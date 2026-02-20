@@ -7,11 +7,10 @@ import {
     getRandomItem,
     cropImageToSquare,
     optimizeImage 
-} from '/.utils.js';
+} from './utils.js';
 
         const MAX_AVATAR_SIZE = 2 * 1024 * 1024;
         const MESSAGES_PER_PAGE = 50;
-
         let SESSION_ID = null;
         let autoSendTimer = null; 
         let sessionList = [];
