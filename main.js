@@ -1,4 +1,4 @@
-import { CONSTANTS, APP_PREFIX } from '.constants.js';
+import { CONSTANTS, APP_PREFIX } from './constants.js';
 import { 
     safeGetItem, 
     safeSetItem, 
@@ -7,7 +7,7 @@ import {
     getRandomItem,
     cropImageToSquare,
     optimizeImage 
-} from '.utils.js';
+} from '/.utils.js';
 
         const MAX_AVATAR_SIZE = 2 * 1024 * 1024;
         const MESSAGES_PER_PAGE = 50;
