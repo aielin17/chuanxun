@@ -692,7 +692,7 @@ document.getElementById('chat-settings').addEventListener('click', () => {
 
                 const pos = settings.inChatAvatarPosition || 'center';
                 const alignMap = { 'top': 'flex-start', 'center': 'center', 'bottom': 'flex-end' };
-                document.documentElement.style.setProperty('--avatar-align', alignMap[pos] || 'flex-start');
+                document.documentElement.style.setProperty('--avatar-align', alignMap[pos] || 'center');
                 document.querySelectorAll('.preview-msg-row').forEach(row => {
                     row.style.alignItems = alignMap[pos] || 'flex-start';
                 });
@@ -704,6 +704,27 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                     btn.className = btn.dataset.pos === pos ? 'modal-btn modal-btn-primary' : 'modal-btn modal-btn-secondary';
                     btn.style.flex = '1'; btn.style.fontSize = '12px'; btn.style.padding = '7px 0';
                 });
+
+                // 每次显示头像开关
+                const alwaysPill = document.getElementById('always-avatar-pill');
+                const alwaysKnob = document.getElementById('always-avatar-knob');
+                const alwaysStatus = document.getElementById('always-avatar-status');
+                const alwaysOn = !!settings.alwaysShowAvatar;
+                if (alwaysPill) alwaysPill.style.background = alwaysOn ? 'var(--accent-color)' : 'var(--border-color)';
+                if (alwaysKnob) alwaysKnob.style.right = alwaysOn ? '3px' : '23px';
+                if (alwaysStatus) alwaysStatus.textContent = alwaysOn ? '已开启 — 每条消息都显示头像' : '已关闭 — 仅首条消息显示';
+                document.body.classList.toggle('always-show-avatar', alwaysOn);
+
+                // 单人模式显示对方名字开关
+                const namePill = document.getElementById('partner-name-chat-pill');
+                const nameKnob = document.getElementById('partner-name-chat-knob');
+                const nameStatus = document.getElementById('partner-name-chat-status');
+                const nameOn = !!settings.showPartnerNameInChat;
+                if (namePill) namePill.style.background = nameOn ? 'var(--accent-color)' : 'var(--border-color)';
+                if (nameKnob) nameKnob.style.right = nameOn ? '3px' : '23px';
+                if (nameStatus) nameStatus.textContent = nameOn ? '已开启 — 消息旁显示对方名字' : '已关闭';
+                showPartnerNameInChat = nameOn;
+                document.body.classList.toggle('show-partner-name', nameOn);
 
                 updateAvatarPreview();
             }
@@ -738,6 +759,27 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                     });
                 }
             });
+
+            // 每条消息都显示头像 toggle
+            const alwaysAvatarToggle = document.getElementById('always-avatar-toggle');
+            if (alwaysAvatarToggle) {
+                alwaysAvatarToggle.addEventListener('click', () => {
+                    settings.alwaysShowAvatar = !settings.alwaysShowAvatar;
+                    updateAvatarSettingsUI();
+                    renderMessages(true);
+                    throttledSaveData();
+                });
+            }
+
+            // 单人模式显示对方名字 toggle
+            const partnerNameChatToggle = document.getElementById('partner-name-chat-toggle');
+            if (partnerNameChatToggle) {
+                partnerNameChatToggle.addEventListener('click', () => {
+                    settings.showPartnerNameInChat = !settings.showPartnerNameInChat;
+                    updateAvatarSettingsUI();
+                    throttledSaveData();
+                });
+            }
 
             function updateAvatarPreview(shape, cornerRadius) {
                 const previewPartner = document.getElementById('preview-partner-avatar');

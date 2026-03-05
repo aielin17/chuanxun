@@ -83,6 +83,9 @@
                 replyDelayMax: 7000,
                 inChatAvatarEnabled: true,
                 inChatAvatarSize: 36,
+                inChatAvatarPosition: 'center',
+                alwaysShowAvatar: false,
+                showPartnerNameInChat: false,
                 customFontUrl: "", 
         customBubbleCss: "",
                 myAvatarFrame: null, 
@@ -243,6 +246,11 @@ const loadData = async () => {
         }
 
         if (savedSettings) Object.assign(settings, savedSettings);
+        // Sync showPartnerNameInChat from settings if set there
+        if (settings.showPartnerNameInChat !== undefined) {
+            showPartnerNameInChat = settings.showPartnerNameInChat;
+            document.body.classList.toggle('show-partner-name', showPartnerNameInChat);
+        }
         try {
             if (settings.customFontUrl) applyCustomFont(settings.customFontUrl);
             if (settings.customBubbleCss) applyCustomBubbleCss(settings.customBubbleCss);
@@ -740,6 +748,10 @@ function manageAutoSendTimer() {
             document.documentElement.style.setProperty('--message-line-height', settings.messageLineHeight);
 
             document.documentElement.style.setProperty('--in-chat-avatar-size', `${settings.inChatAvatarSize}px`);
+            const _alignMap = { 'top': 'flex-start', 'center': 'center', 'bottom': 'flex-end' };
+            document.documentElement.style.setProperty('--avatar-align', _alignMap[settings.inChatAvatarPosition || 'center'] || 'center');
+            document.body.classList.toggle('always-show-avatar', !!settings.alwaysShowAvatar);
+            document.body.classList.toggle('show-partner-name', !!(settings.showPartnerNameInChat || showPartnerNameInChat));
 
             document.querySelectorAll('.theme-color-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.theme === settings.colorTheme);
@@ -857,7 +869,8 @@ function manageAutoSendTimer() {
                 if (settings.inChatAvatarEnabled) {
                     const isSameSenderGroup = groupMember && lastSender === 'group_' + (groupMember ? groupMember.name : '');
                     const isSameSenderNormal = !groupMember && msg.sender === lastSender;
-                    if (isSameSenderGroup || isSameSenderNormal) {
+                    const shouldHide = !settings.alwaysShowAvatar && (isSameSenderGroup || isSameSenderNormal);
+                    if (shouldHide) {
                         avatarDiv.classList.add('hidden');
                     } else if (groupMember) {
                         const groupAvatarShape = settings.partnerAvatarShape || 'circle';
