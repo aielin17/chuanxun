@@ -84,7 +84,6 @@
                 inChatAvatarEnabled: true,
                 inChatAvatarSize: 36,
                 inChatAvatarPosition: 'center',
-                inChatAvatarCustomOffset: 0,
                 alwaysShowAvatar: false,
                 showPartnerNameInChat: false,
                 customFontUrl: "", 
@@ -99,7 +98,9 @@ autoSendInterval: 5,
         readNoReplyChance: 0.2,
         timeFormat: 'HH:mm',
         customSoundUrl: '',
-        soundVolume: 0.15
+        soundVolume: 0.15,
+        toolbarCompact: false,
+        inChatAvatarOffset: 0
             };
         }
 
@@ -275,6 +276,8 @@ const loadData = async () => {
             }));
         } else {
             const backup = _tryRecoverFromBackup();
+            // Only recover from backup if it belongs to the CURRENT session,
+            // to prevent a new/reset session from inheriting old messages.
             if (backup && Array.isArray(backup.messages) && backup.messages.length > 0 && backup.sessionId === SESSION_ID) {
                 const timeSince = Math.round((Date.now() - backup.ts) / 60000);
                 console.warn(`[loadData] 主存储无消息，正在从备份恢复（备份时间：${timeSince} 分钟前）`);
@@ -749,12 +752,21 @@ function manageAutoSendTimer() {
             document.documentElement.style.setProperty('--message-line-height', settings.messageLineHeight);
 
             document.documentElement.style.setProperty('--in-chat-avatar-size', `${settings.inChatAvatarSize}px`);
-            const _alignMap = { 'top': 'flex-start', 'center': 'center', 'bottom': 'flex-end', 'custom': 'flex-start' };
-            document.documentElement.style.setProperty('--avatar-align', _alignMap[settings.inChatAvatarPosition || 'center'] || 'center');
-            document.documentElement.style.setProperty('--avatar-custom-offset', `${settings.inChatAvatarCustomOffset || 0}px`);
-            document.body.classList.toggle('avatar-position-custom', settings.inChatAvatarPosition === 'custom');
+            const _offsetMap = { 'top': 0, 'center': 18, 'bottom': 48, 'custom': (settings.inChatAvatarOffset ?? 0) };
+            const _offset = _offsetMap[settings.inChatAvatarPosition || 'center'] ?? 0;
+            document.documentElement.style.setProperty('--avatar-offset', _offset + 'px');
             document.body.classList.toggle('always-show-avatar', !!settings.alwaysShowAvatar);
             document.body.classList.toggle('show-partner-name', !!(settings.showPartnerNameInChat || showPartnerNameInChat));
+            // Apply compact toolbar mode on load
+            if (settings.toolbarCompact) {
+                ['attachment-btn','combo-btn','batch-btn'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.style.display = 'none';
+                });
+                const expandEl = document.getElementById('compact-expand-btn');
+                if (expandEl) expandEl.style.display = '';
+                document.body.classList.add('toolbar-compact');
+            }
 
             document.querySelectorAll('.theme-color-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.theme === settings.colorTheme);
@@ -909,11 +921,12 @@ function manageAutoSendTimer() {
                     nameLabel.textContent = groupMember.name;
                     const isSameSenderGroupForName = lastSender === 'group_' + groupMember.name;
                     if (!isSameSenderGroupForName) contentWrapper.appendChild(nameLabel);
-                } else if (!groupMember && msg.sender === 'partner' && (showPartnerNameInChat || settings.showPartnerNameInChat)) {
-                    const nameLabel = document.createElement('div');
-                    nameLabel.className = 'message-sender-name';
-                    nameLabel.textContent = settings.partnerName || '对方';
-                    if (lastSender !== 'partner') contentWrapper.appendChild(nameLabel);
+                } else if (msg.sender !== 'user') {
+                    // Single-partner mode: inject sender name for CSS-based show/hide
+                    const senderNameEl = document.createElement('div');
+                    senderNameEl.className = 'message-sender-name';
+                    senderNameEl.textContent = settings.partnerName || '对方';
+                    contentWrapper.appendChild(senderNameEl);
                 }
                 
                 let messageHTML = '';

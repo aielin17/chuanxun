@@ -691,29 +691,31 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                 document.documentElement.style.setProperty('--in-chat-avatar-size', `${settings.inChatAvatarSize}px`);
 
                 const pos = settings.inChatAvatarPosition || 'center';
-                const alignMap = { 'top': 'flex-start', 'center': 'center', 'bottom': 'flex-end', 'custom': 'flex-start' };
-                document.documentElement.style.setProperty('--avatar-align', alignMap[pos] || 'center');
-                const customOffset = settings.inChatAvatarCustomOffset || 0;
-                document.documentElement.style.setProperty('--avatar-custom-offset', `${customOffset}px`);
-                document.body.classList.toggle('avatar-position-custom', pos === 'custom');
+                // Map preset positions to offset values
+                const offsetMap = { 'top': 0, 'center': 18, 'bottom': 48, 'custom': (settings.inChatAvatarOffset ?? 0) };
+                const offset = offsetMap[pos] ?? 0;
+                document.documentElement.style.setProperty('--avatar-offset', offset + 'px');
                 document.querySelectorAll('.preview-msg-row').forEach(row => {
-                    row.style.alignItems = alignMap[pos] || 'flex-start';
+                    row.style.alignItems = 'flex-start';
                 });
+                // Show/hide custom offset slider
+                const customRow = document.getElementById('avatar-custom-offset-row');
+                if (customRow) customRow.style.display = pos === 'custom' ? 'block' : 'none';
+                // Update custom slider value display
+                const offSlider = document.getElementById('avatar-offset-slider-2');
+                const offValue = document.getElementById('avatar-offset-value-2');
+                if (offSlider) offSlider.value = settings.inChatAvatarOffset ?? 0;
+                if (offValue) offValue.textContent = (settings.inChatAvatarOffset ?? 0) + 'px';
+
                 const topBtn = document.getElementById('avatar-pos-top-2');
                 const centerBtn = document.getElementById('avatar-pos-center-2');
                 const bottomBtn = document.getElementById('avatar-pos-bottom-2');
                 const customBtn = document.getElementById('avatar-pos-custom-2');
-                const customOffsetRow = document.getElementById('avatar-custom-offset-row');
-                const customSlider = document.getElementById('avatar-custom-offset-slider');
-                const customValueEl = document.getElementById('avatar-custom-offset-value');
                 [topBtn, centerBtn, bottomBtn, customBtn].forEach(btn => {
                     if (!btn) return;
                     btn.className = btn.dataset.pos === pos ? 'modal-btn modal-btn-primary' : 'modal-btn modal-btn-secondary';
-                    btn.style.flex = '1'; btn.style.minWidth = '60px'; btn.style.fontSize = '11px'; btn.style.padding = '7px 4px';
+                    btn.style.flex = '1'; btn.style.fontSize = '11px'; btn.style.padding = '6px 0';
                 });
-                if (customOffsetRow) customOffsetRow.style.display = pos === 'custom' ? 'block' : 'none';
-                if (customSlider) { customSlider.value = customOffset; }
-                if (customValueEl) customValueEl.textContent = `${customOffset}px`;
 
                 // 每次显示头像开关
                 const alwaysPill = document.getElementById('always-avatar-pill');
@@ -770,17 +772,19 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                 }
             });
 
-            const customOffsetSlider = document.getElementById('avatar-custom-offset-slider');
-            if (customOffsetSlider) {
-                customOffsetSlider.addEventListener('input', (e) => {
-                    const val = parseInt(e.target.value, 10);
-                    settings.inChatAvatarCustomOffset = val;
-                    document.documentElement.style.setProperty('--avatar-custom-offset', `${val}px`);
-                    const valEl = document.getElementById('avatar-custom-offset-value');
-                    if (valEl) valEl.textContent = `${val}px`;
+            // Custom offset slider
+            const offsetSlider = document.getElementById('avatar-offset-slider-2');
+            const offsetValue = document.getElementById('avatar-offset-value-2');
+            if (offsetSlider) {
+                offsetSlider.addEventListener('input', (e) => {
+                    settings.inChatAvatarOffset = parseInt(e.target.value, 10);
+                    settings.inChatAvatarPosition = 'custom';
+                    if (offsetValue) offsetValue.textContent = settings.inChatAvatarOffset + 'px';
+                    document.documentElement.style.setProperty('--avatar-offset', settings.inChatAvatarOffset + 'px');
+                    updateAvatarSettingsUI();
                     renderMessages(true);
                 });
-                customOffsetSlider.addEventListener('change', throttledSaveData);
+                offsetSlider.addEventListener('change', throttledSaveData);
             }
 
             // 每条消息都显示头像 toggle
@@ -799,13 +803,88 @@ document.getElementById('chat-settings').addEventListener('click', () => {
             if (partnerNameChatToggle) {
                 partnerNameChatToggle.addEventListener('click', () => {
                     settings.showPartnerNameInChat = !settings.showPartnerNameInChat;
-                    showPartnerNameInChat = settings.showPartnerNameInChat;
-                    document.body.classList.toggle('show-partner-name', showPartnerNameInChat);
                     updateAvatarSettingsUI();
-                    renderMessages(true);
                     throttledSaveData();
                 });
             }
+
+            // ── 底部栏收纳模式 toggle ──
+            function applyToolbarCompactMode(on) {
+                const attachBtn = document.getElementById('attachment-btn');
+                const comboBtn = document.getElementById('combo-btn');
+                const batchBtn2 = document.getElementById('batch-btn');
+                const expandBtn = document.getElementById('compact-expand-btn');
+                [attachBtn, comboBtn, batchBtn2].forEach(b => {
+                    if (b) b.style.display = on ? 'none' : '';
+                });
+                if (expandBtn) expandBtn.style.display = on ? '' : 'none';
+                document.body.classList.toggle('toolbar-compact', !!on);
+            }
+
+            function updateToolbarCompactUI() {
+                const on = !!settings.toolbarCompact;
+                const pill = document.getElementById('toolbar-compact-pill');
+                const knob = document.getElementById('toolbar-compact-knob');
+                const status = document.getElementById('toolbar-compact-status');
+                if (pill) pill.style.background = on ? 'var(--accent-color)' : 'var(--border-color)';
+                if (knob) knob.style.right = on ? '3px' : '23px';
+                if (status) status.textContent = on ? '已开启 — 底部只保留常用按钮' : '已关闭 — 开启后只保留常用按钮';
+                applyToolbarCompactMode(on);
+            }
+            updateToolbarCompactUI();
+
+            const toolbarCompactToggle = document.getElementById('toolbar-compact-toggle');
+            if (toolbarCompactToggle) {
+                toolbarCompactToggle.addEventListener('click', () => {
+                    settings.toolbarCompact = !settings.toolbarCompact;
+                    updateToolbarCompactUI();
+                    throttledSaveData();
+                });
+            }
+
+            // 收纳展开按钮
+            const expandBtn2 = document.getElementById('compact-expand-btn');
+            const expandPanel = document.getElementById('compact-expand-panel');
+            if (expandBtn2 && expandPanel) {
+                expandBtn2.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const open = expandPanel.style.display === 'none' || expandPanel.style.display === '';
+                    expandPanel.style.display = open ? 'block' : 'none';
+                });
+                // Click on panel buttons proxies to original buttons
+                expandPanel.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const panelBtn = e.target.closest('.compact-panel-btn');
+                    if (panelBtn) {
+                        const targetId = panelBtn.dataset.target;
+                        const realBtn = document.getElementById(targetId);
+                        if (realBtn) {
+                            realBtn.style.display = '';
+                            realBtn.click();
+                            realBtn.style.display = 'none';
+                        }
+                        expandPanel.style.display = 'none';
+                        return;
+                    }
+                    // Exit compact mode toggle
+                    const exitToggle = e.target.closest('#compact-exit-toggle');
+                    if (exitToggle) {
+                        settings.toolbarCompact = false;
+                        updateToolbarCompactUI();
+                        throttledSaveData();
+                        expandPanel.style.display = 'none';
+                        // Also update the settings toggle UI
+                        const pill = document.getElementById('toolbar-compact-pill');
+                        const knob = document.getElementById('toolbar-compact-knob');
+                        if (pill) pill.style.background = 'var(--border-color)';
+                        if (knob) knob.style.right = '23px';
+                    }
+                });
+            }
+            // Close expand panel on outside click
+            document.addEventListener('click', () => {
+                if (expandPanel) expandPanel.style.display = 'none';
+            });
 
             function updateAvatarPreview(shape, cornerRadius) {
                 const previewPartner = document.getElementById('preview-partner-avatar');
