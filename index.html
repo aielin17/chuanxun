@@ -51,6 +51,11 @@
         .compact-panel-btn:hover i {
             color: var(--accent-color) !important;
         }
+        /* 硬币翻转动画类 */
+        .coin.flip-heads { animation: flip-coin-heads 1.4s ease forwards; }
+        .coin.flip-tails { animation: flip-coin-tails 1.4s ease forwards; }
+        /* cs-panel-display 截图按钮 hover */
+        #cs-screenshot-btn:hover { background: rgba(var(--accent-color-rgb), 0.06) !important; border-radius: 10px; }
     </style>
 </head>
 <body>
@@ -1207,6 +1212,24 @@
                             <div class="setting-pill-switch"><div class="setting-pill-knob"></div></div>
                         </div>
                     </div>
+
+                    <p class="cs-group-label" style="margin-top:10px;">输入栏</p>
+                    <div class="cs-card">
+                        <div id="toolbar-compact-toggle-cs" style="display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="(function(){if(typeof settings!=='undefined'){settings.toolbarCompact=!settings.toolbarCompact;if(typeof window._updateToolbarCompactUI==='function')window._updateToolbarCompactUI();if(typeof throttledSaveData==='function')throttledSaveData();}})()">
+                            <span class="setting-pill-icon"><i class="fas fa-compress-alt"></i></span>
+                            <span class="setting-pill-label">收纳多余按钮 <span style="font-size:11px;color:var(--text-secondary);font-weight:400;">只保留常用按钮</span></span>
+                            <div class="setting-pill-switch" id="toolbar-compact-switch-cs"><div class="setting-pill-knob"></div></div>
+                        </div>
+                    </div>
+
+                    <p class="cs-group-label" style="margin-top:10px;">截图</p>
+                    <div class="cs-card">
+                        <button id="cs-screenshot-btn" onclick="window._takeChatScreenshot && window._takeChatScreenshot()" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 2px;background:none;border:none;cursor:pointer;color:var(--text-primary);font-size:13px;font-family:var(--font-family);">
+                            <span class="setting-pill-icon"><i class="fas fa-camera"></i></span>
+                            <span style="flex:1;text-align:left;">长截屏 <span style="font-size:11px;color:var(--text-secondary);font-weight:400;">保存聊天记录为图片</span></span>
+                            <i class="fas fa-chevron-right" style="font-size:11px;color:var(--text-secondary);"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="cs-panel" id="cs-panel-names">
@@ -2215,6 +2238,7 @@
     <script src="js/features/daily-greeting.js"></script>
     <script src="js/features/notifications.js"></script>
     <script src="js/features/group-chat.js"></script>
+    <script src="js/features/screenshot.js"></script>
 
     <!-- 6. Event listeners (wires everything together; bug-fixed close buttons here) -->
     <script src="js/listeners.js"></script>
