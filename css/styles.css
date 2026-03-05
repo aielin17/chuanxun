@@ -9568,3 +9568,30 @@
             border-top: 1px solid var(--border-color);
             background: var(--secondary-bg);
         }
+
+        /* ── 字卡分组 & 批量管理新增样式 ── */
+        @keyframes slideUpSheet {
+            from { transform: translateY(100%); opacity: 0; }
+            to   { transform: translateY(0);    opacity: 1; }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to   { opacity: 0; }
+        }
+
+        .reply-group-section {
+            transition: opacity 0.2s;
+        }
+        .reply-group-section:hover {
+            border-color: rgba(var(--accent-color-rgb), 0.3) !important;
+        }
+
+        .export-row:has(input:checked) {
+            border-color: rgba(var(--accent-color-rgb), 0.4) !important;
+            background: rgba(var(--accent-color-rgb), 0.04) !important;
+        }
+
+        .custom-reply-item .disable-btn svg,
+        .custom-reply-item .group-btn svg {
+            display: block;
+        }
