@@ -111,13 +111,6 @@ if (target.classList.contains('delete-btn')) {
                     });
                     return;
                 } 
-                else if (target.classList.contains('note-btn')) {
-                    currentNoteMessageId = messageId;
-                    DOMElements.noteModal.input.value = message.note || '';
-                    showModal(DOMElements.noteModal.modal, DOMElements.noteModal.input);
-                    return;
-                }
-
                 throttledSaveData();
             });
 
@@ -171,17 +164,6 @@ if (target.classList.contains('delete-btn')) {
             DOMElements.editModal.input.addEventListener('input', () => {
                 DOMElements.editModal.save.disabled = !DOMElements.editModal.input.value.trim();
             });
-            DOMElements.noteModal.save.addEventListener('click', () => {
-                const message = messages.find(m => m.id === currentNoteMessageId);
-                if (message) {
-                    message.note = DOMElements.noteModal.input.value.trim() || null;
-                    throttledSaveData();
-                    renderMessages(true);
-                    showNotification('注释已保存', 'success');
-                }
-                hideModal(DOMElements.noteModal.modal);
-            });
-
             DOMElements.pokeModal.save.addEventListener('click', () => {
                 let pokeText = DOMElements.pokeModal.input.value.trim() || `${settings.myName} 拍了拍 ${settings.partnerName}`;
                 addMessage({

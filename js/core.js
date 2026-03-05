@@ -210,7 +210,8 @@ const loadData = async () => {
             localforage.getItem(getStorageKey('partnerPersonas')), 
             localforage.getItem(getStorageKey('showPartnerNameInChat')),
             localforage.getItem(`${APP_PREFIX}themeSchemes`),
-            localforage.getItem(getStorageKey('myStickerLibrary'))
+            localforage.getItem(getStorageKey('myStickerLibrary')),
+            localforage.getItem(getStorageKey('customReplyGroups'))
         ]);
         const getVal = (index) => results[index].status === 'fulfilled' ? results[index].value : null;
 
@@ -232,6 +233,7 @@ const loadData = async () => {
         const savedShowNameConfig = getVal(15);
         const savedThemeSchemes = getVal(16);
         const savedMyStickers = getVal(17);
+        const savedReplyGroups = getVal(18);
 
         if (savedPartnerPersonas) partnerPersonas = savedPartnerPersonas; 
 
@@ -291,6 +293,7 @@ const loadData = async () => {
         }
 
         if (savedCustomReplies) customReplies = savedCustomReplies;
+        if (savedReplyGroups) window.customReplyGroups = savedReplyGroups;
         if (savedAnniversaries) anniversaries = savedAnniversaries;
         if (savedStickers) stickerLibrary = savedStickers;
         if (savedMyStickers) myStickerLibrary = savedMyStickers;
@@ -457,6 +460,7 @@ const saveData = async () => {
     const promises = [
         { key: 'chatSettings',           val: () => localforage.setItem(getStorageKey('chatSettings'), settings) },
         { key: 'customReplies',          val: () => localforage.setItem(getStorageKey('customReplies'), customReplies) },
+        { key: 'customReplyGroups',      val: () => localforage.setItem(getStorageKey('customReplyGroups'), window.customReplyGroups || []) },
         { key: 'customEmojis',           val: () => localforage.setItem(getStorageKey('customEmojis'), customEmojis) },
         { key: 'anniversaries',          val: () => localforage.setItem(getStorageKey('anniversaries'), anniversaries) },
         { key: 'customPokes',            val: () => localforage.setItem(getStorageKey('customPokes'), customPokes) },
@@ -902,7 +906,7 @@ function manageAutoSendTimer() {
                 if (msg.image) content += `<img src="${msg.image}" class="message-image" alt="图片" style="max-width: 200px; border-radius: 8px; margin-top: 8px; cursor: pointer;" onclick="viewImage('${msg.image}')">`;
                 messageHTML += content;
 
-                if (msg.note) messageHTML += `<div class="message-note">${msg.note}</div>`;
+
 
                 const messageDiv = document.createElement('div');
                 messageDiv.className = `message message-${msg.sender === 'user' ? 'sent': 'received'} ${settings.bubbleStyle}`;
@@ -915,7 +919,7 @@ function manageAutoSendTimer() {
                 const starIcon = msg.favorited ? 'fas fa-star' : 'far fa-star'; 
                 actionsHTML += `<button class="meta-action-btn favorite-action-btn ${msg.favorited ? 'favorited' : ''}" title="${msg.favorited ? '取消收藏' : '收藏'}"><i class="${starIcon}"></i></button>`;
                 
-                actionsHTML += `<button class="meta-action-btn note-btn" title="注释"><i class="fas fa-sticky-note"></i></button>`;
+
 actionsHTML += `<button class="meta-action-btn delete-btn" title="删除"><i class="fas fa-trash-alt"></i></button>`;
                 const actionsDiv = document.createElement('div');
                 actionsDiv.className = 'message-meta-actions';
