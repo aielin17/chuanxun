@@ -833,6 +833,8 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                 if (status) status.textContent = on ? '已开启 — 底部只保留常用按钮' : '已关闭 — 开启后只保留常用按钮';
                 applyToolbarCompactMode(on);
             }
+            // Expose globally so core.js/app.js can re-sync after loadData
+            window._updateToolbarCompactUI = updateToolbarCompactUI;
             updateToolbarCompactUI();
 
             const toolbarCompactToggle = document.getElementById('toolbar-compact-toggle');
@@ -852,7 +854,7 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                 if (!expandPanel) return;
                 expandPanel.style.display = 'block';
                 expandPanel.style.pointerEvents = 'auto';
-                // Force reflow then animate in
+                expandPanel.dataset.open = '1';
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
                         expandPanel.style.opacity = '1';
@@ -862,18 +864,19 @@ document.getElementById('chat-settings').addEventListener('click', () => {
             }
             function closeExpandPanel() {
                 if (!expandPanel) return;
+                expandPanel.dataset.open = '';
                 expandPanel.style.opacity = '0';
                 expandPanel.style.transform = 'translateY(12px) scale(0.97)';
                 expandPanel.style.pointerEvents = 'none';
                 setTimeout(() => {
-                    if (expandPanel.style.opacity === '0') expandPanel.style.display = 'none';
+                    if (!expandPanel.dataset.open) expandPanel.style.display = 'none';
                 }, 240);
             }
 
             if (expandBtn2 && expandPanel) {
                 expandBtn2.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    const isOpen = expandPanel.style.opacity === '1';
+                    const isOpen = expandPanel.dataset.open === '1';
                     if (isOpen) {
                         closeExpandPanel();
                     } else {
