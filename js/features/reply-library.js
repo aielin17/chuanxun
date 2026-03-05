@@ -1,489 +1,691 @@
 /**
- * features/reply-library.js - 回复库 Reply Library
- * 自定义回复库管理与渲染 — 重构版（含分组、批量管理、新导入导出UI）
+ * features/reply-library.js — 回复库 · 全新重构版
+ * ✦ 移动优先 · 底部 Tab 导航 · 精美卡片 · 分组高度自定义 · 批量管理
  */
 
-// ─── 分组数据（全局，随customReplies等一起存储）───
-// customReplyGroups: Array<{ id, name, color, disabled, items: string[] }>
-// replyGroupsEnabled: bool — 总开关
-
+// ─── 全局状态 ──────────────────────────────────────────────
 if (typeof customReplyGroups === 'undefined') window.customReplyGroups = [];
 if (typeof replyGroupsEnabled === 'undefined') window.replyGroupsEnabled = false;
 
-// ─── 批量选择状态 ───
 let _batchSelectedIndices = new Set();
 let _batchModeActive = false;
+let _searchVisible = false;
+let _searchQuery = '';
+let _activeGroupFilter = null; // null = 全部, 'ungrouped' = 未分组, groupId = 某分组
 
-// ─── 分组颜色预设 ───
+// ─── 分组预设色板（18色，饱和精致）─────────────────────────
 const GROUP_COLORS = [
-    '#e87461','#f5a623','#f8d347','#6ac97f',
-    '#5db8f5','#9b7fe8','#f06292','#80cbc4'
+    '#FF6B6B','#FF8E53','#FFC542','#51CF66',
+    '#20C997','#4DABF7','#748FFC','#DA77F2',
+    '#F783AC','#FF922B','#A9E34B','#38D9A9',
+    '#339AF0','#5C7CFA','#CC5DE8','#F06595',
+    '#868E96','#212529'
 ];
 
-// ────────────────────────────────────────────────
+// ─── SVG 图标库（纯矢量，无 FontAwesome 依赖）──────────────
+const ICONS = {
+    reply:    `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 3a1 1 0 011-1h10a1 1 0 011 1v7a1 1 0 01-1 1H9l-3 2.5V11H3a1 1 0 01-1-1V3z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>`,
+    magic:    `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2l.9 2.7L11.6 4l-1.8 2.2L12 8l-2.9-.1L8 10.8l-.9-2.9L4.4 8l1.8-2.2L4.4 4l2.7.7L8 2z" stroke="currentColor" stroke-width="1.2" fill="none"/><line x1="2" y1="14" x2="5" y2="11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
+    news:     `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.3"/><line x1="5" y1="6" x2="11" y2="6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="5" y1="9" x2="9" y2="9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`,
+    folder:   `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 5a1 1 0 011-1h3.5l1.2 1.2H13a1 1 0 011 1V12a1 1 0 01-1 1H3a1 1 0 01-1-1V5z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>`,
+    search:   `<svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.3"/><line x1="9.5" y1="9.5" x2="13" y2="13" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+    batch:    `<svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="1.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="8.5" y="1.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2" opacity=".6"/><rect x="1.5" y="8.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2" opacity=".6"/><rect x="8.5" y="8.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2" opacity=".4"/></svg>`,
+    plus:     `<svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="7.5" y1="2" x2="7.5" y2="13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="2" y1="7.5" x2="13" y2="7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+    close:    `<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+    check:    `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    trash:    `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="2" y1="3" x2="11" y2="3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M4.5 3V2.5a.5.5 0 01.5-.5h3a.5.5 0 01.5.5V3"/><path d="M3.5 3.5l.5 7h5l.5-7" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>`,
+    edit:     `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M8.5 2l2.5 2.5L4 11.5H1.5V9L8.5 2z" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>`,
+    eye:      `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4z" stroke="currentColor" stroke-width="1.2"/><circle cx="6.5" cy="6.5" r="1.5" fill="currentColor"/></svg>`,
+    eyeOff:   `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="2" y1="2" x2="11" y2="11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M4.5 3.5C5.1 3.2 5.7 3 6.5 3c3 0 5 3.5 5 3.5s-.5 1-1.5 2M2 5s-.5.8-.5 1.5c0 .6.2 1.1.5 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`,
+    tag:      `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 1.5h5l5 5-5 5-5-5v-5z" stroke="currentColor" stroke-width="1.2" fill="none"/><circle cx="4" cy="4" r="1" fill="currentColor"/></svg>`,
+    filter:   `<svg width="15" height="15" viewBox="0 0 15 15" fill="none"><line x1="2" y1="4" x2="13" y2="4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="4" y1="7.5" x2="11" y2="7.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="6" y1="11" x2="9" y2="11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
+    dedup:    `<svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 4h11M4.5 7h6M7 10h1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
+    import:   `<svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 9.5V2M4 6.5l3.5 3L11 6.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><line x1="2" y1="12.5" x2="13" y2="12.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
+    export:   `<svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 5V12M4 7.5l3.5-3L11 7.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><line x1="2" y1="2.5" x2="13" y2="2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
+    chevronD: `<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 5l4 4 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+    chevronR: `<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+    comment:  `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 3.5A1.5 1.5 0 013.5 2h11A1.5 1.5 0 0116 3.5v8A1.5 1.5 0 0114.5 13H10l-3 3v-3H3.5A1.5 1.5 0 012 11.5v-8z" stroke="currentColor" stroke-width="1.3"/></svg>`,
+    hand:     `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2v8M6 5v5M3 8v3a6 6 0 0012 0V6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
+    dot:      `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="3" fill="currentColor"/><circle cx="9" cy="9" r="6.5" stroke="currentColor" stroke-width="1.3"/></svg>`,
+    quote:    `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 6.5C3 5.4 3.9 4.5 5 4.5h2v5H5A2 2 0 013 7.5V6.5zM10 6.5c0-1.1.9-2 2-2h2v5h-2a2 2 0 01-2-2V6.5z" fill="currentColor" opacity=".7"/></svg>`,
+    play:     `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.3"/><path d="M7 6.5l5 2.5-5 2.5V6.5z" fill="currentColor"/></svg>`,
+    smile:    `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.3"/><circle cx="6.5" cy="7.5" r="1" fill="currentColor"/><circle cx="11.5" cy="7.5" r="1" fill="currentColor"/><path d="M6 11.5s1 2 3 2 3-2 3-2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`,
+    sticker:  `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="2" width="14" height="14" rx="4" stroke="currentColor" stroke-width="1.3"/><circle cx="6.5" cy="7" r="1.2" fill="currentColor"/><circle cx="11.5" cy="7" r="1.2" fill="currentColor"/><path d="M6 11s1 2.5 3 2.5S12 11 12 11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`,
+    folderBig:`<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 5a1 1 0 011-1h4l1.5 1.5H15a1 1 0 011 1V14a1 1 0 01-1 1H3a1 1 0 01-1-1V5z" stroke="currentColor" stroke-width="1.3"/></svg>`,
+    palette:  `<svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1.5a6 6 0 100 12 2.5 2.5 0 010-5 2.5 2.5 0 000-7z" stroke="currentColor" stroke-width="1.2" fill="none"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="7.5" cy="3.5" r="1" fill="currentColor"/><circle cx="11" cy="6" r="1" fill="currentColor"/></svg>`,
+};
+
+// ─────────────────────────────────────────────────────────
 //  主渲染入口
-// ────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
 function renderReplyLibrary() {
     const list = document.getElementById('custom-replies-list');
-    const searchInput = document.getElementById('reply-search-input');
-    const addButton = document.getElementById('add-custom-reply');
-    const subTabsContainer = document.getElementById('cr-sub-tabs');
     const titleEl = document.getElementById('cr-modal-title');
+    if (!list) return;
 
     const currentConfig = LIBRARY_CONFIG[currentMajorTab];
-    titleEl.textContent = currentConfig.title;
+    if (titleEl) titleEl.textContent = currentConfig.title;
 
-    subTabsContainer.innerHTML = currentConfig.tabs.map(tab => `
-        <button class="reply-tab-btn ${currentSubTab === tab.id ? 'active' : ''}" 
-                data-id="${tab.id}" data-mode="${tab.mode}">
-            ${tab.name}
-        </button>
-    `).join('');
-
-    subTabsContainer.querySelectorAll('.reply-tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            currentSubTab = btn.dataset.id;
-            _batchModeActive = false;
-            _batchSelectedIndices.clear();
-            renderReplyLibrary();
+    // 重建子 Tab 区
+    const subTabsContainer = document.getElementById('cr-sub-tabs');
+    if (subTabsContainer) {
+        subTabsContainer.innerHTML = currentConfig.tabs.map(tab => `
+            <button class="reply-tab-btn ${currentSubTab === tab.id ? 'active' : ''}"
+                    data-id="${tab.id}" data-mode="${tab.mode}">
+                ${tab.name}
+            </button>
+        `).join('');
+        subTabsContainer.querySelectorAll('.reply-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentSubTab = btn.dataset.id;
+                _batchModeActive = false;
+                _batchSelectedIndices.clear();
+                _activeGroupFilter = null;
+                _searchVisible = false;
+                _searchQuery = '';
+                renderReplyLibrary();
+            });
         });
-    });
+    }
 
     list.innerHTML = '';
     list.className = 'content-list-area';
 
     const activeTabConfig = currentConfig.tabs.find(t => t.id === currentSubTab);
-    list.classList.add(activeTabConfig.mode + '-mode');
+    if (activeTabConfig) list.classList.add(activeTabConfig.mode + '-mode');
 
-    const filterText = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    // 工具栏重构
+    _renderModernToolbar();
+
+    // 数据源 & 渲染类型
     let itemsToRender = [];
     let renderType = 'text';
 
     if (currentMajorTab === 'reply') {
         if (currentSubTab === 'custom') {
             itemsToRender = customReplies;
-            addButton.innerHTML = '<i class="fas fa-plus"></i> 新增回复';
-            addButton.style.display = 'flex';
         } else if (currentSubTab === 'emojis') {
             itemsToRender = CONSTANTS.REPLY_EMOJIS;
             renderType = 'emoji';
-            addButton.innerHTML = '<i class="fas fa-plus"></i> 添加Emoji';
-            addButton.style.display = 'flex';
         } else if (currentSubTab === 'stickers') {
             itemsToRender = stickerLibrary;
             renderType = 'image';
-            addButton.innerHTML = '<i class="fas fa-plus"></i> 添加表情';
-            addButton.style.display = 'flex';
         }
     } else if (currentMajorTab === 'atmosphere') {
-        addButton.style.display = 'flex';
-        if (currentSubTab === 'pokes') {
-            itemsToRender = customPokes;
-            addButton.innerHTML = '<i class="fas fa-plus"></i> 新增拍一拍';
-        } else if (currentSubTab === 'statuses') {
-            itemsToRender = customStatuses;
-            addButton.innerHTML = '<i class="fas fa-plus"></i> 新增状态';
-        } else if (currentSubTab === 'mottos') {
-            itemsToRender = customMottos;
-            addButton.innerHTML = '<i class="fas fa-plus"></i> 新增格言';
-        } else if (currentSubTab === 'intros') {
-            itemsToRender = customIntros;
-            addButton.innerHTML = '<i class="fas fa-plus"></i> 新增开场语';
-        }
+        if (currentSubTab === 'pokes') itemsToRender = customPokes;
+        else if (currentSubTab === 'statuses') itemsToRender = customStatuses;
+        else if (currentSubTab === 'mottos') itemsToRender = customMottos;
+        else if (currentSubTab === 'intros') itemsToRender = customIntros;
     }
 
-    // ── 批量操作工具栏（仅主字卡显示）──
-    _renderBatchToolbar(currentMajorTab === 'reply' && currentSubTab === 'custom');
+    if (renderType === 'emoji') { _renderEmojiTab(list, itemsToRender); return; }
+    if (renderType === 'image') { _renderStickerTab(list, itemsToRender); return; }
 
-    if (itemsToRender.length === 0 && renderType !== 'emoji') {
-        list.innerHTML = renderEmptyState('列表空空如也');
+    // 应用搜索过滤
+    const q = _searchQuery.toLowerCase().trim();
+    let filtered = q ? itemsToRender.filter(item => item.toLowerCase().includes(q)) : itemsToRender;
+
+    if (filtered.length === 0) {
+        list.innerHTML = renderEmptyState(q ? `未找到"${q}"` : '列表空空如也');
         return;
     }
 
-    if (renderType === 'emoji') {
-        _renderEmojiTab(list, itemsToRender);
-        return;
-    }
-
-    if (renderType === 'image') {
-        _renderStickerTab(list, itemsToRender);
-        return;
-    }
-
-    // ── 主字卡：支持分组视图 ──
+    // 主字卡 → 分组视图
     if (currentMajorTab === 'reply' && currentSubTab === 'custom') {
-        _renderCustomRepliesWithGroups(list, itemsToRender, filterText);
+        _renderCardViewWithGroups(list, filtered);
     } else {
-        _renderPlainList(list, itemsToRender, filterText);
+        _renderAtmosphereList(list, filtered);
     }
 }
 
-// ────────────────────────────────────────────────
-//  批量操作工具栏
-// ────────────────────────────────────────────────
-function _renderBatchToolbar(show) {
+// ─────────────────────────────────────────────────────────
+//  现代工具栏（固定在顶部）
+// ─────────────────────────────────────────────────────────
+function _renderModernToolbar() {
     let toolbar = document.getElementById('batch-ops-toolbar');
-    if (!show) {
-        if (toolbar) toolbar.style.display = 'none';
-        return;
-    }
+    const isMainCustom = currentMajorTab === 'reply' && currentSubTab === 'custom';
 
     if (!toolbar) {
         toolbar = document.createElement('div');
         toolbar.id = 'batch-ops-toolbar';
-        toolbar.style.cssText = `
-            display:flex;align-items:center;gap:8px;padding:8px 0 12px;
-            flex-wrap:wrap;border-bottom:1px solid var(--border-color);
-            margin-bottom:10px;
-        `;
         const listEl = document.getElementById('custom-replies-list');
         listEl.parentNode.insertBefore(toolbar, listEl);
     }
-    toolbar.style.display = 'flex';
+    toolbar.style.display = '';
 
-    const totalItems = customReplies.length;
+    const disabledSet = _getDisabledItemsSet();
+    const totalItems = currentMajorTab === 'reply' && currentSubTab === 'custom' ? customReplies.length : 0;
     const selectedCount = _batchSelectedIndices.size;
 
+    const addBtnLabel = (() => {
+        if (!isMainCustom) return '新增';
+        return '新增字卡';
+    })();
+
+    // 分组过滤器 Pills（仅主字卡）
+    let groupFilterHtml = '';
+    if (isMainCustom && customReplyGroups && customReplyGroups.length > 0) {
+        const allCount = customReplies.length;
+        const ungroupedCount = customReplies.filter(item =>
+            !customReplyGroups.some(g => g.items && g.items.includes(item))
+        ).length;
+        groupFilterHtml = `
+            <div id="group-filter-pills" style="
+                display:flex;gap:6px;overflow-x:auto;padding:8px 15px 0;
+                scrollbar-width:none;-webkit-overflow-scrolling:touch;flex-shrink:0;
+            ">
+                <button class="gfp-btn ${_activeGroupFilter === null ? 'gfp-active' : ''}" data-filter="all">
+                    全部 <span class="gfp-count">${allCount}</span>
+                </button>
+                <button class="gfp-btn ${_activeGroupFilter === 'ungrouped' ? 'gfp-active' : ''}" data-filter="ungrouped">
+                    未分组 <span class="gfp-count">${ungroupedCount}</span>
+                </button>
+                ${customReplyGroups.map(g => {
+                    const cnt = (g.items || []).filter(item => customReplies.includes(item)).length;
+                    return `<button class="gfp-btn ${_activeGroupFilter === g.id ? 'gfp-active' : ''} ${g.disabled ? 'gfp-disabled' : ''}"
+                        data-filter="${g.id}"
+                        style="${_activeGroupFilter === g.id ? `background:${g.color}22;border-color:${g.color};color:${g.color};` : ''}">
+                        <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${g.color || '#aaa'};margin-right:4px;flex-shrink:0;vertical-align:middle;"></span>
+                        ${g.name} <span class="gfp-count">${cnt}</span>
+                        ${g.disabled ? `<span style="font-size:9px;opacity:0.7;margin-left:2px;">${ICONS.eyeOff}</span>` : ''}
+                    </button>`;
+                }).join('')}
+            </div>
+        `;
+    }
+
+    // 批量操作区
+    let batchActionsHtml = '';
+    if (_batchModeActive) {
+        batchActionsHtml = `
+            <div id="batch-action-bar" style="
+                display:flex;align-items:center;gap:6px;padding:8px 15px;
+                background:rgba(var(--accent-color-rgb,180,140,100),0.06);
+                border-bottom:1px solid rgba(var(--accent-color-rgb,180,140,100),0.15);
+                flex-wrap:wrap;
+            ">
+                <button id="batch-select-all-btn" style="
+                    padding:5px 12px;border-radius:20px;border:1.5px solid var(--accent-color);
+                    background:transparent;color:var(--accent-color);font-size:12px;
+                    cursor:pointer;font-family:var(--font-family);font-weight:600;
+                    display:flex;align-items:center;gap:5px;
+                ">
+                    ${ICONS.check}
+                    ${selectedCount === totalItems ? '取消全选' : `全选 (${totalItems})`}
+                </button>
+                <span style="font-size:12px;color:var(--text-secondary);flex:1;min-width:60px;">
+                    ${selectedCount > 0 ? `已选 <strong style="color:var(--text-primary);">${selectedCount}</strong> 条` : '点击字卡以选择'}
+                </span>
+                <button id="batch-group-btn" class="batch-act-pill ${selectedCount === 0 ? 'batch-act-disabled' : ''}" data-tip="分配分组">
+                    ${ICONS.tag} 分组
+                </button>
+                <button id="batch-disable-btn" class="batch-act-pill ${selectedCount === 0 ? 'batch-act-disabled' : ''}" data-tip="屏蔽/启用">
+                    ${ICONS.eyeOff} 屏蔽
+                </button>
+                <button id="batch-delete-btn" class="batch-act-pill batch-act-danger ${selectedCount === 0 ? 'batch-act-disabled' : ''}" data-tip="删除">
+                    ${ICONS.trash} 删除
+                </button>
+            </div>
+        `;
+    }
+
     toolbar.innerHTML = `
-        <button id="batch-toggle-btn" style="
-            padding:5px 12px;border-radius:20px;border:1px solid var(--border-color);
-            background:${_batchModeActive ? 'var(--accent-color)' : 'var(--primary-bg)'};
-            color:${_batchModeActive ? '#fff' : 'var(--text-secondary)'};
-            font-size:12px;cursor:pointer;font-family:var(--font-family);
-            display:flex;align-items:center;gap:5px;transition:all 0.2s;
-        ">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <rect x="1" y="1" width="4" height="4" rx="1" fill="currentColor"/>
-                <rect x="7" y="1" width="4" height="4" rx="1" fill="currentColor" opacity="0.6"/>
-                <rect x="1" y="7" width="4" height="4" rx="1" fill="currentColor" opacity="0.6"/>
-                <rect x="7" y="7" width="4" height="4" rx="1" fill="currentColor" opacity="0.4"/>
-            </svg>
-            ${_batchModeActive ? `已选 ${selectedCount}/${totalItems}` : '批量管理'}
-        </button>
-        ${_batchModeActive ? `
-            <button id="batch-select-all-btn" style="
-                padding:5px 10px;border-radius:20px;border:1px solid var(--border-color);
+        <style>
+            .gfp-btn {
+                display:inline-flex;align-items:center;white-space:nowrap;
+                padding:5px 12px;border-radius:20px;border:1.5px solid var(--border-color);
                 background:var(--primary-bg);color:var(--text-secondary);
                 font-size:12px;cursor:pointer;font-family:var(--font-family);
-            ">${selectedCount === totalItems ? '取消全选' : '全选'}</button>
+                transition:all 0.18s;flex-shrink:0;gap:2px;
+            }
+            .gfp-btn:hover { border-color:var(--accent-color);color:var(--accent-color); }
+            .gfp-btn.gfp-active { background:var(--accent-color);border-color:var(--accent-color);color:#fff; }
+            .gfp-btn.gfp-disabled { opacity:0.55; }
+            .gfp-count { font-size:10px;opacity:0.7;margin-left:2px; }
+            .toolbar-icon-btn {
+                width:34px;height:34px;border-radius:10px;border:1.5px solid var(--border-color);
+                background:var(--primary-bg);color:var(--text-secondary);cursor:pointer;
+                display:flex;align-items:center;justify-content:center;transition:all 0.18s;
+                flex-shrink:0;
+            }
+            .toolbar-icon-btn:hover { border-color:var(--accent-color);color:var(--accent-color); }
+            .toolbar-icon-btn.active { background:var(--accent-color);border-color:var(--accent-color);color:#fff; }
+            .batch-act-pill {
+                display:inline-flex;align-items:center;gap:4px;
+                padding:5px 11px;border-radius:20px;border:1.5px solid var(--border-color);
+                background:var(--primary-bg);color:var(--text-primary);
+                font-size:12px;cursor:pointer;font-family:var(--font-family);transition:all 0.18s;
+            }
+            .batch-act-pill:hover { border-color:var(--accent-color);color:var(--accent-color); }
+            .batch-act-danger { border-color:rgba(239,68,68,.3);color:#ef4444; }
+            .batch-act-danger:hover { background:rgba(239,68,68,.08); }
+            .batch-act-disabled { opacity:0.4;pointer-events:none; }
+            .search-input-line {
+                display:flex;align-items:center;gap:8px;padding:8px 15px;
+                border-bottom:1px solid var(--border-color);animation:slideDown 0.18s ease;
+            }
+            @keyframes slideDown { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:none} }
+            .search-input-line input {
+                flex:1;padding:7px 12px;border:1.5px solid var(--border-color);
+                border-radius:10px;background:var(--secondary-bg);color:var(--text-primary);
+                font-size:13px;font-family:var(--font-family);outline:none;transition:border 0.18s;
+            }
+            .search-input-line input:focus { border-color:var(--accent-color); }
+            .group-filter-pills::-webkit-scrollbar { display:none; }
+        </style>
+
+        <!-- 主工具行 -->
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 15px;border-bottom:1px solid var(--border-color);">
+            <!-- 搜索 toggle -->
+            <button class="toolbar-icon-btn ${_searchVisible ? 'active' : ''}" id="tb-search-btn" title="搜索">
+                ${ICONS.search}
+            </button>
+            <!-- 分组管理（仅主字卡） -->
+            ${isMainCustom ? `
+            <button class="toolbar-icon-btn" id="tb-groups-btn" title="分组管理">
+                ${ICONS.folder}
+            </button>` : ''}
+            <!-- 去重 -->
+            <button class="toolbar-icon-btn" id="tb-dedup-btn" title="一键去重">
+                ${ICONS.dedup}
+            </button>
             <div style="flex:1;"></div>
-            <button id="batch-group-btn" title="批量分组" style="
-                padding:5px 10px;border-radius:20px;border:1px solid var(--border-color);
-                background:var(--primary-bg);color:var(--text-primary);
-                font-size:12px;cursor:pointer;font-family:var(--font-family);
-                display:flex;align-items:center;gap:4px;
-                ${selectedCount === 0 ? 'opacity:0.4;pointer-events:none;' : ''}
-            ">
-                <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                    <path d="M1 2.5C1 1.67 1.67 1 2.5 1h2c.36 0 .7.13.96.36L6.5 2.5H9c.83 0 1.5.67 1.5 1.5V8c0 .83-.67 1.5-1.5 1.5H2C1.17 9.5 1 8.83 1 8V2.5z" stroke="currentColor" stroke-width="1" fill="none"/>
-                </svg>
-                分组
+            <!-- 批量模式 toggle -->
+            ${isMainCustom ? `
+            <button class="toolbar-icon-btn ${_batchModeActive ? 'active' : ''}" id="tb-batch-btn" title="${_batchModeActive ? '退出批量' : '批量管理'}">
+                ${ICONS.batch}
+            </button>` : ''}
+            <!-- 导入 -->
+            <button class="toolbar-icon-btn" id="tb-import-btn" title="导入">
+                ${ICONS.import}
             </button>
-            <button id="batch-disable-btn" title="批量屏蔽" style="
-                padding:5px 10px;border-radius:20px;border:1px solid var(--border-color);
-                background:var(--primary-bg);color:var(--text-primary);
-                font-size:12px;cursor:pointer;font-family:var(--font-family);
-                display:flex;align-items:center;gap:4px;
-                ${selectedCount === 0 ? 'opacity:0.4;pointer-events:none;' : ''}
-            ">
-                <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                    <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1"/>
-                    <line x1="2.5" y1="2.5" x2="8.5" y2="8.5" stroke="currentColor" stroke-width="1"/>
-                </svg>
-                屏蔽
+            <!-- 导出 -->
+            <button class="toolbar-icon-btn" id="tb-export-btn" title="导出">
+                ${ICONS.export}
             </button>
-            <button id="batch-delete-btn" title="批量删除" style="
-                padding:5px 10px;border-radius:20px;border:1px solid rgba(255,80,80,0.3);
-                background:rgba(255,80,80,0.06);color:#e05050;
-                font-size:12px;cursor:pointer;font-family:var(--font-family);
-                display:flex;align-items:center;gap:4px;
-                ${selectedCount === 0 ? 'opacity:0.4;pointer-events:none;' : ''}
-            ">
-                <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                    <polyline points="2,3 9,3" stroke="currentColor" stroke-width="1"/>
-                    <path d="M4 3V2h3v1M3.5 3l.5 6h3.5l.5-6" stroke="currentColor" stroke-width="1" fill="none"/>
-                </svg>
-                删除
+        </div>
+
+        <!-- 搜索栏（按需展开）-->
+        ${_searchVisible ? `
+        <div class="search-input-line">
+            <div style="color:var(--text-secondary);">${ICONS.search}</div>
+            <input type="text" id="rl-search-input" value="${_searchQuery}" placeholder="搜索内容…" autocomplete="off">
+            <button class="toolbar-icon-btn" id="tb-search-clear" title="清除" style="width:28px;height:28px;">
+                ${ICONS.close}
             </button>
-        ` : ''}
+        </div>` : ''}
+
+        <!-- 分组过滤器 Pills -->
+        ${groupFilterHtml}
+
+        <!-- 批量操作栏 -->
+        ${batchActionsHtml}
     `;
 
-    document.getElementById('batch-toggle-btn').onclick = () => {
-        _batchModeActive = !_batchModeActive;
-        _batchSelectedIndices.clear();
+    // ── 绑定事件 ──────────────────────────────
+    toolbar.querySelector('#tb-search-btn').onclick = () => {
+        _searchVisible = !_searchVisible;
+        if (!_searchVisible) _searchQuery = '';
         renderReplyLibrary();
+        if (_searchVisible) setTimeout(() => document.getElementById('rl-search-input')?.focus(), 50);
     };
+    if (_searchVisible) {
+        const si = toolbar.querySelector('#rl-search-input');
+        if (si) {
+            si.oninput = (e) => { _searchQuery = e.target.value; renderReplyLibrary(); };
+            si.onkeydown = (e) => { if (e.key === 'Escape') { _searchVisible = false; _searchQuery = ''; renderReplyLibrary(); } };
+        }
+        toolbar.querySelector('#tb-search-clear').onclick = () => { _searchVisible = false; _searchQuery = ''; renderReplyLibrary(); };
+    }
 
-    if (_batchModeActive) {
-        document.getElementById('batch-select-all-btn').onclick = () => {
-            if (_batchSelectedIndices.size === totalItems) {
-                _batchSelectedIndices.clear();
-            } else {
-                customReplies.forEach((_, i) => _batchSelectedIndices.add(i));
-            }
+    if (isMainCustom) {
+        toolbar.querySelector('#tb-groups-btn')?.addEventListener('click', _showGroupManager);
+        const tbBatch = toolbar.querySelector('#tb-batch-btn');
+        if (tbBatch) tbBatch.onclick = () => {
+            _batchModeActive = !_batchModeActive;
+            _batchSelectedIndices.clear();
             renderReplyLibrary();
         };
+    }
 
-        document.getElementById('batch-group-btn').onclick = () => {
+    toolbar.querySelector('#tb-dedup-btn')?.addEventListener('click', _runDedup);
+    toolbar.querySelector('#tb-import-btn')?.addEventListener('click', () => document.getElementById('import-replies-input')?.click());
+    toolbar.querySelector('#tb-export-btn')?.addEventListener('click', _showExportUI);
+
+    // 分组过滤 Pills 事件
+    toolbar.querySelectorAll('.gfp-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const f = btn.dataset.filter;
+            _activeGroupFilter = f === 'all' ? null : (f === 'ungrouped' ? 'ungrouped' : parseInt(f));
+            renderReplyLibrary();
+        });
+    });
+
+    // 批量操作按钮
+    if (_batchModeActive) {
+        toolbar.querySelector('#batch-select-all-btn')?.addEventListener('click', () => {
+            if (_batchSelectedIndices.size === totalItems) _batchSelectedIndices.clear();
+            else customReplies.forEach((_, i) => _batchSelectedIndices.add(i));
+            renderReplyLibrary();
+        });
+        toolbar.querySelector('#batch-group-btn')?.addEventListener('click', () => {
             if (_batchSelectedIndices.size === 0) return;
             _showBatchGroupPicker();
-        };
-
-        document.getElementById('batch-disable-btn').onclick = () => {
+        });
+        toolbar.querySelector('#batch-disable-btn')?.addEventListener('click', () => {
             if (_batchSelectedIndices.size === 0) return;
             _batchToggleDisable();
-        };
-
-        document.getElementById('batch-delete-btn').onclick = () => {
+        });
+        toolbar.querySelector('#batch-delete-btn')?.addEventListener('click', () => {
             if (_batchSelectedIndices.size === 0) return;
             if (!confirm(`确定删除选中的 ${_batchSelectedIndices.size} 条？`)) return;
             const indices = [..._batchSelectedIndices].sort((a, b) => b - a);
+            const deletedTexts = indices.map(i => customReplies[i]);
             indices.forEach(i => customReplies.splice(i, 1));
-            // 同步删除分组引用
             if (customReplyGroups) {
                 customReplyGroups.forEach(g => {
-                    indices.forEach(i => {
-                        const item = customReplies[i]; // already deleted, use stored
-                    });
+                    if (g.items) g.items = g.items.filter(t => !deletedTexts.includes(t));
                 });
             }
             _batchSelectedIndices.clear();
             throttledSaveData();
             renderReplyLibrary();
             showNotification(`已删除 ${indices.length} 条`, 'success');
-        };
+        });
     }
 }
 
-// ────────────────────────────────────────────────
-//  分组面板渲染（在主字卡上方）
-// ────────────────────────────────────────────────
-function _renderCustomRepliesWithGroups(list, items, filterText) {
-    // 获取已屏蔽项目集合
+// ─────────────────────────────────────────────────────────
+//  主字卡渲染 — 精美卡片式 + 分组
+// ─────────────────────────────────────────────────────────
+function _renderCardViewWithGroups(list, items) {
     const disabledSet = _getDisabledItemsSet();
+    const itemsWithIdx = items.map((text, idx) => ({
+        text,
+        idx: customReplies.indexOf(text)
+    }));
 
-    if (!customReplyGroups || customReplyGroups.length === 0) {
-        // 无分组时的默认列表
-        _renderPlainList(list, items, filterText, disabledSet);
-        return;
-    }
+    // 根据过滤器决定显示哪些
+    if (_activeGroupFilter === null) {
+        // 全部 — 按分组分块显示
+        if (!customReplyGroups || customReplyGroups.length === 0) {
+            _renderCardList(list, itemsWithIdx, disabledSet);
+            return;
+        }
 
-    // 先渲染各分组
-    const inGroupItems = new Set();
-    customReplyGroups.forEach(group => {
-        const groupItems = (group.items || [])
-            .map(itemText => ({ text: itemText, idx: items.indexOf(itemText) }))
-            .filter(x => x.idx >= 0);
-        groupItems.forEach(x => inGroupItems.add(x.idx));
+        const inGroup = new Set();
+        customReplyGroups.forEach(g => {
+            const groupItems = (g.items || [])
+                .map(t => ({ text: t, idx: customReplies.indexOf(t) }))
+                .filter(x => x.idx >= 0 && items.includes(x.text));
+            groupItems.forEach(x => inGroup.add(x.idx));
+            _renderGroupBlock(list, g, groupItems, disabledSet);
+        });
 
-        const filteredGroupItems = filterText
-            ? groupItems.filter(x => x.text.toLowerCase().includes(filterText))
-            : groupItems;
-
-        _renderGroupSection(list, group, filteredGroupItems, disabledSet);
-    });
-
-    // 未分组项目
-    const ungroupedItems = items
-        .map((text, idx) => ({ text, idx }))
-        .filter(x => !inGroupItems.has(x.idx));
-
-    if (ungroupedItems.length > 0) {
-        const filteredUngrouped = filterText
-            ? ungroupedItems.filter(x => x.text.toLowerCase().includes(filterText))
-            : ungroupedItems;
-
-        if (filteredUngrouped.length > 0) {
-            const section = document.createElement('div');
-            section.style.cssText = 'margin-bottom:12px;';
-            section.innerHTML = `
-                <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;padding:0 2px;">
-                    <span style="font-size:11px;color:var(--text-secondary);font-weight:500;">未分组</span>
-                    <span style="font-size:11px;color:var(--text-secondary);opacity:0.6;">(${filteredUngrouped.length})</span>
-                </div>
-            `;
-            const innerList = document.createElement('div');
-            filteredUngrouped.forEach(({ text, idx }) => {
-                innerList.appendChild(_createTextItem(text, idx, disabledSet));
-            });
-            section.appendChild(innerList);
-            list.appendChild(section);
+        const ungrouped = itemsWithIdx.filter(x => !inGroup.has(x.idx));
+        if (ungrouped.length > 0) {
+            _renderGroupBlock(list, { id: '__ungrouped', name: '未分组', color: '#868E96', disabled: false }, ungrouped, disabledSet, true);
+        }
+    } else if (_activeGroupFilter === 'ungrouped') {
+        const inGroup = new Set();
+        if (customReplyGroups) customReplyGroups.forEach(g => (g.items || []).forEach(t => {
+            const i = customReplies.indexOf(t);
+            if (i >= 0) inGroup.add(i);
+        }));
+        const ungrouped = itemsWithIdx.filter(x => !inGroup.has(x.idx));
+        if (ungrouped.length === 0) {
+            list.innerHTML = renderEmptyState('所有字卡均已分组');
+        } else {
+            _renderCardList(list, ungrouped, disabledSet);
+        }
+    } else {
+        // 某具体分组
+        const g = customReplyGroups.find(g => g.id === _activeGroupFilter);
+        if (!g) { list.innerHTML = renderEmptyState('分组不存在'); return; }
+        const filtered = itemsWithIdx.filter(x => (g.items || []).includes(x.text));
+        if (filtered.length === 0) {
+            list.innerHTML = renderEmptyState('此分组暂无内容');
+        } else {
+            _renderCardList(list, filtered, disabledSet);
         }
     }
 }
 
-function _renderGroupSection(list, group, groupItems, disabledSet) {
-    const isCollapsed = group._collapsed || false;
-
+function _renderGroupBlock(list, group, groupItems, disabledSet, isUngrouped = false) {
     const section = document.createElement('div');
-    section.className = 'reply-group-section';
-    section.style.cssText = `margin-bottom:10px;border-radius:12px;overflow:hidden;border:1px solid var(--border-color);`;
+    section.className = 'rl-group-block';
+    const isCollapsed = group._collapsed || false;
+    const isDisabled = group.disabled;
+    const colorDot = group.color || '#868E96';
 
-    const header = document.createElement('div');
-    header.style.cssText = `
-        display:flex;align-items:center;gap:8px;padding:9px 12px;
-        background:var(--secondary-bg);cursor:pointer;user-select:none;
-        ${group.disabled ? 'opacity:0.5;' : ''}
+    section.innerHTML = `
+        <style>
+            .rl-group-block { margin-bottom:12px; }
+            .rl-group-header {
+                display:flex;align-items:center;gap:9px;padding:9px 14px;
+                border-radius:12px 12px ${isCollapsed ? '12px 12px' : '0 0'};
+                background:var(--secondary-bg);cursor:pointer;user-select:none;
+                transition:background 0.2s;
+                ${isDisabled ? 'opacity:0.5;' : ''}
+            }
+            .rl-group-header:hover { background:rgba(var(--accent-color-rgb,180,140,100),0.06); }
+            .rl-group-body { border:1px solid var(--border-color);border-top:none;border-radius:0 0 12px 12px;padding:6px 8px 8px;background:var(--primary-bg); }
+            .rl-group-tag {
+                display:inline-flex;align-items:center;gap:5px;
+                padding:2px 9px 2px 6px;border-radius:20px;
+                border:1.5px solid ${colorDot}30;background:${colorDot}15;
+                cursor:pointer;transition:all 0.15s;
+            }
+            .rl-group-tag:hover { background:${colorDot}30; }
+        </style>
+        <div class="rl-group-header" id="grp-hdr-${group.id}">
+            <div class="rl-group-tag" id="grp-tag-${group.id}" title="${isDisabled ? '点击启用此分组' : '点击屏蔽此分组'}">
+                <span style="width:8px;height:8px;border-radius:50%;background:${colorDot};flex-shrink:0;"></span>
+                <span style="font-size:12px;font-weight:700;color:${colorDot};">${group.name}</span>
+                ${isDisabled ? `<span title="已屏蔽" style="color:${colorDot};">${ICONS.eyeOff}</span>` : ''}
+            </div>
+            <span style="font-size:11px;color:var(--text-secondary);">${groupItems.length} 条</span>
+            ${!isUngrouped ? `
+            <button class="grp-edit-btn" title="编辑分组" style="
+                margin-left:auto;width:26px;height:26px;border-radius:8px;border:1px solid var(--border-color);
+                background:var(--primary-bg);color:var(--text-secondary);cursor:pointer;
+                display:flex;align-items:center;justify-content:center;flex-shrink:0;
+            ">${ICONS.edit}</button>` : '<div style="flex:1;"></div>'}
+            <div class="grp-chevron" style="color:var(--text-secondary);transition:transform 0.2s;transform:${isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)'};">
+                ${ICONS.chevronD}
+            </div>
+        </div>
+        <div class="rl-group-body" id="grp-body-${group.id}" style="display:${isCollapsed ? 'none' : 'block'};">
+        </div>
     `;
-    header.innerHTML = `
-        <span style="width:8px;height:8px;border-radius:50%;background:${group.color || '#aaa'};flex-shrink:0;"></span>
-        <span style="font-size:13px;font-weight:600;color:var(--text-primary);flex:1;">${group.name}</span>
-        <span style="font-size:11px;color:var(--text-secondary);">${groupItems.length} 条</span>
-        <button class="group-disable-toggle" title="${group.disabled ? '启用分组' : '屏蔽分组'}" style="
-            background:none;border:none;cursor:pointer;padding:3px 6px;border-radius:6px;
-            color:${group.disabled ? 'var(--accent-color)' : 'var(--text-secondary)'};
-            font-size:11px;display:flex;align-items:center;gap:3px;
-        ">
-            ${group.disabled ? `
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M2 6s1.5-3 4-3 4 3 4 3-1.5 3-4 3-4-3-4-3z" stroke="currentColor" stroke-width="1"/>
-                    <circle cx="6" cy="6" r="1.5" fill="currentColor"/>
-                </svg>
-            ` : `
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <circle cx="6" cy="6" r="4" stroke="currentColor" stroke-width="1"/>
-                    <line x1="3" y1="3" x2="9" y2="9" stroke="currentColor" stroke-width="1"/>
-                </svg>
-            `}
-        </button>
-        <button class="group-edit-btn" title="编辑分组" style="
-            background:none;border:none;cursor:pointer;padding:3px 6px;border-radius:6px;
-            color:var(--text-secondary);font-size:11px;
-        ">
-            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                <path d="M7.5 1.5l2 2L3 10H1V8L7.5 1.5z" stroke="currentColor" stroke-width="1" fill="none"/>
-            </svg>
-        </button>
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" class="group-chevron" style="
-            color:var(--text-secondary);transition:transform 0.2s;
-            transform:${isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)'};
-        ">
-            <path d="M3 5l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-    `;
+    list.appendChild(section);
 
-    const bodyWrap = document.createElement('div');
-    bodyWrap.style.cssText = `display:${isCollapsed ? 'none' : 'block'};`;
-
-    const innerList = document.createElement('div');
-    innerList.style.cssText = `padding:4px 8px 8px;`;
-
+    const body = section.querySelector(`#grp-body-${group.id}`);
     if (groupItems.length === 0) {
-        innerList.innerHTML = `<div style="padding:16px;text-align:center;font-size:12px;color:var(--text-secondary);opacity:0.6;">此分组暂无内容</div>`;
+        body.innerHTML = `<div style="padding:18px;text-align:center;font-size:12px;color:var(--text-secondary);opacity:0.6;">此分组暂无内容</div>`;
     } else {
-        groupItems.forEach(({ text, idx }) => {
-            innerList.appendChild(_createTextItem(text, idx, disabledSet));
+        _renderCardList(body, groupItems, disabledSet);
+    }
+
+    // 折叠
+    section.querySelector(`#grp-hdr-${group.id}`).addEventListener('click', e => {
+        if (e.target.closest('.grp-edit-btn') || e.target.closest(`#grp-tag-${group.id}`)) return;
+        group._collapsed = !group._collapsed;
+        body.style.display = group._collapsed ? 'none' : 'block';
+        section.querySelector('.grp-chevron').style.transform = group._collapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+        section.querySelector('.rl-group-header').style.borderRadius = group._collapsed ? '12px' : '12px 12px 0 0';
+    });
+
+    // 屏蔽 Tag
+    const tag = section.querySelector(`#grp-tag-${group.id}`);
+    if (tag && !isUngrouped) {
+        tag.addEventListener('click', e => {
+            e.stopPropagation();
+            group.disabled = !group.disabled;
+            throttledSaveData();
+            renderReplyLibrary();
+            showNotification(group.disabled ? `已屏蔽「${group.name}」` : `已启用「${group.name}」`, 'success');
         });
     }
 
-    bodyWrap.appendChild(innerList);
-    section.appendChild(header);
-    section.appendChild(bodyWrap);
-    list.appendChild(section);
-
-    // 折叠/展开
-    header.addEventListener('click', (e) => {
-        if (e.target.closest('.group-disable-toggle') || e.target.closest('.group-edit-btn')) return;
-        group._collapsed = !group._collapsed;
-        bodyWrap.style.display = group._collapsed ? 'none' : 'block';
-        header.querySelector('.group-chevron').style.transform = group._collapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
-    });
-
-    // 屏蔽/启用分组
-    header.querySelector('.group-disable-toggle').addEventListener('click', (e) => {
-        e.stopPropagation();
-        group.disabled = !group.disabled;
-        throttledSaveData();
-        renderReplyLibrary();
-        showNotification(group.disabled ? `分组「${group.name}」已屏蔽` : `分组「${group.name}」已启用`, 'success');
-    });
-
-    // 编辑分组
-    header.querySelector('.group-edit-btn').addEventListener('click', (e) => {
+    // 编辑
+    section.querySelector('.grp-edit-btn')?.addEventListener('click', e => {
         e.stopPropagation();
         _showGroupEditor(group);
     });
 }
 
-// ────────────────────────────────────────────────
-//  普通列表渲染（无分组）
-// ────────────────────────────────────────────────
-function _renderPlainList(list, items, filterText, disabledSet) {
-    const ds = disabledSet || _getDisabledItemsSet();
-    items.forEach((item, index) => {
-        if (filterText && !item.toLowerCase().includes(filterText)) return;
-        list.appendChild(_createTextItem(item, index, ds));
+function _renderCardList(container, itemsWithIdx, disabledSet) {
+    itemsWithIdx.forEach(({ text, idx }) => {
+        container.appendChild(_createCard(text, idx, disabledSet));
     });
 }
 
-function _createTextItem(item, index, disabledSet) {
+function _createCard(item, index, disabledSet) {
     const div = document.createElement('div');
-    div.className = 'custom-reply-item';
+    div.className = 'rl-card';
     const isDisabled = disabledSet && disabledSet.has(item);
+    const isSelected = _batchSelectedIndices.has(index);
+
+    const groupBadge = (() => {
+        if (!customReplyGroups) return '';
+        const g = customReplyGroups.find(grp => grp.items && grp.items.includes(item));
+        if (!g) return '';
+        return `<span style="
+            display:inline-flex;align-items:center;gap:3px;
+            padding:1px 7px 1px 4px;border-radius:10px;font-size:10px;
+            background:${g.color}18;color:${g.color};border:1px solid ${g.color}30;
+            margin-top:5px;flex-shrink:0;
+        ">
+            <span style="width:5px;height:5px;border-radius:50%;background:${g.color};flex-shrink:0;"></span>
+            ${g.name}
+        </span>`;
+    })();
+
+    const itemParts = item.split('|');
+    const displayText = itemParts.length > 1
+        ? `<span style="font-size:13px;">${itemParts[0]}</span><span style="font-size:11px;opacity:0.6;display:block;margin-top:1px;">${itemParts[1]}</span>`
+        : `<span style="font-size:13px;">${item}</span>`;
 
     if (_batchModeActive) {
-        div.style.cursor = 'pointer';
-        const isSelected = _batchSelectedIndices.has(index);
-        div.style.background = isSelected ? 'rgba(var(--accent-color-rgb,180,140,100),0.12)' : '';
-        div.style.borderRadius = '8px';
-        div.style.padding = '6px 8px';
-        div.style.marginBottom = '2px';
+        div.style.cssText = `cursor:pointer;`;
         div.innerHTML = `
-            <div style="display:flex;align-items:center;gap:8px;flex:1;">
-                <div style="
-                    width:16px;height:16px;border-radius:4px;flex-shrink:0;
-                    border:1.5px solid ${isSelected ? 'var(--accent-color)' : 'var(--border-color)'};
-                    background:${isSelected ? 'var(--accent-color)' : 'transparent'};
-                    display:flex;align-items:center;justify-content:center;
-                ">
-                    ${isSelected ? '<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>' : ''}
-                </div>
-                <span class="custom-reply-text" style="${isDisabled ? 'opacity:0.4;text-decoration:line-through;' : ''}">${item.replace('|', '<br><small style="opacity:0.7">')}</span>
+            <style>
+                .rl-card {
+                    display:flex;align-items:flex-start;gap:10px;padding:11px 13px;
+                    border-radius:12px;border:1.5px solid ${isSelected ? 'var(--accent-color)' : 'var(--border-color)'};
+                    background:${isSelected ? 'rgba(var(--accent-color-rgb,180,140,100),0.08)' : 'var(--secondary-bg)'};
+                    margin-bottom:7px;transition:all 0.15s;
+                }
+            </style>
+            <div style="
+                width:18px;height:18px;border-radius:5px;flex-shrink:0;margin-top:1px;
+                border:1.5px solid ${isSelected ? 'var(--accent-color)' : 'var(--border-color)'};
+                background:${isSelected ? 'var(--accent-color)' : 'transparent'};
+                display:flex;align-items:center;justify-content:center;transition:all 0.15s;
+            ">
+                ${isSelected ? `<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>` : ''}
+            </div>
+            <div style="flex:1;min-width:0;${isDisabled ? 'opacity:0.4;' : ''}">
+                ${displayText}
+                ${groupBadge}
             </div>
         `;
         div.addEventListener('click', () => {
-            if (_batchSelectedIndices.has(index)) {
-                _batchSelectedIndices.delete(index);
-            } else {
-                _batchSelectedIndices.add(index);
-            }
+            if (_batchSelectedIndices.has(index)) _batchSelectedIndices.delete(index);
+            else _batchSelectedIndices.add(index);
             renderReplyLibrary();
         });
         return div;
     }
 
-    let displayHTML = `<span class="custom-reply-text" style="${isDisabled ? 'opacity:0.4;text-decoration:line-through;' : ''}">${item.replace('|', '<br><small style="opacity:0.7">')}</span>`;
-    const disableIcon = isDisabled
-        ? `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6s1.5-3 4-3 4 3 4 3-1.5 3-4 3-4-3-4-3z" stroke="currentColor" stroke-width="1"/><circle cx="6" cy="6" r="1.5" fill="currentColor"/></svg>`
-        : `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4" stroke="currentColor" stroke-width="1"/><line x1="3" y1="3" x2="9" y2="9" stroke="currentColor" stroke-width="1"/></svg>`;
+    div.innerHTML = `
+        <style>
+            .rl-card {
+                display:flex;align-items:flex-start;gap:0;padding:11px 13px;
+                border-radius:12px;border:1.5px solid var(--border-color);
+                background:var(--secondary-bg);margin-bottom:7px;
+                transition:all 0.18s;position:relative;overflow:hidden;
+            }
+            .rl-card:hover { border-color:var(--accent-color);transform:translateY(-1px);box-shadow:0 3px 12px rgba(0,0,0,0.08); }
+            .rl-card-actions {
+                display:flex;gap:3px;margin-left:auto;flex-shrink:0;padding-left:8px;
+                opacity:0;transition:opacity 0.18s;align-items:center;
+            }
+            .rl-card:hover .rl-card-actions { opacity:1; }
+            @media (hover:none) { .rl-card-actions { opacity:1; } }
+            .rl-act-btn {
+                width:28px;height:28px;border-radius:8px;border:1px solid var(--border-color);
+                background:var(--primary-bg);color:var(--text-secondary);cursor:pointer;
+                display:flex;align-items:center;justify-content:center;transition:all 0.15s;
+                flex-shrink:0;
+            }
+            .rl-act-btn:hover { border-color:var(--accent-color);color:var(--accent-color); }
+            .rl-act-btn.danger:hover { border-color:#ef4444;color:#ef4444; }
+            .rl-act-btn.active { background:var(--accent-color);border-color:var(--accent-color);color:#fff; }
+        </style>
+        <div style="flex:1;min-width:0;${isDisabled ? 'opacity:0.4;text-decoration:line-through;' : ''}">
+            ${displayText}
+            ${groupBadge}
+        </div>
+        <div class="rl-card-actions">
+            <button class="rl-act-btn ${isDisabled ? 'active' : ''}" data-action="disable" title="${isDisabled ? '启用' : '屏蔽'}">
+                ${isDisabled ? ICONS.eye : ICONS.eyeOff}
+            </button>
+            <button class="rl-act-btn" data-action="tag" title="分组">
+                ${ICONS.tag}
+            </button>
+            <button class="rl-act-btn" data-action="edit" title="编辑">
+                ${ICONS.edit}
+            </button>
+            <button class="rl-act-btn danger" data-action="delete" title="删除">
+                ${ICONS.trash}
+            </button>
+        </div>
+    `;
 
-    div.innerHTML = `${displayHTML}<div class="custom-reply-actions">
-        <button class="reply-action-mini disable-btn" title="${isDisabled ? '启用' : '屏蔽'}" style="color:${isDisabled ? 'var(--accent-color)' : ''}">${disableIcon}</button>
-        <button class="reply-action-mini group-btn" title="分配分组">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 3C1 2.17 1.67 1.5 2.5 1.5h2c.36 0 .7.13.96.36L6.5 3H10c.83 0 1.5.67 1.5 1.5V9c0 .83-.67 1.5-1.5 1.5H2C1.17 10.5 1 9.83 1 9V3z" stroke="currentColor" stroke-width="1" fill="none"/></svg>
-        </button>
-        <button class="reply-action-mini edit-btn"><i class="fas fa-pen"></i></button>
-        <button class="reply-action-mini delete-btn"><i class="fas fa-trash-alt"></i></button>
-    </div>`;
-
-    div.querySelector('.delete-btn').onclick = () => deleteItem(index);
-    div.querySelector('.edit-btn').onclick = () => editItem(index, item);
-    div.querySelector('.disable-btn').onclick = () => _toggleItemDisable(item);
-    div.querySelector('.group-btn').onclick = (e) => {
-        e.stopPropagation();
-        _showSingleItemGroupPicker(item);
-    };
+    div.querySelector('[data-action="delete"]').onclick = (e) => { e.stopPropagation(); deleteItem(index); };
+    div.querySelector('[data-action="edit"]').onclick = (e) => { e.stopPropagation(); editItem(index, item); };
+    div.querySelector('[data-action="disable"]').onclick = (e) => { e.stopPropagation(); _toggleItemDisable(item); };
+    div.querySelector('[data-action="tag"]').onclick = (e) => { e.stopPropagation(); _showSingleItemGroupPicker(item); };
 
     return div;
 }
 
-// ────────────────────────────────────────────────
-//  Emoji & Sticker 渲染（不变）
-// ────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
+//  氛围感列表（简洁行列）
+// ─────────────────────────────────────────────────────────
+function _renderAtmosphereList(list, items) {
+    const disabledSet = _getDisabledItemsSet();
+    items.forEach((item, idx) => {
+        const realIdx = (() => {
+            if (currentSubTab === 'pokes') return customPokes.indexOf(item);
+            if (currentSubTab === 'statuses') return customStatuses.indexOf(item);
+            if (currentSubTab === 'mottos') return customMottos.indexOf(item);
+            if (currentSubTab === 'intros') return customIntros.indexOf(item);
+            return idx;
+        })();
+        const div = document.createElement('div');
+        div.className = 'custom-reply-item';
+        div.innerHTML = `
+            <span class="custom-reply-text">${item.replace('|','<br><small style="opacity:.65">')}</span>
+            <div class="custom-reply-actions">
+                <button class="reply-action-mini edit-btn" title="编辑">${ICONS.edit}</button>
+                <button class="reply-action-mini delete-btn" title="删除">${ICONS.trash}</button>
+            </div>
+        `;
+        div.querySelector('.delete-btn').onclick = () => deleteItem(realIdx);
+        div.querySelector('.edit-btn').onclick = () => editItem(realIdx, item);
+        list.appendChild(div);
+    });
+}
+
+// ─────────────────────────────────────────────────────────
+//  Emoji & 表情包
+// ─────────────────────────────────────────────────────────
 function _renderEmojiTab(list, itemsToRender) {
     if (itemsToRender.length === 0 && customEmojis.length === 0) {
-        list.innerHTML = renderEmptyState('列表空空如也');
-        return;
+        list.innerHTML = renderEmptyState('暂无 Emoji'); return;
     }
     itemsToRender.forEach(item => {
         const div = document.createElement('div');
@@ -503,7 +705,7 @@ function _renderEmojiTab(list, itemsToRender) {
             div.innerHTML = `<span style="pointer-events:none;">${item}</span><span class="emoji-custom-del" style="position:absolute;top:-4px;right:-4px;font-size:10px;background:var(--text-secondary);color:#fff;border-radius:50%;width:14px;height:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;transition:opacity 0.2s;">×</span>`;
             div.addEventListener('mouseenter', () => div.querySelector('.emoji-custom-del').style.opacity = '1');
             div.addEventListener('mouseleave', () => div.querySelector('.emoji-custom-del').style.opacity = '0');
-            div.querySelector('.emoji-custom-del').addEventListener('click', (e) => {
+            div.querySelector('.emoji-custom-del').addEventListener('click', e => {
                 e.stopPropagation();
                 customEmojis.splice(idx, 1);
                 throttledSaveData();
@@ -518,11 +720,8 @@ function _renderStickerTab(list, itemsToRender) {
     itemsToRender.forEach((item, index) => {
         const div = document.createElement('div');
         div.className = 'sticker-item';
-        div.innerHTML = `
-            <img src="${item}" loading="lazy">
-            <div class="sticker-delete-btn"><i class="fas fa-times"></i></div>
-        `;
-        div.querySelector('.sticker-delete-btn').addEventListener('click', (e) => {
+        div.innerHTML = `<img src="${item}" loading="lazy"><div class="sticker-delete-btn"><i class="fas fa-times"></i></div>`;
+        div.querySelector('.sticker-delete-btn').addEventListener('click', e => {
             e.stopPropagation();
             if (confirm('删除此表情？')) {
                 stickerLibrary.splice(index, 1);
@@ -534,9 +733,9 @@ function _renderStickerTab(list, itemsToRender) {
     });
 }
 
-// ────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
 //  屏蔽功能
-// ────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
 function _getDisabledItemsSet() {
     try {
         const raw = localStorage.getItem('disabledReplyItems');
@@ -550,13 +749,8 @@ function _saveDisabledItemsSet(set) {
 
 function _toggleItemDisable(itemText) {
     const set = _getDisabledItemsSet();
-    if (set.has(itemText)) {
-        set.delete(itemText);
-        showNotification('已启用', 'success');
-    } else {
-        set.add(itemText);
-        showNotification('已屏蔽（不会出现在随机回复中）', 'info');
-    }
+    if (set.has(itemText)) { set.delete(itemText); showNotification('已启用', 'success'); }
+    else { set.add(itemText); showNotification('已屏蔽（不会出现在随机回复中）', 'info'); }
     _saveDisabledItemsSet(set);
     renderReplyLibrary();
 }
@@ -577,147 +771,260 @@ function _batchToggleDisable() {
     renderReplyLibrary();
 }
 
-// ────────────────────────────────────────────────
-//  分组管理弹窗
-// ────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
+//  去重
+// ─────────────────────────────────────────────────────────
+function _runDedup() {
+    let totalRemoved = 0;
+    const crDedup = deduplicateContentArray(customReplies, CONSTANTS.REPLY_MESSAGES);
+    customReplies = crDedup.result; totalRemoved += crDedup.removedCount;
+    const cpDedup = deduplicateContentArray(customPokes);
+    customPokes = cpDedup.result; totalRemoved += cpDedup.removedCount;
+    const csDedup = deduplicateContentArray(customStatuses);
+    customStatuses = csDedup.result; totalRemoved += csDedup.removedCount;
+    const cmDedup = deduplicateContentArray(customMottos);
+    customMottos = cmDedup.result; totalRemoved += cmDedup.removedCount;
+    const ciDedup = deduplicateContentArray(customIntros);
+    customIntros = ciDedup.result; totalRemoved += ciDedup.removedCount;
+    const preEmoji = customEmojis.length;
+    customEmojis = [...new Set(customEmojis)];
+    totalRemoved += (preEmoji - customEmojis.length);
+    if (totalRemoved > 0) {
+        throttledSaveData(); renderReplyLibrary();
+        showNotification(`🧹 共清理了 ${totalRemoved} 条重复内容`, 'success');
+    } else {
+        showNotification('✨ 没有重复内容', 'info');
+    }
+}
+
+// ─────────────────────────────────────────────────────────
+//  分组管理弹窗（全新设计）
+// ─────────────────────────────────────────────────────────
 function _showGroupManager() {
-    const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;';
+    const overlay = _makeOverlay();
 
-    const renderGroupList = () => {
-        const gl = overlay.querySelector('#gm-group-list');
-        if (!gl) return;
-        if (!customReplyGroups || customReplyGroups.length === 0) {
-            gl.innerHTML = `<div style="text-align:center;padding:30px 0;color:var(--text-secondary);font-size:13px;">暂无分组，点击下方按钮创建</div>`;
-            return;
-        }
-        gl.innerHTML = customReplyGroups.map((g, i) => `
-            <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border-color);border-radius:10px;background:var(--primary-bg);${g.disabled ? 'opacity:0.5;' : ''}">
-                <span style="width:10px;height:10px;border-radius:50%;background:${g.color || '#aaa'};flex-shrink:0;"></span>
-                <span style="flex:1;font-size:13px;color:var(--text-primary);">${g.name}</span>
-                <span style="font-size:11px;color:var(--text-secondary);">${(g.items || []).length} 条</span>
-                <button data-action="toggle" data-idx="${i}" style="background:none;border:none;cursor:pointer;padding:3px;color:${g.disabled ? 'var(--accent-color)' : 'var(--text-secondary)'};" title="${g.disabled ? '启用' : '屏蔽'}">
-                    ${g.disabled ? '◉' : '◎'}
-                </button>
-                <button data-action="edit" data-idx="${i}" style="background:none;border:none;cursor:pointer;padding:3px;color:var(--text-secondary);">✎</button>
-                <button data-action="del" data-idx="${i}" style="background:none;border:none;cursor:pointer;padding:3px;color:#e05050;">✕</button>
-            </div>
-        `).join('');
+    const render = () => {
+        const noGroups = !customReplyGroups || customReplyGroups.length === 0;
+        panel.querySelector('#gm-list').innerHTML = noGroups
+            ? `<div style="text-align:center;padding:32px 0;color:var(--text-secondary);font-size:13px;opacity:0.7;">
+                    还没有分组<br><span style="font-size:11px;">点击下方按钮创建第一个分组</span>
+               </div>`
+            : customReplyGroups.map((g, i) => `
+                <div style="
+                    display:flex;align-items:center;gap:10px;padding:12px 14px;
+                    border-radius:13px;border:1.5px solid var(--border-color);
+                    background:var(--primary-bg);${g.disabled ? 'opacity:0.55;' : ''}
+                    transition:all 0.15s;
+                ">
+                    <span style="width:12px;height:12px;border-radius:50%;background:${g.color||'#868E96'};flex-shrink:0;box-shadow:0 0 0 2px ${g.color||'#868E96'}30;"></span>
+                    <span style="flex:1;font-size:13px;color:var(--text-primary);font-weight:600;">${g.name}</span>
+                    <span style="font-size:11px;color:var(--text-secondary);">${(g.items||[]).filter(t=>customReplies.includes(t)).length} 条</span>
+                    <button data-action="toggle" data-i="${i}" style="
+                        width:28px;height:28px;border-radius:8px;border:1px solid var(--border-color);
+                        background:${g.disabled ? 'var(--accent-color)' : 'transparent'};
+                        color:${g.disabled ? '#fff' : 'var(--text-secondary)'};
+                        cursor:pointer;display:flex;align-items:center;justify-content:center;
+                    " title="${g.disabled ? '启用' : '屏蔽'}">${g.disabled ? ICONS.eye : ICONS.eyeOff}</button>
+                    <button data-action="edit" data-i="${i}" style="
+                        width:28px;height:28px;border-radius:8px;border:1px solid var(--border-color);
+                        background:transparent;color:var(--text-secondary);cursor:pointer;
+                        display:flex;align-items:center;justify-content:center;
+                    " title="编辑">${ICONS.edit}</button>
+                    <button data-action="del" data-i="${i}" style="
+                        width:28px;height:28px;border-radius:8px;border:1px solid rgba(239,68,68,.25);
+                        background:transparent;color:#ef4444;cursor:pointer;
+                        display:flex;align-items:center;justify-content:center;
+                    " title="删除">${ICONS.trash}</button>
+                </div>
+            `).join('');
 
-        gl.querySelectorAll('button[data-action]').forEach(btn => {
+        panel.querySelectorAll('[data-action]').forEach(btn => {
             btn.onclick = () => {
-                const idx = parseInt(btn.dataset.idx);
+                const i = parseInt(btn.dataset.i);
                 const action = btn.dataset.action;
                 if (action === 'toggle') {
-                    customReplyGroups[idx].disabled = !customReplyGroups[idx].disabled;
-                    throttledSaveData();
-                    renderGroupList();
-                    renderReplyLibrary();
+                    customReplyGroups[i].disabled = !customReplyGroups[i].disabled;
+                    throttledSaveData(); render(); renderReplyLibrary();
                 } else if (action === 'edit') {
                     overlay.remove();
-                    _showGroupEditor(customReplyGroups[idx]);
+                    _showGroupEditor(customReplyGroups[i]);
                 } else if (action === 'del') {
-                    if (confirm(`删除分组「${customReplyGroups[idx].name}」？（字卡不会被删除）`)) {
-                        customReplyGroups.splice(idx, 1);
-                        throttledSaveData();
-                        renderGroupList();
-                        renderReplyLibrary();
+                    if (confirm(`删除分组「${customReplyGroups[i].name}」？（字卡不会被删除）`)) {
+                        customReplyGroups.splice(i, 1);
+                        throttledSaveData(); render(); renderReplyLibrary();
                     }
                 }
             };
         });
     };
 
-    overlay.innerHTML = `
-        <div style="background:var(--secondary-bg);border-radius:20px;padding:24px;width:88%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.4);max-height:80vh;overflow-y:auto;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-                <div style="font-size:15px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="color:var(--accent-color);">
-                        <path d="M1 4C1 2.9 1.9 2 3 2h3c.5 0 .9.2 1.2.5L8.5 4H13c1.1 0 2 .9 2 2V12c0 1.1-.9 2-2 2H3c-1.1 0-2-.9-2-2V4z" stroke="currentColor" stroke-width="1.2" fill="none"/>
-                    </svg>
-                    分组管理
-                </div>
-                <button id="gm-close" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-secondary);">×</button>
-            </div>
-            <div id="gm-group-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;"></div>
-            <button id="gm-add" style="width:100%;padding:11px;border:1px dashed var(--accent-color);border-radius:12px;background:none;color:var(--accent-color);font-size:13px;cursor:pointer;font-family:var(--font-family);display:flex;align-items:center;justify-content:center;gap:6px;">
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 2v9M2 6.5h9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                新建分组
-            </button>
-        </div>
+    const panel = document.createElement('div');
+    panel.style.cssText = `
+        background:var(--secondary-bg);border-radius:22px;padding:24px;
+        width:92%;max-width:400px;max-height:85vh;
+        display:flex;flex-direction:column;gap:14px;
+        box-shadow:0 24px 80px rgba(0,0,0,.45);
+        animation:popIn 0.22s cubic-bezier(.34,1.56,.64,1);
     `;
+    panel.innerHTML = `
+        <style>
+            @keyframes popIn { from{opacity:0;transform:scale(.93)} to{opacity:1;transform:scale(1)} }
+        </style>
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div style="font-size:16px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
+                ${ICONS.folder} 分组管理
+            </div>
+            <button id="gm-close" style="width:30px;height:30px;border-radius:50%;border:none;background:var(--primary-bg);color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;">${ICONS.close}</button>
+        </div>
+        <div id="gm-list" style="display:flex;flex-direction:column;gap:8px;overflow-y:auto;max-height:55vh;"></div>
+        <button id="gm-add" style="
+            width:100%;padding:12px;border:1.5px dashed var(--accent-color);border-radius:13px;
+            background:transparent;color:var(--accent-color);font-size:13px;cursor:pointer;
+            font-family:var(--font-family);display:flex;align-items:center;justify-content:center;gap:7px;
+            transition:background 0.15s;
+        " onmouseover="this.style.background='rgba(var(--accent-color-rgb),0.06)'" onmouseout="this.style.background='transparent'">
+            ${ICONS.plus} 新建分组
+        </button>
+    `;
+    overlay.appendChild(panel);
     document.body.appendChild(overlay);
-    renderGroupList();
+    render();
 
-    overlay.querySelector('#gm-close').onclick = () => overlay.remove();
+    panel.querySelector('#gm-close').onclick = () => overlay.remove();
     overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
-    overlay.querySelector('#gm-add').onclick = () => {
-        overlay.remove();
-        _showGroupEditor(null);
-    };
+    panel.querySelector('#gm-add').onclick = () => { overlay.remove(); _showGroupEditor(null); };
 }
 
+// ─────────────────────────────────────────────────────────
+//  分组编辑器（支持完全自定义颜色）
+// ─────────────────────────────────────────────────────────
 function _showGroupEditor(group) {
     const isNew = !group;
-    const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;';
+    const overlay = _makeOverlay();
+    const initColor = group?.color || GROUP_COLORS[Math.floor(Math.random() * GROUP_COLORS.length)];
+    let selectedColor = initColor;
 
-    const currentColor = group?.color || GROUP_COLORS[Math.floor(Math.random() * GROUP_COLORS.length)];
+    const panel = document.createElement('div');
+    panel.style.cssText = `
+        background:var(--secondary-bg);border-radius:22px;padding:24px;
+        width:92%;max-width:380px;
+        box-shadow:0 24px 80px rgba(0,0,0,.45);
+        animation:popIn 0.22s cubic-bezier(.34,1.56,.64,1);
+    `;
+    panel.innerHTML = `
+        <style>@keyframes popIn { from{opacity:0;transform:scale(.93)} to{opacity:1;transform:scale(1)} }</style>
+        <div style="font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:18px;">
+            ${isNew ? '新建分组' : '编辑分组'}
+        </div>
 
-    overlay.innerHTML = `
-        <div style="background:var(--secondary-bg);border-radius:20px;padding:24px;width:88%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.4);">
-            <div style="font-size:15px;font-weight:700;color:var(--text-primary);margin-bottom:16px;">
-                ${isNew ? '新建分组' : '编辑分组'}
-            </div>
-            <div style="margin-bottom:12px;">
-                <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:6px;">分组名称</label>
-                <input id="ge-name" value="${group?.name || ''}" placeholder="输入分组名…" style="
-                    width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--border-color);
-                    border-radius:10px;background:var(--primary-bg);color:var(--text-primary);
-                    font-size:13px;font-family:var(--font-family);outline:none;
-                ">
-            </div>
-            <div style="margin-bottom:20px;">
-                <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:8px;">颜色标签</label>
-                <div id="ge-colors" style="display:flex;gap:6px;flex-wrap:wrap;">
-                    ${GROUP_COLORS.map(c => `
-                        <div data-color="${c}" style="
-                            width:24px;height:24px;border-radius:50%;background:${c};cursor:pointer;
-                            border:2px solid ${c === currentColor ? '#fff' : 'transparent'};
-                            box-shadow:${c === currentColor ? '0 0 0 2px var(--accent-color)' : 'none'};
-                            transition:all 0.15s;
-                        "></div>
-                    `).join('')}
-                </div>
-            </div>
-            <div style="display:flex;gap:10px;">
-                <button id="ge-cancel" style="flex:1;padding:11px;border:1px solid var(--border-color);border-radius:12px;background:none;color:var(--text-secondary);font-size:13px;cursor:pointer;font-family:var(--font-family);">取消</button>
-                <button id="ge-save" style="flex:2;padding:11px;border:none;border-radius:12px;background:var(--accent-color);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font-family);">保存</button>
+        <!-- 名称 -->
+        <div style="margin-bottom:16px;">
+            <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:7px;letter-spacing:.5px;">LABEL</label>
+            <input id="ge-name" value="${group?.name || ''}" placeholder="分组名称…" style="
+                width:100%;box-sizing:border-box;padding:11px 14px;
+                border:1.5px solid var(--border-color);border-radius:12px;
+                background:var(--primary-bg);color:var(--text-primary);
+                font-size:14px;font-family:var(--font-family);outline:none;transition:border 0.18s;
+            ">
+        </div>
+
+        <!-- 颜色预设色板 -->
+        <div style="margin-bottom:12px;">
+            <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:8px;letter-spacing:.5px;">COLOR PRESET</label>
+            <div id="ge-presets" style="display:flex;gap:7px;flex-wrap:wrap;">
+                ${GROUP_COLORS.map(c => `
+                    <div data-preset="${c}" style="
+                        width:26px;height:26px;border-radius:50%;background:${c};cursor:pointer;
+                        border:2.5px solid ${c === selectedColor ? '#fff' : 'transparent'};
+                        box-shadow:${c === selectedColor ? `0 0 0 2.5px ${c}` : 'none'};
+                        transition:all 0.15s;flex-shrink:0;
+                    "></div>
+                `).join('')}
             </div>
         </div>
+
+        <!-- 自定义颜色 -->
+        <div style="margin-bottom:20px;">
+            <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:8px;letter-spacing:.5px;">CUSTOM COLOR</label>
+            <div style="display:flex;gap:10px;align-items:center;">
+                <input type="color" id="ge-colorpicker" value="${selectedColor}" style="
+                    width:40px;height:40px;border:none;border-radius:10px;cursor:pointer;
+                    padding:2px;background:var(--primary-bg);flex-shrink:0;
+                ">
+                <input type="text" id="ge-hexinput" value="${selectedColor}" maxlength="7" placeholder="#RRGGBB" style="
+                    flex:1;padding:10px 12px;border:1.5px solid var(--border-color);
+                    border-radius:10px;background:var(--primary-bg);color:var(--text-primary);
+                    font-size:13px;font-family:monospace;outline:none;transition:border 0.18s;
+                ">
+                <!-- 预览 -->
+                <div id="ge-color-preview" style="
+                    display:flex;align-items:center;gap:6px;padding:7px 12px;
+                    border-radius:20px;border:1.5px solid ${selectedColor}40;
+                    background:${selectedColor}18;
+                ">
+                    <span style="width:8px;height:8px;border-radius:50%;background:${selectedColor};"></span>
+                    <span id="ge-preview-name" style="font-size:12px;font-weight:700;color:${selectedColor};">${group?.name || '预览'}</span>
+                </div>
+            </div>
+        </div>
+
+        <div style="display:flex;gap:10px;">
+            <button id="ge-cancel" style="
+                flex:1;padding:12px;border:1.5px solid var(--border-color);border-radius:13px;
+                background:none;color:var(--text-secondary);font-size:13px;cursor:pointer;font-family:var(--font-family);
+            ">取消</button>
+            <button id="ge-save" style="
+                flex:2;padding:12px;border:none;border-radius:13px;
+                background:var(--accent-color);color:#fff;font-size:14px;font-weight:700;
+                cursor:pointer;font-family:var(--font-family);transition:opacity 0.15s;
+            ">保存</button>
+        </div>
     `;
+    overlay.appendChild(panel);
     document.body.appendChild(overlay);
 
-    let selectedColor = currentColor;
+    const updateColor = (color) => {
+        selectedColor = color;
+        panel.querySelector('#ge-colorpicker').value = color;
+        panel.querySelector('#ge-hexinput').value = color;
+        const preview = panel.querySelector('#ge-color-preview');
+        const previewName = panel.querySelector('#ge-preview-name');
+        preview.style.borderColor = color + '40';
+        preview.style.background = color + '18';
+        previewName.style.color = color;
+        const nameInput = panel.querySelector('#ge-name');
+        previewName.textContent = nameInput.value || '预览';
+        panel.querySelectorAll('[data-preset]').forEach(dot => {
+            const isSelected = dot.dataset.preset === color;
+            dot.style.border = `2.5px solid ${isSelected ? '#fff' : 'transparent'}`;
+            dot.style.boxShadow = isSelected ? `0 0 0 2.5px ${dot.dataset.preset}` : 'none';
+        });
+    };
 
-    overlay.querySelectorAll('[data-color]').forEach(dot => {
-        dot.onclick = () => {
-            selectedColor = dot.dataset.color;
-            overlay.querySelectorAll('[data-color]').forEach(d => {
-                const isSelected = d.dataset.color === selectedColor;
-                d.style.border = `2px solid ${isSelected ? '#fff' : 'transparent'}`;
-                d.style.boxShadow = isSelected ? '0 0 0 2px var(--accent-color)' : 'none';
-            });
-        };
+    panel.querySelector('#ge-name').addEventListener('input', e => {
+        panel.querySelector('#ge-preview-name').textContent = e.target.value || '预览';
+    });
+    panel.querySelector('#ge-name').addEventListener('focus', e => { e.target.style.borderColor = 'var(--accent-color)'; });
+    panel.querySelector('#ge-name').addEventListener('blur', e => { e.target.style.borderColor = 'var(--border-color)'; });
+
+    panel.querySelectorAll('[data-preset]').forEach(dot => {
+        dot.onclick = () => updateColor(dot.dataset.preset);
     });
 
-    overlay.querySelector('#ge-cancel').onclick = () => overlay.remove();
+    panel.querySelector('#ge-colorpicker').addEventListener('input', e => updateColor(e.target.value));
+    panel.querySelector('#ge-hexinput').addEventListener('input', e => {
+        const v = e.target.value.trim();
+        if (/^#[0-9A-Fa-f]{6}$/.test(v)) updateColor(v);
+    });
+    panel.querySelector('#ge-hexinput').addEventListener('focus', e => { e.target.style.borderColor = 'var(--accent-color)'; });
+    panel.querySelector('#ge-hexinput').addEventListener('blur', e => { e.target.style.borderColor = 'var(--border-color)'; });
+
+    panel.querySelector('#ge-cancel').onclick = () => overlay.remove();
     overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 
-    overlay.querySelector('#ge-save').onclick = () => {
-        const name = overlay.querySelector('#ge-name').value.trim();
+    panel.querySelector('#ge-save').onclick = () => {
+        const name = panel.querySelector('#ge-name').value.trim();
         if (!name) { showNotification('请输入分组名称', 'warning'); return; }
-
         if (isNew) {
             if (!window.customReplyGroups) window.customReplyGroups = [];
             customReplyGroups.push({ id: Date.now(), name, color: selectedColor, disabled: false, items: [] });
@@ -728,53 +1035,59 @@ function _showGroupEditor(group) {
         throttledSaveData();
         overlay.remove();
         renderReplyLibrary();
-        showNotification(isNew ? '分组已创建' : '分组已更新', 'success');
+        showNotification(isNew ? '✓ 分组已创建' : '✓ 分组已更新', 'success');
     };
 }
 
+// ─────────────────────────────────────────────────────────
+//  单条分组选择器
+// ─────────────────────────────────────────────────────────
 function _showSingleItemGroupPicker(itemText) {
     if (!customReplyGroups || customReplyGroups.length === 0) {
-        showNotification('请先创建分组', 'info');
-        _showGroupEditor(null);
+        if (confirm('还没有分组，是否立即创建？')) _showGroupEditor(null);
         return;
     }
-    const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;';
+    const overlay = _makeOverlay();
+    const currentGroup = customReplyGroups.find(g => g.items && g.items.includes(itemText));
 
-    overlay.innerHTML = `
-        <div style="background:var(--secondary-bg);border-radius:20px;padding:20px;width:88%;max-width:320px;box-shadow:0 20px 60px rgba(0,0,0,0.4);">
-            <div style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:12px;">选择分组</div>
-            <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
-                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 10px;border:1px solid var(--border-color);border-radius:10px;background:var(--primary-bg);">
-                    <input type="radio" name="sgp" value="" ${!customReplyGroups.some(g => g.items?.includes(itemText)) ? 'checked' : ''} style="accent-color:var(--accent-color);">
-                    <span style="font-size:13px;color:var(--text-secondary);">不分组</span>
+    const panel = document.createElement('div');
+    panel.style.cssText = `
+        background:var(--secondary-bg);border-radius:22px;padding:22px;
+        width:92%;max-width:340px;
+        box-shadow:0 24px 80px rgba(0,0,0,.45);
+        animation:popIn 0.22s cubic-bezier(.34,1.56,.64,1);
+    `;
+    panel.innerHTML = `
+        <style>@keyframes popIn { from{opacity:0;transform:scale(.93)} to{opacity:1;transform:scale(1)} }</style>
+        <div style="font-size:15px;font-weight:700;color:var(--text-primary);margin-bottom:14px;">选择分组</div>
+        <div style="display:flex;flex-direction:column;gap:7px;max-height:55vh;overflow-y:auto;margin-bottom:14px;">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;border-radius:11px;border:1.5px solid ${!currentGroup ? 'var(--accent-color)' : 'var(--border-color)'};background:${!currentGroup ? 'rgba(var(--accent-color-rgb),0.06)' : 'var(--primary-bg)'};">
+                <input type="radio" name="sgp" value="" ${!currentGroup ? 'checked' : ''} style="accent-color:var(--accent-color);">
+                <span style="font-size:13px;color:var(--text-secondary);">不分组</span>
+            </label>
+            ${customReplyGroups.map((g, i) => `
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;border-radius:11px;border:1.5px solid ${currentGroup?.id === g.id ? g.color : 'var(--border-color)'};background:${currentGroup?.id === g.id ? g.color + '10' : 'var(--primary-bg)'};">
+                    <input type="radio" name="sgp" value="${i}" ${currentGroup?.id === g.id ? 'checked' : ''} style="accent-color:${g.color};">
+                    <span style="width:9px;height:9px;border-radius:50%;background:${g.color||'#aaa'};flex-shrink:0;"></span>
+                    <span style="flex:1;font-size:13px;color:var(--text-primary);font-weight:600;">${g.name}</span>
+                    <span style="font-size:11px;color:var(--text-secondary);">${(g.items||[]).length} 条</span>
                 </label>
-                ${customReplyGroups.map((g, i) => `
-                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 10px;border:1px solid var(--border-color);border-radius:10px;background:var(--primary-bg);">
-                        <input type="radio" name="sgp" value="${i}" ${g.items?.includes(itemText) ? 'checked' : ''} style="accent-color:var(--accent-color);">
-                        <span style="width:8px;height:8px;border-radius:50%;background:${g.color || '#aaa'};flex-shrink:0;"></span>
-                        <span style="font-size:13px;color:var(--text-primary);">${g.name}</span>
-                    </label>
-                `).join('')}
-            </div>
-            <div style="display:flex;gap:10px;">
-                <button id="sgp-cancel" style="flex:1;padding:10px;border:1px solid var(--border-color);border-radius:10px;background:none;color:var(--text-secondary);font-size:13px;cursor:pointer;font-family:var(--font-family);">取消</button>
-                <button id="sgp-save" style="flex:2;padding:10px;border:none;border-radius:10px;background:var(--accent-color);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font-family);">确认</button>
-            </div>
+            `).join('')}
+        </div>
+        <div style="display:flex;gap:10px;">
+            <button id="sgp-cancel" style="flex:1;padding:11px;border:1.5px solid var(--border-color);border-radius:12px;background:none;color:var(--text-secondary);font-size:13px;cursor:pointer;font-family:var(--font-family);">取消</button>
+            <button id="sgp-save" style="flex:2;padding:11px;border:none;border-radius:12px;background:var(--accent-color);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-family);">确认</button>
         </div>
     `;
+    overlay.appendChild(panel);
     document.body.appendChild(overlay);
 
-    overlay.querySelector('#sgp-cancel').onclick = () => overlay.remove();
+    panel.querySelector('#sgp-cancel').onclick = () => overlay.remove();
     overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
-    overlay.querySelector('#sgp-save').onclick = () => {
-        const checked = overlay.querySelector('input[name="sgp"]:checked');
+    panel.querySelector('#sgp-save').onclick = () => {
+        const checked = panel.querySelector('input[name="sgp"]:checked');
         if (!checked) return;
-        // 先从所有分组中移除
-        customReplyGroups.forEach(g => {
-            if (g.items) g.items = g.items.filter(t => t !== itemText);
-        });
-        // 添加到新分组
+        customReplyGroups.forEach(g => { if (g.items) g.items = g.items.filter(t => t !== itemText); });
         if (checked.value !== '') {
             const idx = parseInt(checked.value);
             if (!customReplyGroups[idx].items) customReplyGroups[idx].items = [];
@@ -783,73 +1096,78 @@ function _showSingleItemGroupPicker(itemText) {
         throttledSaveData();
         overlay.remove();
         renderReplyLibrary();
-        showNotification('分组已更新', 'success');
+        showNotification('✓ 分组已更新', 'success');
     };
 }
 
+// ─────────────────────────────────────────────────────────
+//  批量分组选择器
+// ─────────────────────────────────────────────────────────
 function _showBatchGroupPicker() {
     if (!customReplyGroups || customReplyGroups.length === 0) {
-        showNotification('请先创建分组', 'info');
-        _showGroupEditor(null);
+        if (confirm('还没有分组，是否立即创建？')) { _showGroupEditor(null); return; }
         return;
     }
     const selectedItems = [..._batchSelectedIndices].map(i => customReplies[i]);
-    const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;';
+    const overlay = _makeOverlay();
 
-    overlay.innerHTML = `
-        <div style="background:var(--secondary-bg);border-radius:20px;padding:20px;width:88%;max-width:320px;box-shadow:0 20px 60px rgba(0,0,0,0.4);">
-            <div style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:4px;">批量分组</div>
-            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">将选中的 ${selectedItems.length} 条添加到分组</div>
-            <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
-                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 10px;border:1px solid var(--border-color);border-radius:10px;background:var(--primary-bg);">
-                    <input type="radio" name="bgp" value="" checked style="accent-color:var(--accent-color);">
-                    <span style="font-size:13px;color:var(--text-secondary);">移出所有分组</span>
+    const panel = document.createElement('div');
+    panel.style.cssText = `
+        background:var(--secondary-bg);border-radius:22px;padding:22px;
+        width:92%;max-width:340px;
+        box-shadow:0 24px 80px rgba(0,0,0,.45);
+        animation:popIn 0.22s cubic-bezier(.34,1.56,.64,1);
+    `;
+    panel.innerHTML = `
+        <style>@keyframes popIn { from{opacity:0;transform:scale(.93)} to{opacity:1;transform:scale(1)} }</style>
+        <div style="font-size:15px;font-weight:700;color:var(--text-primary);margin-bottom:4px;">批量分组</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:14px;">将 <strong style="color:var(--text-primary);">${selectedItems.length}</strong> 条字卡移入分组</div>
+        <div style="display:flex;flex-direction:column;gap:7px;max-height:50vh;overflow-y:auto;margin-bottom:14px;">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;border-radius:11px;border:1.5px solid var(--border-color);background:var(--primary-bg);">
+                <input type="radio" name="bgp" value="" checked style="accent-color:var(--accent-color);">
+                <span style="font-size:13px;color:var(--text-secondary);">移出所有分组</span>
+            </label>
+            ${customReplyGroups.map((g, i) => `
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;border-radius:11px;border:1.5px solid var(--border-color);background:var(--primary-bg);">
+                    <input type="radio" name="bgp" value="${i}" style="accent-color:${g.color};">
+                    <span style="width:9px;height:9px;border-radius:50%;background:${g.color||'#aaa'};flex-shrink:0;"></span>
+                    <span style="flex:1;font-size:13px;color:var(--text-primary);font-weight:600;">${g.name}</span>
+                    <span style="font-size:11px;color:var(--text-secondary);">${(g.items||[]).length} 条</span>
                 </label>
-                ${customReplyGroups.map((g, i) => `
-                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 10px;border:1px solid var(--border-color);border-radius:10px;background:var(--primary-bg);">
-                        <input type="radio" name="bgp" value="${i}" style="accent-color:var(--accent-color);">
-                        <span style="width:8px;height:8px;border-radius:50%;background:${g.color || '#aaa'};flex-shrink:0;"></span>
-                        <span style="font-size:13px;color:var(--text-primary);">${g.name}</span>
-                    </label>
-                `).join('')}
-            </div>
-            <div style="display:flex;gap:10px;">
-                <button id="bgp-cancel" style="flex:1;padding:10px;border:1px solid var(--border-color);border-radius:10px;background:none;color:var(--text-secondary);font-size:13px;cursor:pointer;font-family:var(--font-family);">取消</button>
-                <button id="bgp-save" style="flex:2;padding:10px;border:none;border-radius:10px;background:var(--accent-color);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font-family);">确认</button>
-            </div>
+            `).join('')}
+        </div>
+        <div style="display:flex;gap:10px;">
+            <button id="bgp-cancel" style="flex:1;padding:11px;border:1.5px solid var(--border-color);border-radius:12px;background:none;color:var(--text-secondary);font-size:13px;cursor:pointer;font-family:var(--font-family);">取消</button>
+            <button id="bgp-save" style="flex:2;padding:11px;border:none;border-radius:12px;background:var(--accent-color);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-family);">确认</button>
         </div>
     `;
+    overlay.appendChild(panel);
     document.body.appendChild(overlay);
 
-    overlay.querySelector('#bgp-cancel').onclick = () => overlay.remove();
+    panel.querySelector('#bgp-cancel').onclick = () => overlay.remove();
     overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
-    overlay.querySelector('#bgp-save').onclick = () => {
-        const checked = overlay.querySelector('input[name="bgp"]:checked');
+    panel.querySelector('#bgp-save').onclick = () => {
+        const checked = panel.querySelector('input[name="bgp"]:checked');
         if (!checked) return;
-        customReplyGroups.forEach(g => {
-            if (g.items) g.items = g.items.filter(t => !selectedItems.includes(t));
-        });
+        customReplyGroups.forEach(g => { if (g.items) g.items = g.items.filter(t => !selectedItems.includes(t)); });
         if (checked.value !== '') {
             const idx = parseInt(checked.value);
             if (!customReplyGroups[idx].items) customReplyGroups[idx].items = [];
             selectedItems.forEach(item => {
-                if (!customReplyGroups[idx].items.includes(item)) {
-                    customReplyGroups[idx].items.push(item);
-                }
+                if (!customReplyGroups[idx].items.includes(item)) customReplyGroups[idx].items.push(item);
             });
         }
         throttledSaveData();
         _batchSelectedIndices.clear();
         overlay.remove();
         renderReplyLibrary();
-        showNotification(`已将 ${selectedItems.length} 条移入分组`, 'success');
+        showNotification(`✓ 已为 ${selectedItems.length} 条字卡分组`, 'success');
     };
 }
 
-// ────────────────────────────────────────────────
-//  CRUD
-// ────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
+//  CRUD 操作
+// ─────────────────────────────────────────────────────────
 function deleteItem(index) {
     if (!confirm('确定删除吗？')) return;
     const item = (currentMajorTab === 'reply' && currentSubTab === 'custom') ? customReplies[index] : null;
@@ -858,14 +1176,9 @@ function deleteItem(index) {
     else if (currentSubTab === 'statuses') customStatuses.splice(index, 1);
     else if (currentSubTab === 'mottos') customMottos.splice(index, 1);
     else if (currentSubTab === 'intros') customIntros.splice(index, 1);
-
-    // 从分组中移除
     if (item && customReplyGroups) {
-        customReplyGroups.forEach(g => {
-            if (g.items) g.items = g.items.filter(t => t !== item);
-        });
+        customReplyGroups.forEach(g => { if (g.items) g.items = g.items.filter(t => t !== item); });
     }
-
     throttledSaveData();
     renderReplyLibrary();
 }
@@ -882,301 +1195,93 @@ function editItem(index, oldText) {
     } else {
         newText = prompt('修改内容:', oldText);
     }
-
     if (newText === null || newText.trim() === '') return;
-
-    // 同步更新分组中的文本
     if (customReplyGroups && currentMajorTab === 'reply' && currentSubTab === 'custom') {
         customReplyGroups.forEach(g => {
-            if (g.items) {
-                const idx = g.items.indexOf(oldText);
-                if (idx >= 0) g.items[idx] = newText.trim();
-            }
+            if (g.items) { const i = g.items.indexOf(oldText); if (i >= 0) g.items[i] = newText.trim(); }
         });
     }
-
-    if (currentMajorTab === 'reply' && currentSubTab === 'custom') customReplies[index] = newText;
-    else if (currentSubTab === 'pokes') customPokes[index] = newText;
-    else if (currentSubTab === 'statuses') customStatuses[index] = newText;
-    else if (currentSubTab === 'mottos') customMottos[index] = newText;
-    else if (currentSubTab === 'intros') customIntros[index] = newText;
-
+    if (currentMajorTab === 'reply' && currentSubTab === 'custom') customReplies[index] = newText.trim();
+    else if (currentSubTab === 'pokes') customPokes[index] = newText.trim();
+    else if (currentSubTab === 'statuses') customStatuses[index] = newText.trim();
+    else if (currentSubTab === 'mottos') customMottos[index] = newText.trim();
+    else if (currentSubTab === 'intros') customIntros[index] = newText.trim();
     throttledSaveData();
     renderReplyLibrary();
 }
 
 function renderEmptyState(text) {
     return `
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 0; color: var(--text-secondary); opacity: 0.6; grid-column: 1 / -1;">
-        <div style="width: 60px; height: 60px; background: var(--secondary-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; box-shadow: var(--shadow);">
-            <i class="fas fa-search" style="font-size: 24px; color: var(--accent-color);"></i>
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 0;color:var(--text-secondary);opacity:0.6;grid-column:1/-1;">
+        <div style="width:56px;height:56px;background:var(--secondary-bg);border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;box-shadow:var(--shadow);">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M16.5 16.5L20 20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         </div>
-        <p style="font-size:15px; font-weight: 500; text-align:center; line-height:1.5;">${text}</p>
+        <p style="font-size:14px;font-weight:500;text-align:center;line-height:1.6;">${text}</p>
     </div>`;
 }
 
-// ────────────────────────────────────────────────
-//  导出 UI（全新矢量风格）
-// ────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
+//  导出 UI（底部抽屉）
+// ─────────────────────────────────────────────────────────
 function _showExportUI() {
-    const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);backdrop-filter:blur(10px);display:flex;align-items:flex-end;justify-content:center;animation:fadeIn 0.2s ease;';
-
     const modules = [
-        { id: '_re_replies',  icon: _iconComment(),   label: '主字卡',    count: customReplies.length,  key: 'customReplies' },
-        { id: '_re_pokes',    icon: _iconHand(),      label: '拍一拍',    count: customPokes.length,    key: 'customPokes' },
-        { id: '_re_statuses', icon: _iconDot(),       label: '对方状态',  count: customStatuses.length, key: 'customStatuses' },
-        { id: '_re_mottos',   icon: _iconQuote(),     label: '顶部格言',  count: customMottos.length,   key: 'customMottos' },
-        { id: '_re_intros',   icon: _iconPlay(),      label: '开场动画',  count: customIntros.length,   key: 'customIntros' },
-        { id: '_re_emojis',   icon: _iconSmile(),     label: 'Emoji 库',  count: customEmojis.length,   key: 'customEmojis' },
-        { id: '_re_groups',   icon: _iconFolder(),    label: '字卡分组',  count: (customReplyGroups||[]).length, key: 'customReplyGroups', extra: true },
+        { id: '_re_replies',  icon: ICONS.comment,   label: '主字卡',    count: customReplies.length,          key: 'customReplies' },
+        { id: '_re_pokes',    icon: ICONS.hand,      label: '拍一拍',    count: customPokes.length,            key: 'customPokes' },
+        { id: '_re_statuses', icon: ICONS.dot,       label: '对方状态',  count: customStatuses.length,         key: 'customStatuses' },
+        { id: '_re_mottos',   icon: ICONS.quote,     label: '顶部格言',  count: customMottos.length,           key: 'customMottos' },
+        { id: '_re_intros',   icon: ICONS.play,      label: '开场动画',  count: customIntros.length,           key: 'customIntros' },
+        { id: '_re_emojis',   icon: ICONS.smile,     label: 'Emoji 库',  count: customEmojis.length,           key: 'customEmojis' },
+        { id: '_re_groups',   icon: ICONS.folderBig, label: '字卡分组',  count: (customReplyGroups||[]).length, key: 'customReplyGroups', extra: true },
     ];
-
-    overlay.innerHTML = `
-        <div style="
-            background:var(--secondary-bg);border-radius:24px 24px 0 0;
-            width:100%;max-width:480px;padding:0 0 env(safe-area-inset-bottom,0);
-            box-shadow:0 -10px 60px rgba(0,0,0,0.3);
-            animation:slideUpSheet 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;
-        ">
-            <div style="width:36px;height:4px;border-radius:2px;background:var(--border-color);margin:12px auto 0;"></div>
-            <div style="padding:20px 22px 6px;display:flex;align-items:center;justify-content:space-between;">
-                <div>
-                    <div style="font-size:16px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
-                        ${_iconExport('var(--accent-color)',20)} 导出字卡
-                    </div>
-                    <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">选择要导出的模块</div>
-                </div>
-                <button id="_re_close" style="background:var(--primary-bg);border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                </button>
-            </div>
-            <div style="padding:10px 22px 16px;display:flex;flex-direction:column;gap:6px;">
-                ${modules.map(m => `
-                    <label style="
-                        display:flex;align-items:center;gap:12px;cursor:pointer;
-                        padding:12px 14px;border-radius:14px;
-                        background:var(--primary-bg);
-                        border:1.5px solid var(--border-color);
-                        transition:border-color 0.15s;
-                    " class="export-row">
-                        <div style="
-                            width:36px;height:36px;border-radius:10px;
-                            background:rgba(var(--accent-color-rgb,180,140,100),0.12);
-                            display:flex;align-items:center;justify-content:center;
-                            color:var(--accent-color);flex-shrink:0;
-                        ">${m.icon}</div>
-                        <div style="flex:1;">
-                            <div style="font-size:13px;font-weight:600;color:var(--text-primary);">${m.label}</div>
-                            <div style="font-size:11px;color:var(--text-secondary);">${m.count} 条${m.extra ? ' · 含分组结构' : ''}</div>
-                        </div>
-                        <div class="toggle-switch" data-id="${m.id}" style="
-                            width:42px;height:24px;border-radius:12px;background:var(--accent-color);
-                            position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0;
-                        ">
-                            <div style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform 0.2s;transform:translateX(18px);box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
-                        </div>
-                        <input type="checkbox" id="${m.id}" checked style="display:none;">
-                    </label>
-                `).join('')}
-            </div>
-            <div style="padding:0 22px 24px;display:flex;gap:10px;">
-                <button id="_re_cancel_btn" style="
-                    flex:1;padding:13px;border:1px solid var(--border-color);border-radius:14px;
-                    background:none;color:var(--text-secondary);font-size:13px;cursor:pointer;
-                    font-family:var(--font-family);
-                ">取消</button>
-                <button id="_re_confirm_btn" style="
-                    flex:2;padding:13px;border:none;border-radius:14px;
-                    background:var(--accent-color);color:#fff;font-size:14px;font-weight:600;
-                    cursor:pointer;font-family:var(--font-family);
-                    display:flex;align-items:center;justify-content:center;gap:8px;
-                ">
-                    ${_iconExport('#fff',16)} 确认导出
-                </button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(overlay);
-
-    // toggle开关
-    overlay.querySelectorAll('.toggle-switch').forEach(sw => {
-        sw.onclick = () => {
-            const cb = document.getElementById(sw.dataset.id);
-            cb.checked = !cb.checked;
-            const knob = sw.querySelector('div');
-            if (cb.checked) {
-                sw.style.background = 'var(--accent-color)';
-                knob.style.transform = 'translateX(18px)';
-            } else {
-                sw.style.background = 'var(--border-color)';
-                knob.style.transform = 'translateX(0)';
-            }
-        };
-    });
-
-    const close = () => { overlay.style.animation = 'fadeOut 0.15s ease forwards'; setTimeout(() => overlay.remove(), 150); };
-    overlay.querySelector('#_re_close').onclick = close;
-    overlay.querySelector('#_re_cancel_btn').onclick = close;
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
-
-    overlay.querySelector('#_re_confirm_btn').onclick = () => {
-        const inclReplies  = document.getElementById('_re_replies').checked;
-        const inclPokes    = document.getElementById('_re_pokes').checked;
-        const inclStatuses = document.getElementById('_re_statuses').checked;
-        const inclMottos   = document.getElementById('_re_mottos').checked;
-        const inclIntros   = document.getElementById('_re_intros').checked;
-        const inclEmojis   = document.getElementById('_re_emojis').checked;
-        const inclGroups   = document.getElementById('_re_groups').checked;
-
-        if (!inclReplies && !inclPokes && !inclStatuses && !inclMottos && !inclIntros && !inclEmojis && !inclGroups) {
-            showNotification('请至少选择一项', 'error'); return;
-        }
-        close();
+    _showIOSheet('导出字卡', '选择要导出的模块', modules, ICONS.export, (selected) => {
+        if (!selected.length) { showNotification('请至少选择一项', 'error'); return; }
         const libraryData = { exportDate: new Date().toISOString(), modules: [] };
-        if (inclReplies)  { libraryData.customReplies = customReplies;     libraryData.modules.push('replies'); }
-        if (inclPokes)    { libraryData.customPokes = customPokes;         libraryData.modules.push('pokes'); }
-        if (inclStatuses) { libraryData.customStatuses = customStatuses;   libraryData.modules.push('statuses'); }
-        if (inclMottos)   { libraryData.customMottos = customMottos;       libraryData.modules.push('mottos'); }
-        if (inclIntros)   { libraryData.customIntros = customIntros;       libraryData.modules.push('intros'); }
-        if (inclEmojis)   { libraryData.customEmojis = customEmojis;       libraryData.modules.push('emojis'); }
-        if (inclGroups)   { libraryData.customReplyGroups = customReplyGroups; libraryData.modules.push('groups'); }
+        selected.forEach(m => {
+            if (m.key === 'customReplies')       { libraryData.customReplies = customReplies; libraryData.modules.push('replies'); }
+            else if (m.key === 'customPokes')    { libraryData.customPokes = customPokes; libraryData.modules.push('pokes'); }
+            else if (m.key === 'customStatuses') { libraryData.customStatuses = customStatuses; libraryData.modules.push('statuses'); }
+            else if (m.key === 'customMottos')   { libraryData.customMottos = customMottos; libraryData.modules.push('mottos'); }
+            else if (m.key === 'customIntros')   { libraryData.customIntros = customIntros; libraryData.modules.push('intros'); }
+            else if (m.key === 'customEmojis')   { libraryData.customEmojis = customEmojis; libraryData.modules.push('emojis'); }
+            else if (m.key === 'customReplyGroups') { libraryData.customReplyGroups = customReplyGroups; libraryData.modules.push('groups'); }
+        });
         const fileName = `reply-library-${libraryData.modules.join('+')}-${new Date().toISOString().slice(0,10)}.json`;
         exportDataToMobileOrPC(JSON.stringify(libraryData, null, 2), fileName);
-        showNotification('字卡导出成功', 'success');
-    };
+        showNotification('✓ 字卡导出成功', 'success');
+    });
 }
 
-// ────────────────────────────────────────────────
-//  导入 UI（全新底部抽屉）
-// ────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
+//  导入 UI（底部抽屉）
+// ─────────────────────────────────────────────────────────
 function _showImportUI(data) {
     const knownFields = ['customReplies','customPokes','customStatuses','customMottos','customIntros','customEmojis','customReplyGroups'];
     const hasValid = knownFields.some(f => Array.isArray(data[f]));
-    if (!hasValid) { showNotification('无效的字卡备份文件，未找到可识别的内容', 'error'); return; }
-
-    const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);backdrop-filter:blur(10px);display:flex;align-items:flex-end;justify-content:center;animation:fadeIn 0.2s ease;';
+    if (!hasValid) { showNotification('无效的字卡备份文件', 'error'); return; }
 
     const modules = [
-        { id: '_ri_replies',  icon: _iconComment(),   label: '主字卡',    data: data.customReplies,     key: 'customReplies' },
-        { id: '_ri_pokes',    icon: _iconHand(),      label: '拍一拍',    data: data.customPokes,       key: 'customPokes' },
-        { id: '_ri_statuses', icon: _iconDot(),       label: '对方状态',  data: data.customStatuses,    key: 'customStatuses' },
-        { id: '_ri_mottos',   icon: _iconQuote(),     label: '顶部格言',  data: data.customMottos,      key: 'customMottos' },
-        { id: '_ri_intros',   icon: _iconPlay(),      label: '开场动画',  data: data.customIntros,      key: 'customIntros' },
-        { id: '_ri_emojis',   icon: _iconSmile(),     label: 'Emoji 库',  data: data.customEmojis,      key: 'customEmojis' },
-        { id: '_ri_groups',   icon: _iconFolder(),    label: '字卡分组',  data: data.customReplyGroups, key: 'customReplyGroups', extra: true },
+        { id: '_ri_replies',  icon: ICONS.comment,   label: '主字卡',    data: data.customReplies,     key: 'customReplies' },
+        { id: '_ri_pokes',    icon: ICONS.hand,      label: '拍一拍',    data: data.customPokes,       key: 'customPokes' },
+        { id: '_ri_statuses', icon: ICONS.dot,       label: '对方状态',  data: data.customStatuses,    key: 'customStatuses' },
+        { id: '_ri_mottos',   icon: ICONS.quote,     label: '顶部格言',  data: data.customMottos,      key: 'customMottos' },
+        { id: '_ri_intros',   icon: ICONS.play,      label: '开场动画',  data: data.customIntros,      key: 'customIntros' },
+        { id: '_ri_emojis',   icon: ICONS.smile,     label: 'Emoji 库',  data: data.customEmojis,      key: 'customEmojis' },
+        { id: '_ri_groups',   icon: ICONS.folderBig, label: '字卡分组',  data: data.customReplyGroups, key: 'customReplyGroups', extra: true },
     ].filter(m => Array.isArray(m.data));
 
-    overlay.innerHTML = `
-        <div style="
-            background:var(--secondary-bg);border-radius:24px 24px 0 0;
-            width:100%;max-width:480px;padding:0 0 env(safe-area-inset-bottom,0);
-            box-shadow:0 -10px 60px rgba(0,0,0,0.3);
-            animation:slideUpSheet 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;
-            max-height:90vh;display:flex;flex-direction:column;
-        ">
-            <div style="width:36px;height:4px;border-radius:2px;background:var(--border-color);margin:12px auto 0;flex-shrink:0;"></div>
-            <div style="padding:20px 22px 6px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
-                <div>
-                    <div style="font-size:16px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
-                        ${_iconImport('var(--accent-color)',20)} 导入字卡
-                    </div>
-                    <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">文件中包含以下 ${modules.length} 个模块</div>
-                </div>
-                <button id="_ri_close" style="background:var(--primary-bg);border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                </button>
-            </div>
-            <div style="overflow-y:auto;padding:10px 22px 6px;display:flex;flex-direction:column;gap:6px;">
-                ${modules.map(m => `
-                    <label style="
-                        display:flex;align-items:center;gap:12px;cursor:pointer;
-                        padding:12px 14px;border-radius:14px;background:var(--primary-bg);
-                        border:1.5px solid var(--border-color);
-                    ">
-                        <div style="
-                            width:36px;height:36px;border-radius:10px;
-                            background:rgba(var(--accent-color-rgb,180,140,100),0.12);
-                            display:flex;align-items:center;justify-content:center;
-                            color:var(--accent-color);flex-shrink:0;
-                        ">${m.icon}</div>
-                        <div style="flex:1;">
-                            <div style="font-size:13px;font-weight:600;color:var(--text-primary);">${m.label}</div>
-                            <div style="font-size:11px;color:var(--text-secondary);">${m.data.length} 条${m.extra ? ' · 含分组结构' : ''}</div>
-                        </div>
-                        <div class="toggle-switch" data-id="${m.id}" style="
-                            width:42px;height:24px;border-radius:12px;background:var(--accent-color);
-                            position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0;
-                        ">
-                            <div style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform 0.2s;transform:translateX(18px);box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
-                        </div>
-                        <input type="checkbox" id="${m.id}" checked style="display:none;">
-                    </label>
-                `).join('')}
-            </div>
-            <!-- 导入方式 -->
-            <div style="padding:10px 22px 6px;flex-shrink:0;">
-                <div style="
-                    display:flex;align-items:center;gap:8px;padding:11px 14px;
-                    border-radius:14px;background:var(--primary-bg);border:1.5px solid var(--border-color);
-                ">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="color:var(--accent-color);flex-shrink:0;">
-                        <path d="M8 1v9M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M2 12h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                    </svg>
-                    <span style="font-size:13px;color:var(--text-primary);flex:1;">导入方式</span>
-                    <div style="display:flex;background:var(--secondary-bg);border-radius:8px;overflow:hidden;border:1px solid var(--border-color);">
-                        <label style="display:flex;align-items:center;gap:4px;padding:5px 10px;cursor:pointer;font-size:12px;color:var(--text-primary);">
-                            <input type="radio" name="_ri_mode" id="_ri_mode_merge" value="merge" checked style="accent-color:var(--accent-color);"> 追加
-                        </label>
-                        <label style="display:flex;align-items:center;gap:4px;padding:5px 10px;cursor:pointer;font-size:12px;color:var(--text-primary);border-left:1px solid var(--border-color);">
-                            <input type="radio" name="_ri_mode" id="_ri_mode_overwrite" value="overwrite" style="accent-color:var(--accent-color);"> 覆盖
-                        </label>
-                    </div>
-                </div>
-            </div>
-            <div style="padding:12px 22px 24px;display:flex;gap:10px;flex-shrink:0;">
-                <button id="_ri_cancel_btn" style="flex:1;padding:13px;border:1px solid var(--border-color);border-radius:14px;background:none;color:var(--text-secondary);font-size:13px;cursor:pointer;font-family:var(--font-family);">取消</button>
-                <button id="_ri_confirm_btn" style="flex:2;padding:13px;border:none;border-radius:14px;background:var(--accent-color);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font-family);display:flex;align-items:center;justify-content:center;gap:8px;">
-                    ${_iconImport('#fff',16)} 确认导入
-                </button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(overlay);
-
-    overlay.querySelectorAll('.toggle-switch').forEach(sw => {
-        sw.onclick = () => {
-            const cb = document.getElementById(sw.dataset.id);
-            cb.checked = !cb.checked;
-            const knob = sw.querySelector('div');
-            sw.style.background = cb.checked ? 'var(--accent-color)' : 'var(--border-color)';
-            knob.style.transform = cb.checked ? 'translateX(18px)' : 'translateX(0)';
-        };
-    });
-
-    const close = () => { overlay.style.animation = 'fadeOut 0.15s ease forwards'; setTimeout(() => overlay.remove(), 150); };
-    overlay.querySelector('#_ri_close').onclick = close;
-    overlay.querySelector('#_ri_cancel_btn').onclick = close;
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
-
-    overlay.querySelector('#_ri_confirm_btn').onclick = () => {
-        const overwrite = document.getElementById('_ri_mode_overwrite').checked;
-        const selected = modules.filter(m => document.getElementById(m.id)?.checked);
-        if (selected.length === 0) { showNotification('请至少选择一项', 'error'); return; }
-        close();
-
+    _showIOSheet(`导入字卡`, `文件中包含 ${modules.length} 个模块`, modules, ICONS.import, (selected, mode) => {
+        if (!selected.length) { showNotification('请至少选择一项', 'error'); return; }
         try {
+            const overwrite = mode === 'overwrite';
             let totalAdded = 0;
             if (overwrite) {
                 selected.forEach(m => {
-                    if (m.key === 'customReplies')       { customReplies = data.customReplies; totalAdded += data.customReplies.length; }
-                    else if (m.key === 'customPokes')    { customPokes = data.customPokes; totalAdded += data.customPokes.length; }
+                    if (m.key === 'customReplies') { customReplies = data.customReplies; totalAdded += data.customReplies.length; }
+                    else if (m.key === 'customPokes') { customPokes = data.customPokes; totalAdded += data.customPokes.length; }
                     else if (m.key === 'customStatuses') { customStatuses = data.customStatuses; totalAdded += data.customStatuses.length; }
-                    else if (m.key === 'customMottos')   { customMottos = data.customMottos; totalAdded += data.customMottos.length; }
-                    else if (m.key === 'customIntros')   { customIntros = data.customIntros; totalAdded += data.customIntros.length; }
-                    else if (m.key === 'customEmojis')   { customEmojis = data.customEmojis; }
+                    else if (m.key === 'customMottos') { customMottos = data.customMottos; totalAdded += data.customMottos.length; }
+                    else if (m.key === 'customIntros') { customIntros = data.customIntros; totalAdded += data.customIntros.length; }
+                    else if (m.key === 'customEmojis') { customEmojis = data.customEmojis; }
                     else if (m.key === 'customReplyGroups') { window.customReplyGroups = data.customReplyGroups; }
                 });
             } else {
@@ -1206,38 +1311,215 @@ function _showImportUI(data) {
                     } else if (m.key === 'customReplyGroups') {
                         if (!window.customReplyGroups) window.customReplyGroups = [];
                         data.customReplyGroups.forEach(dg => {
-                            const existing = customReplyGroups.find(g => g.name === dg.name);
-                            if (!existing) customReplyGroups.push(dg);
+                            if (!customReplyGroups.find(g => g.name === dg.name)) customReplyGroups.push(dg);
                         });
                     }
                 });
             }
             throttledSaveData();
             if (typeof renderReplyLibrary === 'function') renderReplyLibrary();
-            showNotification(`导入成功（${overwrite ? '覆盖' : '追加'}）${totalAdded > 0 ? `，共 ${totalAdded} 条` : ''}`, 'success', 3000);
+            showNotification(`✓ 导入成功（${overwrite ? '覆盖' : '追加'}）${totalAdded > 0 ? `，共 ${totalAdded} 条` : ''}`, 'success', 3000);
         } catch (err) {
-            console.error('字卡导入处理失败:', err);
+            console.error('字卡导入失败:', err);
             showNotification('导入过程中发生错误：' + err.message, 'error');
         }
+    }, true);
+}
+
+// ─────────────────────────────────────────────────────────
+//  通用 IO 底部抽屉
+// ─────────────────────────────────────────────────────────
+function _showIOSheet(title, subtitle, modules, icon, onConfirm, showMode = false) {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);backdrop-filter:blur(10px);display:flex;align-items:flex-end;justify-content:center;animation:fadeIn 0.2s ease;';
+
+    let modeVal = 'merge';
+
+    overlay.innerHTML = `
+        <style>
+            @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+            @keyframes slideUpSheet { from{transform:translateY(100%)} to{transform:translateY(0)} }
+            .io-module-row {
+                display:flex;align-items:center;gap:12px;cursor:pointer;
+                padding:12px 14px;border-radius:14px;background:var(--primary-bg);
+                border:1.5px solid var(--border-color);transition:border-color 0.15s;
+            }
+            .io-icon-box {
+                width:36px;height:36px;border-radius:10px;
+                background:rgba(var(--accent-color-rgb,180,140,100),0.12);
+                display:flex;align-items:center;justify-content:center;
+                color:var(--accent-color);flex-shrink:0;
+            }
+            .io-toggle {
+                width:42px;height:24px;border-radius:12px;background:var(--accent-color);
+                position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0;
+            }
+            .io-toggle .knob {
+                position:absolute;top:3px;left:3px;width:18px;height:18px;
+                border-radius:50%;background:#fff;transition:transform 0.2s;
+                transform:translateX(18px);box-shadow:0 1px 3px rgba(0,0,0,.2);
+            }
+            .io-toggle.off { background:var(--border-color); }
+            .io-toggle.off .knob { transform:translateX(0); }
+        </style>
+        <div style="
+            background:var(--secondary-bg);border-radius:24px 24px 0 0;
+            width:100%;max-width:500px;padding:0 0 env(safe-area-inset-bottom,0);
+            box-shadow:0 -10px 60px rgba(0,0,0,.3);
+            animation:slideUpSheet 0.3s cubic-bezier(0.34,1.56,0.64,1);
+            max-height:92vh;display:flex;flex-direction:column;
+        ">
+            <div style="width:36px;height:4px;border-radius:2px;background:var(--border-color);margin:12px auto 0;flex-shrink:0;"></div>
+            <div style="padding:18px 22px 8px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+                <div>
+                    <div style="font-size:16px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
+                        <span style="color:var(--accent-color);">${icon}</span> ${title}
+                    </div>
+                    <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">${subtitle}</div>
+                </div>
+                <button id="_io_close" style="background:var(--primary-bg);border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);">
+                    ${ICONS.close}
+                </button>
+            </div>
+            <div style="overflow-y:auto;padding:8px 22px;display:flex;flex-direction:column;gap:7px;flex:1;">
+                ${modules.map(m => `
+                    <div class="io-module-row">
+                        <div class="io-icon-box">${m.icon}</div>
+                        <div style="flex:1;">
+                            <div style="font-size:13px;font-weight:600;color:var(--text-primary);">${m.label}</div>
+                            <div style="font-size:11px;color:var(--text-secondary);">${m.data ? m.data.length : m.count} 条${m.extra ? ' · 含分组结构' : ''}</div>
+                        </div>
+                        <div class="io-toggle" data-id="${m.id}"><div class="knob"></div></div>
+                        <input type="checkbox" id="${m.id}" checked style="display:none;">
+                    </div>
+                `).join('')}
+            </div>
+            ${showMode ? `
+            <div style="padding:8px 22px;flex-shrink:0;">
+                <div style="display:flex;align-items:center;gap:8px;padding:11px 14px;border-radius:13px;background:var(--primary-bg);border:1.5px solid var(--border-color);">
+                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" style="color:var(--accent-color);flex-shrink:0;"><path d="M7.5 1v9M4 6l3.5 3L11 6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="2" y1="13" x2="13" y2="13" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                    <span style="font-size:13px;color:var(--text-primary);flex:1;">导入方式</span>
+                    <div style="display:flex;background:var(--secondary-bg);border-radius:8px;overflow:hidden;border:1px solid var(--border-color);">
+                        <label style="display:flex;align-items:center;gap:4px;padding:5px 12px;cursor:pointer;font-size:12px;color:var(--text-primary);">
+                            <input type="radio" name="_io_mode" id="_io_merge" value="merge" checked style="accent-color:var(--accent-color);"> 追加
+                        </label>
+                        <label style="display:flex;align-items:center;gap:4px;padding:5px 12px;cursor:pointer;font-size:12px;color:var(--text-primary);border-left:1px solid var(--border-color);">
+                            <input type="radio" name="_io_mode" id="_io_overwrite" value="overwrite" style="accent-color:var(--accent-color);"> 覆盖
+                        </label>
+                    </div>
+                </div>
+            </div>` : ''}
+            <div style="padding:10px 22px 22px;display:flex;gap:10px;flex-shrink:0;">
+                <button id="_io_cancel" style="flex:1;padding:13px;border:1.5px solid var(--border-color);border-radius:14px;background:none;color:var(--text-secondary);font-size:13px;cursor:pointer;font-family:var(--font-family);">取消</button>
+                <button id="_io_confirm" style="flex:2;padding:13px;border:none;border-radius:14px;background:var(--accent-color);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font-family);display:flex;align-items:center;justify-content:center;gap:8px;">
+                    <span style="color:#fff;">${icon}</span> 确认
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.querySelectorAll('.io-toggle').forEach(sw => {
+        sw.onclick = () => {
+            const cb = document.getElementById(sw.dataset.id);
+            cb.checked = !cb.checked;
+            sw.classList.toggle('off', !cb.checked);
+        };
+    });
+
+    const close = () => { overlay.style.animation = 'fadeOut 0.15s ease forwards'; setTimeout(() => overlay.remove(), 150); };
+    overlay.querySelector('#_io_close').onclick = close;
+    overlay.querySelector('#_io_cancel').onclick = close;
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+    overlay.querySelector('#_io_confirm').onclick = () => {
+        const selected = modules.filter(m => document.getElementById(m.id)?.checked);
+        const mode = showMode ? (document.getElementById('_io_overwrite')?.checked ? 'overwrite' : 'merge') : 'export';
+        close();
+        onConfirm(selected, mode);
     };
 }
 
-// ────────────────────────────────────────────────
-//  SVG 图标辅助
-// ────────────────────────────────────────────────
-function _iconComment() { return `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 3.5A1.5 1.5 0 013.5 2h11A1.5 1.5 0 0116 3.5v8A1.5 1.5 0 0114.5 13H10l-3 3v-3H3.5A1.5 1.5 0 012 11.5v-8z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>`; }
-function _iconHand() { return `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2v8M6 5v5M3 8v3a6 6 0 0012 0V6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`; }
-function _iconDot() { return `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="3" fill="currentColor"/><circle cx="9" cy="9" r="6.5" stroke="currentColor" stroke-width="1.3"/></svg>`; }
-function _iconQuote() { return `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 6.5C3 5.4 3.9 4.5 5 4.5h2v5H5A2 2 0 013 7.5V6.5zM10 6.5c0-1.1.9-2 2-2h2v5h-2a2 2 0 01-2-2V6.5z" fill="currentColor" opacity="0.7"/><path d="M5 9.5v2M12 9.5v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`; }
-function _iconPlay() { return `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.3"/><path d="M7 6.5l5 2.5-5 2.5V6.5z" fill="currentColor"/></svg>`; }
-function _iconSmile() { return `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.3"/><circle cx="6.5" cy="7.5" r="1" fill="currentColor"/><circle cx="11.5" cy="7.5" r="1" fill="currentColor"/><path d="M6 11.5s1 2 3 2 3-2 3-2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`; }
-function _iconFolder() { return `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 5.5C2 4.4 2.9 3.5 4 3.5h3.5c.4 0 .8.2 1.1.5L10 5.5H14c1.1 0 2 .9 2 2V13c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V5.5z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>`; }
-function _iconExport(color, size) { return `<svg width="${size}" height="${size}" viewBox="0 0 20 20" fill="none"><path d="M10 3v10M6 9l4 4 4-4" stroke="${color}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16h12" stroke="${color}" stroke-width="1.6" stroke-linecap="round"/></svg>`; }
-function _iconImport(color, size) { return `<svg width="${size}" height="${size}" viewBox="0 0 20 20" fill="none"><path d="M10 13V3M6 7l4-4 4 4" stroke="${color}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16h12" stroke="${color}" stroke-width="1.6" stroke-linecap="round"/></svg>`; }
+// ─────────────────────────────────────────────────────────
+//  辅助：创建通用遮罩
+// ─────────────────────────────────────────────────────────
+function _makeOverlay() {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;';
+    return overlay;
+}
 
-// ────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
+//  批量添加弹窗
+// ─────────────────────────────────────────────────────────
+function _showBatchAddDialog() {
+    const overlay = _makeOverlay();
+    const panel = document.createElement('div');
+    panel.style.cssText = `
+        background:var(--secondary-bg);border-radius:22px;padding:24px;
+        width:92%;max-width:420px;
+        box-shadow:0 24px 80px rgba(0,0,0,.45);
+        animation:popIn 0.22s cubic-bezier(.34,1.56,.64,1);
+    `;
+    panel.innerHTML = `
+        <style>@keyframes popIn { from{opacity:0;transform:scale(.93)} to{opacity:1;transform:scale(1)} }</style>
+        <div style="font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:6px;">批量添加字卡</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:14px;line-height:1.6;">每行一条，自动去重</div>
+        <textarea id="batch-add-input" rows="10" placeholder="在此粘贴内容，每行一条…" style="
+            width:100%;box-sizing:border-box;padding:12px 14px;
+            border:1.5px solid var(--border-color);border-radius:13px;
+            background:var(--primary-bg);color:var(--text-primary);
+            font-size:13px;font-family:var(--font-family);outline:none;resize:vertical;
+            line-height:1.6;transition:border 0.18s;
+        "></textarea>
+        <div style="font-size:11px;color:var(--text-secondary);margin-top:6px;margin-bottom:16px;">
+            <span id="batch-add-count">0 条</span>
+        </div>
+        <div style="display:flex;gap:10px;">
+            <button id="ba-cancel" style="flex:1;padding:12px;border:1.5px solid var(--border-color);border-radius:13px;background:none;color:var(--text-secondary);font-size:13px;cursor:pointer;font-family:var(--font-family);">取消</button>
+            <button id="ba-confirm" style="flex:2;padding:12px;border:none;border-radius:13px;background:var(--accent-color);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font-family);">添加</button>
+        </div>
+    `;
+    overlay.appendChild(panel);
+    document.body.appendChild(overlay);
+
+    const ta = panel.querySelector('#batch-add-input');
+    const countEl = panel.querySelector('#batch-add-count');
+    ta.addEventListener('input', () => {
+        const lines = ta.value.split('\n').filter(l => l.trim());
+        countEl.textContent = `${lines.length} 条`;
+    });
+    ta.addEventListener('focus', e => { e.target.style.borderColor = 'var(--accent-color)'; });
+    ta.addEventListener('blur', e => { e.target.style.borderColor = 'var(--border-color)'; });
+
+    panel.querySelector('#ba-cancel').onclick = () => overlay.remove();
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    panel.querySelector('#ba-confirm').onclick = () => {
+        const lines = ta.value.split('\n').map(l => l.trim()).filter(Boolean);
+        if (!lines.length) { showNotification('请输入内容', 'warning'); return; }
+        let added = 0, skipped = 0;
+        lines.forEach(val => {
+            const norm = normalizeStringStrict(val);
+            const isDup = currentSubTab === 'custom'
+                ? (customReplies.some(r => normalizeStringStrict(r) === norm) || CONSTANTS.REPLY_MESSAGES.some(r => normalizeStringStrict(r) === norm))
+                : false;
+            if (isDup) { skipped++; return; }
+            if (currentSubTab === 'custom') customReplies.push(val);
+            else if (currentSubTab === 'pokes') customPokes.push(val);
+            else if (currentSubTab === 'statuses') customStatuses.push(val);
+            else if (currentSubTab === 'mottos') customMottos.push(val);
+            added++;
+        });
+        throttledSaveData();
+        overlay.remove();
+        renderReplyLibrary();
+        showNotification(`✓ 添加 ${added} 条${skipped ? `，跳过 ${skipped} 条重复` : ''}`, 'success');
+    };
+}
+
+// ─────────────────────────────────────────────────────────
 //  监听器初始化
-// ────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
 function initReplyLibraryListeners() {
     const entryBtn = document.getElementById('custom-replies-function');
     if (entryBtn) {
@@ -1245,6 +1527,11 @@ function initReplyLibraryListeners() {
             hideModal(DOMElements.advancedModal.modal);
             currentMajorTab = 'reply';
             currentSubTab = 'custom';
+            _batchModeActive = false;
+            _batchSelectedIndices.clear();
+            _searchVisible = false;
+            _searchQuery = '';
+            _activeGroupFilter = null;
             document.querySelectorAll('.sidebar-btn').forEach(b => {
                 b.classList.toggle('active', b.dataset.major === 'reply');
             });
@@ -1261,79 +1548,63 @@ function initReplyLibraryListeners() {
 
             if (currentMajorTab === 'announcement') return;
 
-            var listArea = document.getElementById('custom-replies-list');
-            var annPanel = document.getElementById('announcement-panel');
-            var toolbar = document.getElementById('cr-toolbar');
-            var subTabs = document.getElementById('cr-sub-tabs');
-            var addBtn = document.getElementById('add-custom-reply');
-            var titleEl = document.getElementById('cr-modal-title');
+            const listArea = document.getElementById('custom-replies-list');
+            const annPanel = document.getElementById('announcement-panel');
+            const crToolbar = document.getElementById('cr-toolbar');
+            const subTabs = document.getElementById('cr-sub-tabs');
+            const addBtn = document.getElementById('add-custom-reply');
+            const titleEl = document.getElementById('cr-modal-title');
             if (listArea) listArea.style.display = '';
             if (annPanel) annPanel.style.display = 'none';
-            if (toolbar) toolbar.style.display = '';
+            if (crToolbar) crToolbar.style.display = '';
             if (subTabs) subTabs.style.display = '';
             if (addBtn) addBtn.style.display = '';
             if (titleEl) titleEl.textContent = '内容管理';
 
             _batchModeActive = false;
             _batchSelectedIndices.clear();
+            _searchVisible = false;
+            _searchQuery = '';
+            _activeGroupFilter = null;
             currentSubTab = LIBRARY_CONFIG[currentMajorTab].tabs[0].id;
             renderReplyLibrary();
         });
     });
 
-    // 分组管理按钮（需要在HTML中添加 id="manage-groups-btn"）
+    // 分组管理按钮（全局事件委托）
     document.addEventListener('click', e => {
         if (e.target.closest('#manage-groups-btn')) _showGroupManager();
     });
 
+    // 搜索
     const searchInput = document.getElementById('reply-search-input');
-    if (searchInput) searchInput.addEventListener('input', renderReplyLibrary);
+    if (searchInput) searchInput.addEventListener('input', () => {
+        _searchQuery = searchInput.value;
+        renderReplyLibrary();
+    });
 
+    // 去重
     const dedupBtn = document.getElementById('dedup-replies-btn');
-    if (dedupBtn) {
-        dedupBtn.addEventListener('click', () => {
-            let totalRemoved = 0;
-            const crDedup = deduplicateContentArray(customReplies, CONSTANTS.REPLY_MESSAGES);
-            customReplies = crDedup.result; totalRemoved += crDedup.removedCount;
-            const cpDedup = deduplicateContentArray(customPokes);
-            customPokes = cpDedup.result; totalRemoved += cpDedup.removedCount;
-            const csDedup = deduplicateContentArray(customStatuses);
-            customStatuses = csDedup.result; totalRemoved += csDedup.removedCount;
-            const cmDedup = deduplicateContentArray(customMottos);
-            customMottos = cmDedup.result; totalRemoved += cmDedup.removedCount;
-            const ciDedup = deduplicateContentArray(customIntros);
-            customIntros = ciDedup.result; totalRemoved += ciDedup.removedCount;
-            const preEmojiCount = customEmojis.length;
-            customEmojis = [...new Set(customEmojis)];
-            totalRemoved += (preEmojiCount - customEmojis.length);
+    if (dedupBtn) dedupBtn.addEventListener('click', _runDedup);
 
-            if (totalRemoved > 0) {
-                throttledSaveData(); renderReplyLibrary();
-                showNotification(`🧹 共清理了 ${totalRemoved} 条重复内容`, 'success');
-            } else {
-                showNotification('✨ 没有重复内容', 'info');
-            }
-        });
-    }
-
+    // 导出
     const exportBtn = document.getElementById('export-replies-btn');
     if (exportBtn) exportBtn.addEventListener('click', _showExportUI);
 
+    // 导入
     const importBtn = document.getElementById('import-replies-btn');
     const importInput = document.getElementById('import-replies-input');
     if (importBtn && importInput) {
         importBtn.addEventListener('click', () => importInput.click());
-        importInput.addEventListener('change', (e) => {
+        importInput.addEventListener('change', e => {
             const file = e.target.files[0];
             if (!file) return;
             e.target.value = '';
-            if (file.size > 50 * 1024 * 1024) {
-                showNotification('文件过大', 'error'); return;
-            }
+            if (file.size > 50 * 1024 * 1024) { showNotification('文件过大', 'error'); return; }
             const reader = new FileReader();
-            reader.onload = (event) => {
+            reader.onload = ev => {
                 let data;
-                try { data = JSON.parse(event.target.result); }
+                try { data = JSON.parse(ev.target.result); }
                 catch { showNotification('文件解析失败', 'error'); return; }
                 _showImportUI(data);
             };
@@ -1342,21 +1613,27 @@ function initReplyLibraryListeners() {
         });
     }
 
+    // 新增按钮
     const addBtn = document.getElementById('add-custom-reply');
     if (addBtn) {
         addBtn.addEventListener('click', () => {
             if (currentSubTab === 'stickers') {
-                document.getElementById('sticker-file-input').click(); return;
+                document.getElementById('sticker-file-input')?.click(); return;
             }
             if (currentSubTab === 'emojis') {
                 const input = prompt('请输入要添加的 Emoji（支持组合表情）:');
-                if (input && input.trim()) {
+                if (input?.trim()) {
                     customEmojis.push(input.trim());
                     throttledSaveData(); renderReplyLibrary();
-                    showNotification('Emoji 已添加', 'success');
+                    showNotification('✓ Emoji 已添加', 'success');
                 }
                 return;
             }
+            // 主字卡：提供"批量添加"
+            if (currentSubTab === 'custom') {
+                _showBatchAddDialog(); return;
+            }
+            // 其他标签
             let input;
             if (currentSubTab === 'intros') {
                 const l1 = prompt('请输入主标题 (如: 𝑳𝒐𝒗𝒆):');
@@ -1366,50 +1643,45 @@ function initReplyLibraryListeners() {
             } else {
                 input = prompt(`请输入新的${getCategoryName(currentSubTab)}:`);
             }
-            if (input && input.trim()) {
+            if (input?.trim()) {
                 const val = input.trim();
-                let isDuplicate = false;
                 const valNorm = normalizeStringStrict(val);
-                if (currentSubTab === 'custom' && (customReplies.some(r => normalizeStringStrict(r) === valNorm) || CONSTANTS.REPLY_MESSAGES.some(r => normalizeStringStrict(r) === valNorm))) isDuplicate = true;
-                else if (currentSubTab === 'pokes' && customPokes.some(r => normalizeStringStrict(r) === valNorm)) isDuplicate = true;
-                else if (currentSubTab === 'statuses' && customStatuses.some(r => normalizeStringStrict(r) === valNorm)) isDuplicate = true;
-                else if (currentSubTab === 'mottos' && customMottos.some(r => normalizeStringStrict(r) === valNorm)) isDuplicate = true;
-                else if (currentSubTab === 'intros' && customIntros.some(r => normalizeStringStrict(r) === valNorm)) isDuplicate = true;
-                if (isDuplicate) { showNotification('该内容已存在', 'warning'); return; }
-                if (currentSubTab === 'custom') customReplies.unshift(val);
-                else if (currentSubTab === 'pokes') customPokes.unshift(val);
+                let isDup = false;
+                if (currentSubTab === 'pokes' && customPokes.some(r => normalizeStringStrict(r) === valNorm)) isDup = true;
+                else if (currentSubTab === 'statuses' && customStatuses.some(r => normalizeStringStrict(r) === valNorm)) isDup = true;
+                else if (currentSubTab === 'mottos' && customMottos.some(r => normalizeStringStrict(r) === valNorm)) isDup = true;
+                else if (currentSubTab === 'intros' && customIntros.some(r => normalizeStringStrict(r) === valNorm)) isDup = true;
+                if (isDup) { showNotification('该内容已存在', 'warning'); return; }
+                if (currentSubTab === 'pokes') customPokes.unshift(val);
                 else if (currentSubTab === 'statuses') customStatuses.unshift(val);
                 else if (currentSubTab === 'mottos') customMottos.unshift(val);
                 else if (currentSubTab === 'intros') customIntros.unshift(val);
                 throttledSaveData(); renderReplyLibrary();
-                showNotification('添加成功', 'success');
+                showNotification('✓ 添加成功', 'success');
             }
         });
     }
 }
 
 function getCategoryName(tabId) {
-    const map = { 'custom': '回复', 'pokes': '拍一拍', 'statuses': '状态', 'mottos': '格言', 'intros': '开场语' };
-    return map[tabId] || '内容';
+    return { custom: '回复', pokes: '拍一拍', statuses: '状态', mottos: '格言', intros: '开场语' }[tabId] || '内容';
 }
 
 function updateTabUI() {
     document.querySelectorAll('.reply-tab-btn').forEach(btn => {
-        if (btn.dataset.tab === currentReplyTab) btn.classList.add('active');
-        else btn.classList.remove('active');
+        btn.classList.toggle('active', btn.dataset.tab === currentReplyTab);
     });
-    const searchInput = document.getElementById('reply-search-input');
-    if (searchInput) searchInput.value = '';
+    const si = document.getElementById('reply-search-input');
+    if (si) si.value = '';
 }
 
+// ─────────────────────────────────────────────────────────
+//  波纹反馈 & 头像框（不变）
+// ─────────────────────────────────────────────────────────
 function initRippleFeedback() {
-    const rippleTargets = [
-        '.input-btn', '.action-btn', '.modal-btn', '.settings-item', '.batch-action-btn',
-        '.coin-btn-action', '.import-export-btn', '.reply-tab-btn', '.anniversary-type-btn',
-        '.reply-tool-btn', '.session-action-btn', '.fav-action-btn'
-    ];
-    document.addEventListener('mousedown', function(e) {
-        const target = e.target.closest(rippleTargets.join(','));
+    const targets = ['.input-btn','.action-btn','.modal-btn','.settings-item','.batch-action-btn','.coin-btn-action','.import-export-btn','.reply-tab-btn','.anniversary-type-btn','.reply-tool-btn','.session-action-btn','.fav-action-btn'];
+    document.addEventListener('mousedown', e => {
+        const target = e.target.closest(targets.join(','));
         if (target) createRipple(e, target);
     });
     function createRipple(event, button) {
@@ -1418,14 +1690,11 @@ function initRippleFeedback() {
         const diameter = Math.max(button.clientWidth, button.clientHeight);
         const radius = diameter / 2;
         const rect = button.getBoundingClientRect();
-        const clientX = event.clientX || (event.touches ? event.touches[0].clientX : 0);
-        const clientY = event.clientY || (event.touches ? event.touches[0].clientY : 0);
-        circle.style.width = circle.style.height = `${diameter}px`;
-        circle.style.left = `${clientX - rect.left - radius}px`;
-        circle.style.top = `${clientY - rect.top - radius}px`;
+        const cx = event.clientX || (event.touches ? event.touches[0].clientX : 0);
+        const cy = event.clientY || (event.touches ? event.touches[0].clientY : 0);
+        circle.style.cssText = `width:${diameter}px;height:${diameter}px;left:${cx-rect.left-radius}px;top:${cy-rect.top-radius}px;`;
         circle.classList.add('ripple-wave');
-        const ripple = button.getElementsByClassName('ripple-wave')[0];
-        if (ripple) ripple.remove();
+        button.getElementsByClassName('ripple-wave')[0]?.remove();
         button.appendChild(circle);
         setTimeout(() => circle.remove(), 600);
     }
@@ -1433,7 +1702,7 @@ function initRippleFeedback() {
 
 function applyAvatarFrame(avatarContainer, frameSettings) {
     let frameElement = avatarContainer.querySelector('.avatar-frame');
-    if (frameSettings && frameSettings.src) {
+    if (frameSettings?.src) {
         if (!frameElement) {
             frameElement = document.createElement('img');
             frameElement.className = 'avatar-frame';
@@ -1442,11 +1711,9 @@ function applyAvatarFrame(avatarContainer, frameSettings) {
         frameElement.src = frameSettings.src;
         frameElement.style.width = `${frameSettings.size || 100}%`;
         frameElement.style.height = `${frameSettings.size || 100}%`;
-        const offsetX = frameSettings.offsetX || 0;
-        const offsetY = frameSettings.offsetY || 0;
-        frameElement.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px))`;
+        frameElement.style.transform = `translate(calc(-50% + ${frameSettings.offsetX || 0}px), calc(-50% + ${frameSettings.offsetY || 0}px))`;
     } else {
-        if (frameElement) frameElement.remove();
+        frameElement?.remove();
     }
 }
 
@@ -1467,18 +1734,13 @@ function setupAvatarFrameSettings() {
         const avatarContainer = type === 'my' ? DOMElements.me.avatarContainer : DOMElements.partner.avatarContainer;
         const avatarElement = type === 'my' ? DOMElements.me.avatar : DOMElements.partner.avatar;
         const updatePreview = () => {
-            let avatarContent = avatarElement.innerHTML;
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = avatarContent;
-            const img = tempDiv.querySelector('img');
-            if (img) avatarContent = `<img src="${img.src}" alt="preview">`;
+            const img = avatarElement.querySelector('img');
+            const avatarContent = img ? `<img src="${img.src}" alt="preview">` : avatarElement.innerHTML;
             const frameSettings = settings[settingsKey];
             let frameHtml = '';
-            if (frameSettings && frameSettings.src) {
-                const size = frameSettings.size || 100;
-                const offsetX = frameSettings.offsetX || 0;
-                const offsetY = frameSettings.offsetY || 0;
-                frameHtml = `<img src="${frameSettings.src}" class="preview-frame" style="width: ${size}%; height: ${size}%; transform: translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px));">`;
+            if (frameSettings?.src) {
+                const { size = 100, offsetX = 0, offsetY = 0 } = frameSettings;
+                frameHtml = `<img src="${frameSettings.src}" class="preview-frame" style="width:${size}%;height:${size}%;transform:translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px));">`;
             }
             preview.innerHTML = `<div class="preview-bg-layer">${avatarContent}</div>${frameHtml}`;
         };
@@ -1493,14 +1755,14 @@ function setupAvatarFrameSettings() {
             updatePreview();
         };
         uploadBtn.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', (e) => {
+        fileInput.addEventListener('change', e => {
             const file = e.target.files[0];
             if (!file) return;
             if (file.size > 1024 * 1024) { showNotification('头像框图片大小不能超过1MB', 'error'); return; }
             const reader = new FileReader();
-            reader.onload = (event) => {
+            reader.onload = ev => {
                 if (!settings[settingsKey]) settings[settingsKey] = { size: 100, offsetX: 0, offsetY: 0 };
-                settings[settingsKey].src = event.target.result;
+                settings[settingsKey].src = ev.target.result;
                 applyAvatarFrame(avatarContainer, settings[settingsKey]);
                 updateControls(); throttledSaveData();
             };
@@ -1519,7 +1781,7 @@ function setupAvatarFrameSettings() {
                 settings[settingsKey].offsetY = parseInt(ySlider.value);
                 applyAvatarFrame(avatarContainer, settings[settingsKey]);
                 updateControls();
-                renderMessages(true);
+                if (typeof renderMessages === 'function') renderMessages(true);
             });
             slider.addEventListener('change', throttledSaveData);
         });
@@ -1532,8 +1794,10 @@ function setupAvatarFrameSettings() {
 function applyAllAvatarFrames() {
     applyAvatarFrame(DOMElements.me.avatarContainer, settings.myAvatarFrame);
     applyAvatarFrame(DOMElements.partner.avatarContainer, settings.partnerAvatarFrame);
-    applyAvatarShapeToDOM('my', settings.myAvatarShape || 'circle');
-    applyAvatarShapeToDOM('partner', settings.partnerAvatarShape || 'circle');
+    if (typeof applyAvatarShapeToDOM === 'function') {
+        applyAvatarShapeToDOM('my', settings.myAvatarShape || 'circle');
+        applyAvatarShapeToDOM('partner', settings.partnerAvatarShape || 'circle');
+    }
     if (settings.avatarCornerRadius) {
         document.documentElement.style.setProperty('--avatar-corner-radius', settings.avatarCornerRadius + 'px');
     }
