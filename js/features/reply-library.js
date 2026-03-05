@@ -1233,22 +1233,167 @@ function _showExportUI() {
         { id: '_re_emojis',   icon: ICONS.smile,     label: 'Emoji 库',  count: customEmojis.length,           key: 'customEmojis' },
         { id: '_re_groups',   icon: ICONS.folderBig, label: '字卡分组',  count: (customReplyGroups||[]).length, key: 'customReplyGroups', extra: true },
     ];
+
+    // 如果有分组，提供按分组导出的入口
+    if (customReplyGroups && customReplyGroups.length > 0) {
+        const overlay = _makeOverlay();
+        const panel = document.createElement('div');
+        panel.style.cssText = `
+            background:var(--secondary-bg);border-radius:22px;padding:24px;
+            width:92%;max-width:380px;
+            box-shadow:0 24px 80px rgba(0,0,0,.45);
+            animation:popIn 0.22s cubic-bezier(.34,1.56,.64,1);
+        `;
+        panel.innerHTML = `
+            <style>@keyframes popIn{from{opacity:0;transform:scale(.93)}to{opacity:1;transform:scale(1)}}</style>
+            <div style="font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:6px;display:flex;align-items:center;gap:8px;">
+                ${ICONS.export} 导出方式
+            </div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:18px;">请选择导出模式</div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <button id="_exp_all_btn" style="
+                    display:flex;align-items:center;gap:12px;padding:14px 16px;
+                    border:1.5px solid var(--border-color);border-radius:14px;
+                    background:var(--primary-bg);cursor:pointer;text-align:left;transition:border-color 0.15s;
+                ">
+                    <div style="width:38px;height:38px;border-radius:10px;background:rgba(var(--accent-color-rgb),0.12);display:flex;align-items:center;justify-content:center;color:var(--accent-color);flex-shrink:0;">${ICONS.export}</div>
+                    <div>
+                        <div style="font-size:13px;font-weight:600;color:var(--text-primary);">全量导出</div>
+                        <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">自由选择要导出的模块</div>
+                    </div>
+                </button>
+                <button id="_exp_group_btn" style="
+                    display:flex;align-items:center;gap:12px;padding:14px 16px;
+                    border:1.5px solid var(--border-color);border-radius:14px;
+                    background:var(--primary-bg);cursor:pointer;text-align:left;transition:border-color 0.15s;
+                ">
+                    <div style="width:38px;height:38px;border-radius:10px;background:rgba(var(--accent-color-rgb),0.12);display:flex;align-items:center;justify-content:center;color:var(--accent-color);flex-shrink:0;">${ICONS.folderBig}</div>
+                    <div>
+                        <div style="font-size:13px;font-weight:600;color:var(--text-primary);">按分组导出</div>
+                        <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">仅导出指定分组的字卡内容</div>
+                    </div>
+                </button>
+            </div>
+            <button id="_exp_cancel_btn" style="
+                width:100%;margin-top:14px;padding:12px;border:1.5px solid var(--border-color);
+                border-radius:13px;background:none;color:var(--text-secondary);
+                font-size:13px;cursor:pointer;font-family:var(--font-family);
+            ">取消</button>
+        `;
+        overlay.appendChild(panel);
+        document.body.appendChild(overlay);
+
+        panel.querySelector('#_exp_cancel_btn').onclick = () => overlay.remove();
+        overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+        panel.querySelector('#_exp_all_btn').onclick = () => {
+            overlay.remove();
+            _showIOSheet('导出字卡', '选择要导出的模块', modules, ICONS.export, (selected) => {
+                if (!selected.length) { showNotification('请至少选择一项', 'error'); return; }
+                _doExport(selected);
+            });
+        };
+
+        panel.querySelector('#_exp_group_btn').onclick = () => {
+            overlay.remove();
+            _showGroupExportPicker();
+        };
+        return;
+    }
+
+    // 无分组时直接全量导出
     _showIOSheet('导出字卡', '选择要导出的模块', modules, ICONS.export, (selected) => {
         if (!selected.length) { showNotification('请至少选择一项', 'error'); return; }
-        const libraryData = { exportDate: new Date().toISOString(), modules: [] };
-        selected.forEach(m => {
-            if (m.key === 'customReplies')       { libraryData.customReplies = customReplies; libraryData.modules.push('replies'); }
-            else if (m.key === 'customPokes')    { libraryData.customPokes = customPokes; libraryData.modules.push('pokes'); }
-            else if (m.key === 'customStatuses') { libraryData.customStatuses = customStatuses; libraryData.modules.push('statuses'); }
-            else if (m.key === 'customMottos')   { libraryData.customMottos = customMottos; libraryData.modules.push('mottos'); }
-            else if (m.key === 'customIntros')   { libraryData.customIntros = customIntros; libraryData.modules.push('intros'); }
-            else if (m.key === 'customEmojis')   { libraryData.customEmojis = customEmojis; libraryData.modules.push('emojis'); }
-            else if (m.key === 'customReplyGroups') { libraryData.customReplyGroups = customReplyGroups; libraryData.modules.push('groups'); }
-        });
-        const fileName = `reply-library-${libraryData.modules.join('+')}-${new Date().toISOString().slice(0,10)}.json`;
-        exportDataToMobileOrPC(JSON.stringify(libraryData, null, 2), fileName);
-        showNotification('✓ 字卡导出成功', 'success');
+        _doExport(selected);
     });
+}
+
+function _doExport(selectedModules) {
+    const libraryData = { exportDate: new Date().toISOString(), modules: [] };
+    selectedModules.forEach(m => {
+        if (m.key === 'customReplies')       { libraryData.customReplies = customReplies; libraryData.modules.push('replies'); }
+        else if (m.key === 'customPokes')    { libraryData.customPokes = customPokes; libraryData.modules.push('pokes'); }
+        else if (m.key === 'customStatuses') { libraryData.customStatuses = customStatuses; libraryData.modules.push('statuses'); }
+        else if (m.key === 'customMottos')   { libraryData.customMottos = customMottos; libraryData.modules.push('mottos'); }
+        else if (m.key === 'customIntros')   { libraryData.customIntros = customIntros; libraryData.modules.push('intros'); }
+        else if (m.key === 'customEmojis')   { libraryData.customEmojis = customEmojis; libraryData.modules.push('emojis'); }
+        else if (m.key === 'customReplyGroups') { libraryData.customReplyGroups = customReplyGroups; libraryData.modules.push('groups'); }
+    });
+    const fileName = `reply-library-${libraryData.modules.join('+')}-${new Date().toISOString().slice(0,10)}.json`;
+    exportDataToMobileOrPC(JSON.stringify(libraryData, null, 2), fileName);
+    showNotification('✓ 字卡导出成功', 'success');
+}
+
+function _showGroupExportPicker() {
+    const overlay = _makeOverlay();
+    const panel = document.createElement('div');
+    panel.style.cssText = `
+        background:var(--secondary-bg);border-radius:22px;padding:24px;
+        width:92%;max-width:380px;max-height:85vh;
+        display:flex;flex-direction:column;gap:14px;
+        box-shadow:0 24px 80px rgba(0,0,0,.45);
+        animation:popIn 0.22s cubic-bezier(.34,1.56,.64,1);
+    `;
+    panel.innerHTML = `
+        <style>@keyframes popIn{from{opacity:0;transform:scale(.93)}to{opacity:1;transform:scale(1)}}</style>
+        <div style="font-size:16px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
+            ${ICONS.folderBig} 选择分组导出
+        </div>
+        <div style="font-size:12px;color:var(--text-secondary);">勾选要导出的分组，仅导出这些分组的字卡</div>
+        <div id="_gep_list" style="display:flex;flex-direction:column;gap:8px;overflow-y:auto;max-height:50vh;"></div>
+        <div style="display:flex;gap:10px;">
+            <button id="_gep_cancel" style="flex:1;padding:12px;border:1.5px solid var(--border-color);border-radius:13px;background:none;color:var(--text-secondary);font-size:13px;cursor:pointer;font-family:var(--font-family);">取消</button>
+            <button id="_gep_confirm" style="flex:2;padding:12px;border:none;border-radius:13px;background:var(--accent-color);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font-family);display:flex;align-items:center;justify-content:center;gap:8px;">
+                ${ICONS.export} 导出
+            </button>
+        </div>
+    `;
+    overlay.appendChild(panel);
+    document.body.appendChild(overlay);
+
+    const listEl = panel.querySelector('#_gep_list');
+    customReplyGroups.forEach((g, i) => {
+        const cnt = (g.items || []).filter(t => customReplies.includes(t)).length;
+        const row = document.createElement('label');
+        row.style.cssText = `display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:13px;border:1.5px solid var(--border-color);background:var(--primary-bg);cursor:pointer;transition:border-color 0.15s;`;
+        row.innerHTML = `
+            <input type="checkbox" value="${i}" style="width:16px;height:16px;accent-color:${g.color};flex-shrink:0;" checked>
+            <span style="width:10px;height:10px;border-radius:50%;background:${g.color||'#aaa'};flex-shrink:0;"></span>
+            <span style="flex:1;font-size:13px;font-weight:600;color:var(--text-primary);">${g.name}</span>
+            <span style="font-size:11px;color:var(--text-secondary);">${cnt} 条</span>
+        `;
+        listEl.appendChild(row);
+    });
+
+    panel.querySelector('#_gep_cancel').onclick = () => overlay.remove();
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+    panel.querySelector('#_gep_confirm').onclick = () => {
+        const checked = [...panel.querySelectorAll('input[type=checkbox]:checked')].map(cb => parseInt(cb.value));
+        if (!checked.length) { showNotification('请至少选择一个分组', 'warning'); return; }
+
+        const selectedGroups = checked.map(i => customReplyGroups[i]);
+        const allItems = new Set();
+        const exportGroups = [];
+        selectedGroups.forEach(g => {
+            const items = (g.items || []).filter(t => customReplies.includes(t));
+            items.forEach(t => allItems.add(t));
+            exportGroups.push({ ...g, items });
+        });
+
+        const libraryData = {
+            exportDate: new Date().toISOString(),
+            modules: ['replies', 'groups'],
+            customReplies: [...allItems],
+            customReplyGroups: exportGroups,
+            _groupExport: true
+        };
+        const groupNames = selectedGroups.map(g => g.name).join('+');
+        const fileName = `reply-groups-${groupNames}-${new Date().toISOString().slice(0,10)}.json`;
+        exportDataToMobileOrPC(JSON.stringify(libraryData, null, 2), fileName);
+        overlay.remove();
+        showNotification(`✓ 已导出 ${checked.length} 个分组，共 ${allItems.size} 条字卡`, 'success');
+    };
 }
 
 // ─────────────────────────────────────────────────────────
