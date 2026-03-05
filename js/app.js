@@ -51,12 +51,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         updateLoader('正在读取记忆存档...', '40%');
         await safeAwait(loadData());
+        // Re-sync toolbar compact UI now that settings are loaded
+        if (typeof window._updateToolbarCompactUI === 'function') window._updateToolbarCompactUI();
 
         updateLoader('正在渲染我们的世界...', '70%');
-        // Re-sync toolbar compact state now that settings are loaded
-        if (typeof window._updateToolbarCompactUI === 'function') {
-            window._updateToolbarCompactUI();
-        }
         
         await Promise.allSettled([
             safeAwait(initializeRandomUI?.()),

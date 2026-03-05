@@ -876,6 +876,7 @@ document.getElementById('chat-settings').addEventListener('click', () => {
             if (expandBtn2 && expandPanel) {
                 expandBtn2.addEventListener('click', (e) => {
                     e.stopPropagation();
+                    e.preventDefault();
                     const isOpen = expandPanel.dataset.open === '1';
                     if (isOpen) {
                         closeExpandPanel();
@@ -937,13 +938,25 @@ document.getElementById('chat-settings').addEventListener('click', () => {
             }
 
             // Close expand panel on outside click or scroll
+            // Use a small debounce flag so opening the panel doesn't immediately close it
+            let _panelJustOpened = false;
+            const _origOpen = openExpandPanel;
+            openExpandPanel = function() {
+                _panelJustOpened = true;
+                _origOpen();
+                setTimeout(() => { _panelJustOpened = false; }, 50);
+            };
             document.addEventListener('click', (e) => {
+                if (_panelJustOpened) return;
                 if (!expandPanel) return;
                 if (expandBtn2 && expandBtn2.contains(e.target)) return;
                 if (expandPanel.contains(e.target)) return;
                 closeExpandPanel();
             });
             document.addEventListener('scroll', closeExpandPanel, { passive: true });
+
+            // Re-sync toolbar compact state after loadData populates settings
+            window._resyncToolbarCompact = updateToolbarCompactUI;
 
             function updateAvatarPreview(shape, cornerRadius) {
                 const previewPartner = document.getElementById('preview-partner-avatar');
