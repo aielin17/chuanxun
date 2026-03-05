@@ -691,19 +691,29 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                 document.documentElement.style.setProperty('--in-chat-avatar-size', `${settings.inChatAvatarSize}px`);
 
                 const pos = settings.inChatAvatarPosition || 'center';
-                const alignMap = { 'top': 'flex-start', 'center': 'center', 'bottom': 'flex-end' };
+                const alignMap = { 'top': 'flex-start', 'center': 'center', 'bottom': 'flex-end', 'custom': 'flex-start' };
                 document.documentElement.style.setProperty('--avatar-align', alignMap[pos] || 'center');
+                const customOffset = settings.inChatAvatarCustomOffset || 0;
+                document.documentElement.style.setProperty('--avatar-custom-offset', `${customOffset}px`);
+                document.body.classList.toggle('avatar-position-custom', pos === 'custom');
                 document.querySelectorAll('.preview-msg-row').forEach(row => {
                     row.style.alignItems = alignMap[pos] || 'flex-start';
                 });
                 const topBtn = document.getElementById('avatar-pos-top-2');
                 const centerBtn = document.getElementById('avatar-pos-center-2');
                 const bottomBtn = document.getElementById('avatar-pos-bottom-2');
-                [topBtn, centerBtn, bottomBtn].forEach(btn => {
+                const customBtn = document.getElementById('avatar-pos-custom-2');
+                const customOffsetRow = document.getElementById('avatar-custom-offset-row');
+                const customSlider = document.getElementById('avatar-custom-offset-slider');
+                const customValueEl = document.getElementById('avatar-custom-offset-value');
+                [topBtn, centerBtn, bottomBtn, customBtn].forEach(btn => {
                     if (!btn) return;
                     btn.className = btn.dataset.pos === pos ? 'modal-btn modal-btn-primary' : 'modal-btn modal-btn-secondary';
-                    btn.style.flex = '1'; btn.style.fontSize = '12px'; btn.style.padding = '7px 0';
+                    btn.style.flex = '1'; btn.style.minWidth = '60px'; btn.style.fontSize = '11px'; btn.style.padding = '7px 4px';
                 });
+                if (customOffsetRow) customOffsetRow.style.display = pos === 'custom' ? 'block' : 'none';
+                if (customSlider) { customSlider.value = customOffset; }
+                if (customValueEl) customValueEl.textContent = `${customOffset}px`;
 
                 // 每次显示头像开关
                 const alwaysPill = document.getElementById('always-avatar-pill');
@@ -748,7 +758,7 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                 avatarSizeSlider.addEventListener('change', throttledSaveData);
             }
 
-            ['avatar-pos-top-2','avatar-pos-center-2','avatar-pos-bottom-2'].forEach(btnId => {
+            ['avatar-pos-top-2','avatar-pos-center-2','avatar-pos-bottom-2','avatar-pos-custom-2'].forEach(btnId => {
                 const btn = document.getElementById(btnId);
                 if (btn) {
                     btn.addEventListener('click', () => {
@@ -759,6 +769,19 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                     });
                 }
             });
+
+            const customOffsetSlider = document.getElementById('avatar-custom-offset-slider');
+            if (customOffsetSlider) {
+                customOffsetSlider.addEventListener('input', (e) => {
+                    const val = parseInt(e.target.value, 10);
+                    settings.inChatAvatarCustomOffset = val;
+                    document.documentElement.style.setProperty('--avatar-custom-offset', `${val}px`);
+                    const valEl = document.getElementById('avatar-custom-offset-value');
+                    if (valEl) valEl.textContent = `${val}px`;
+                    renderMessages(true);
+                });
+                customOffsetSlider.addEventListener('change', throttledSaveData);
+            }
 
             // 每条消息都显示头像 toggle
             const alwaysAvatarToggle = document.getElementById('always-avatar-toggle');
@@ -776,7 +799,10 @@ document.getElementById('chat-settings').addEventListener('click', () => {
             if (partnerNameChatToggle) {
                 partnerNameChatToggle.addEventListener('click', () => {
                     settings.showPartnerNameInChat = !settings.showPartnerNameInChat;
+                    showPartnerNameInChat = settings.showPartnerNameInChat;
+                    document.body.classList.toggle('show-partner-name', showPartnerNameInChat);
                     updateAvatarSettingsUI();
+                    renderMessages(true);
                     throttledSaveData();
                 });
             }
