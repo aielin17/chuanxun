@@ -8091,6 +8091,14 @@
     display: block;
         }
 
+        body.avatar-position-custom .message-wrapper {
+    align-items: flex-start !important;
+        }
+        body.avatar-position-custom .message-avatar {
+    align-self: flex-start;
+    margin-top: var(--avatar-custom-offset, 0px) !important;
+        }
+
         .mood-stats-card {
     background: var(--secondary-bg);
     border-radius: 16px;
