@@ -192,8 +192,8 @@ const majorCards = CONSTANTS.TAROT_CARDS;
     }
 
     renderFortuneCardInteractive(fortuneData, majorCards, todayKey);
-    // Ensure weekly sub-tab is shown
-    setTimeout(() => showFortuneSub('weekly'), 50);
+    // Show weekly sub-tab (deferred so modal is open before calling showFortuneSub)
+    requestAnimationFrame(() => { if (typeof showFortuneSub === 'function') showFortuneSub('weekly'); });
 }
 function renderFortuneCardInteractive(data, majorCards, todayKey) {
     const content = document.getElementById('fortune-content');
@@ -686,8 +686,8 @@ window.switchFLTab = function(tab) {
     _origSwitchFLTab(tab);
     if (tab === 'divihistory') renderDiviHistory();
     if (tab === 'fortune') {
-        // Default to weekly sub-tab when opening fortune panel
-        showFortuneSub('weekly');
+        // When switching to fortune tab (e.g. user manually clicks tab), ensure weekly is shown
+        requestAnimationFrame(() => { if (typeof showFortuneSub === 'function') showFortuneSub('weekly'); });
     }
 };
 
@@ -730,6 +730,7 @@ function _initDailyFortuneView() {
             </div>`;
     }
 }
+window._initDailyFortuneView = _initDailyFortuneView;
 
 // Truly random shuffle using crypto.getRandomValues
 function _cryptoShuffle(arr) {
