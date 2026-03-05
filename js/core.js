@@ -1278,6 +1278,53 @@ if (partnerPersonas && partnerPersonas.length > 0 && Math.random() < 0.3) {
                 const delayRange = settings.replyDelayMax - settings.replyDelayMin;
                 delay += settings.replyDelayMin + Math.random() * delayRange;
                 setTimeout(() => {
+                    // Pick a reply from the custom library, falling back to safe defaults
+                    const replyPool = (customReplies && customReplies.length > 0)
+                        ? customReplies
+                        : ['嗯', '好的', '哦', '🥰', '好呀'];
+                    const replyText = replyPool[Math.floor(Math.random() * replyPool.length)];
+
+                    // Occasionally append a random emoji
+                    let finalText = replyText;
+                    if (customEmojis && customEmojis.length > 0 && Math.random() < 0.3) {
+                        const emoji = customEmojis[Math.floor(Math.random() * customEmojis.length)];
+                        finalText = Math.random() < 0.5
+                            ? emoji + ' ' + replyText
+                            : replyText + ' ' + emoji;
+                    }
+
+                    addMessage({
+                        id: Date.now() + i,
+                        sender: settings.partnerName || '对方',
+                        text: finalText,
+                        timestamp: new Date(),
+                        status: 'received',
+                        favorited: false,
+                        note: null,
+                        type: 'normal'
+                    });
+
+                    // Hide typing indicator after the last reply in this batch
+                    if (i === replyCount - 1) {
+                        (function() {
+                            var _tiW = document.getElementById('typing-indicator-wrapper');
+                            if (_tiW) {
+                                var _tiInner = _tiW.querySelector('.typing-indicator');
+                                if (_tiInner) {
+                                    _tiInner.classList.add('hiding');
+                                    setTimeout(function() {
+                                        _tiW.style.display = 'none';
+                                        if (_tiInner) _tiInner.classList.remove('hiding');
+                                    }, 240);
+                                } else {
+                                    _tiW.style.display = 'none';
+                                }
+                            }
+                        })();
+                    }
+                }, delay);
+            }
+        }
 
 function showModal(modalElement, focusElement = null) {
             if (modalElement._hideTimeout) {
