@@ -389,19 +389,19 @@ fileInput.addEventListener('change', function(e) {
                 showModal(document.getElementById('group-chat-modal'));
             });
 
+            window.setReadReceiptStyle = function(style) {
+                settings.readReceiptStyle = style;
+                throttledSaveData();
+                const iconBtn = document.getElementById('rr-style-icon');
+                const textBtn = document.getElementById('rr-style-text');
+                if (iconBtn) { iconBtn.className = style === 'icon' ? 'modal-btn modal-btn-primary' : 'modal-btn modal-btn-secondary'; iconBtn.style.cssText = 'padding:5px 12px;font-size:12px;'; }
+                if (textBtn) { textBtn.className = style === 'text' ? 'modal-btn modal-btn-primary' : 'modal-btn modal-btn-secondary'; textBtn.style.cssText = 'padding:5px 12px;font-size:12px;'; }
+                renderMessages();
+                showNotification('已读回执样式已更新', 'success');
+            };
 
-window.setReadReceiptStyle = function(style) {
-    settings.readReceiptStyle = style;
-    throttledSaveData();
-    const iconBtn = document.getElementById('rr-style-icon');
-    const textBtn = document.getElementById('rr-style-text');
-    if (iconBtn) { iconBtn.className = style === 'icon' ? 'modal-btn modal-btn-primary' : 'modal-btn modal-btn-secondary'; iconBtn.style.cssText = 'padding:5px 12px;font-size:12px;'; }
-    if (textBtn) { textBtn.className = style === 'text' ? 'modal-btn modal-btn-primary' : 'modal-btn modal-btn-secondary'; textBtn.style.cssText = 'padding:5px 12px;font-size:12px;'; }
-    renderMessages();
-    showNotification('已读回执样式已更新', 'success');
-};
-
-document.getElementById('chat-settings').addEventListener('click', () => {
+            const chatSettingsBtn = document.getElementById('chat-settings');
+            if (chatSettingsBtn) chatSettingsBtn.addEventListener('click', () => {
     hideModal(DOMElements.settingsModal.modal);
     
     const toggleSyncMap = {
@@ -1333,11 +1333,12 @@ autoSendSlider.addEventListener('change', () => {
         galleryBanner.addEventListener('mouseup', () => { galleryBanner.style.transform = 'scale(1)'; });
         galleryBanner.addEventListener('mouseleave', () => { galleryBanner.style.transform = 'scale(1)'; });
     }
-document.getElementById('send-envelope').addEventListener('click', handleSendEnvelope);
-
-document.getElementById('cancel-envelope').addEventListener('click', () => {
-    hideModal(document.getElementById('envelope-modal'));
-});
+            const sendEnvBtn = document.getElementById('send-envelope');
+            if (sendEnvBtn) sendEnvBtn.addEventListener('click', handleSendEnvelope);
+            const cancelEnvBtn = document.getElementById('cancel-envelope');
+            if (cancelEnvBtn) cancelEnvBtn.addEventListener('click', () => {
+                hideModal(document.getElementById('envelope-modal'));
+            });
             const shareFortuneBtnEl = document.getElementById('share-fortune');
             if (shareFortuneBtnEl) {
                 shareFortuneBtnEl.addEventListener('click', () => {
