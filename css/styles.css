@@ -860,7 +860,7 @@
             flex-shrink: 0;
             background-color: var(--border-color);
             transition: all 0.3s ease;
-            align-self: flex-start;
+            align-self: var(--avatar-align-self, flex-start);
             margin-top: var(--avatar-offset, 0px);
         }
         .message-avatar img {
