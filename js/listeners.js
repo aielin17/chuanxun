@@ -810,26 +810,25 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                 });
             }
 
-            // ── 底部栏收纳模式 toggle ──
+            // ── 底部栏收纳模式 ──────────────────────────────────────────────
             function applyToolbarCompactMode(on) {
-                const attachBtn = document.getElementById('attachment-btn');
-                const comboBtn = document.getElementById('combo-btn');
-                const batchBtn2 = document.getElementById('batch-btn');
-                const expandBtn = document.getElementById('compact-expand-btn');
-                [attachBtn, comboBtn, batchBtn2].forEach(b => {
-                    if (b) b.style.display = on ? 'none' : '';
+                const ids = ['attachment-btn', 'combo-btn', 'batch-btn'];
+                ids.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.style.display = on ? 'none' : '';
                 });
+                const expandBtn = document.getElementById('compact-expand-btn');
                 if (expandBtn) expandBtn.style.display = on ? '' : 'none';
                 document.body.classList.toggle('toolbar-compact', !!on);
             }
 
             function updateToolbarCompactUI() {
                 const on = !!settings.toolbarCompact;
-                const pill = document.getElementById('toolbar-compact-pill');
-                const knob = document.getElementById('toolbar-compact-knob');
+                const pill   = document.getElementById('toolbar-compact-pill');
+                const knob   = document.getElementById('toolbar-compact-knob');
                 const status = document.getElementById('toolbar-compact-status');
-                if (pill) pill.style.background = on ? 'var(--accent-color)' : 'var(--border-color)';
-                if (knob) knob.style.right = on ? '3px' : '23px';
+                if (pill)   pill.style.background = on ? 'var(--accent-color)' : 'var(--border-color)';
+                if (knob)   knob.style.right = on ? '3px' : '23px';
                 if (status) status.textContent = on ? '已开启 — 底部只保留常用按钮' : '已关闭 — 开启后只保留常用按钮';
                 applyToolbarCompactMode(on);
             }
@@ -844,64 +843,95 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                 });
             }
 
-            // 收纳展开按钮
-            const expandBtn2 = document.getElementById('compact-expand-btn');
-            const expandPanel = document.getElementById('compact-expand-panel');
-            if (expandBtn2 && expandPanel) {
-                expandBtn2.addEventListener('click', (e) => {
+            // ── 收纳展开面板 ──────────────────────────────────────────────
+            (function() {
+                const expandBtn = document.getElementById('compact-expand-btn');
+                const expandPanel = document.getElementById('compact-expand-panel');
+                if (!expandBtn || !expandPanel) return;
+
+                let panelOpen = false;
+
+                function openPanel() {
+                    expandPanel.style.display = 'block';
+                    panelOpen = true;
+                    // Sync exit-toggle knob state
+                    const exitKnob = document.getElementById('compact-exit-knob');
+                    const exitPill = document.getElementById('compact-exit-pill');
+                    if (exitPill) exitPill.style.background = 'var(--accent-color)';
+                    if (exitKnob) exitKnob.style.right = '2.5px';
+                }
+                function closePanel() {
+                    expandPanel.style.display = 'none';
+                    panelOpen = false;
+                }
+
+                expandBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    const open = expandPanel.style.display === 'none' || expandPanel.style.display === '';
-                    expandPanel.style.display = open ? 'block' : 'none';
+                    panelOpen ? closePanel() : openPanel();
                 });
-                // Click on panel buttons proxies to original buttons
+
+                // Prevent clicks inside the panel from closing it via document listener
                 expandPanel.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    const panelBtn = e.target.closest('.compact-panel-btn');
-                    if (panelBtn) {
-                        const targetId = panelBtn.dataset.target;
-                        expandPanel.style.display = 'none';
-                        if (targetId === 'combo-btn') {
-                            // Directly toggle the sticker picker
-                            const picker = document.getElementById('user-sticker-picker');
-                            if (picker) {
-                                if (picker.classList.contains('active')) {
-                                    picker.classList.remove('active');
-                                } else {
-                                    // Render my-sticker tab first
-                                    const firstTab = picker.querySelector('.combo-tab-btn[data-tab="my-sticker"]');
-                                    if (firstTab) firstTab.click();
-                                    picker.classList.add('active');
-                                }
-                            }
-                        } else {
-                            // For attachment and others - show briefly, click, hide
-                            const realBtn = document.getElementById(targetId);
-                            if (realBtn) {
-                                realBtn.style.display = '';
-                                realBtn.click();
-                                realBtn.style.display = 'none';
+
+                    // ── 图片 ──
+                    const imgBtn = e.target.closest('[data-action="image"]');
+                    if (imgBtn) {
+                        closePanel();
+                        // Trigger image modal via the real attachment button (works even when hidden)
+                        DOMElements.attachmentBtn.click();
+                        return;
+                    }
+
+                    // ── 表情 ──
+                    const emojiBtn = e.target.closest('[data-action="emoji"]');
+                    if (emojiBtn) {
+                        closePanel();
+                        const picker = document.getElementById('user-sticker-picker');
+                        if (picker) {
+                            if (!picker.classList.contains('active')) {
+                                const firstTab = picker.querySelector('.combo-tab-btn[data-tab="my-sticker"]');
+                                if (firstTab) firstTab.click();
+                                picker.classList.add('active');
                             }
                         }
                         return;
                     }
-                    // Exit compact mode toggle
-                    const exitToggle = e.target.closest('#compact-exit-toggle');
-                    if (exitToggle) {
+
+                    // ── 自定义回复 ──
+                    const replyBtn = e.target.closest('[data-action="custom-reply"]');
+                    if (replyBtn) {
+                        closePanel();
+                        showModal(DOMElements.customRepliesModal.modal);
+                        return;
+                    }
+
+                    // ── 运势占卜 ──
+                    const fortuneBtn = e.target.closest('[data-action="fortune"]');
+                    if (fortuneBtn) {
+                        closePanel();
+                        generateFortune();
+                        switchFLTab('fortune');
+                        showModal(document.getElementById('fortune-lenormand-modal'));
+                        return;
+                    }
+
+                    // ── 退出收纳模式 ──
+                    const exitBtn = e.target.closest('[data-action="exit-compact"]');
+                    if (exitBtn) {
                         settings.toolbarCompact = false;
                         updateToolbarCompactUI();
                         throttledSaveData();
-                        expandPanel.style.display = 'none';
-                        const pill = document.getElementById('toolbar-compact-pill');
-                        const knob = document.getElementById('toolbar-compact-knob');
-                        if (pill) pill.style.background = 'var(--border-color)';
-                        if (knob) knob.style.right = '23px';
+                        closePanel();
+                        return;
                     }
                 });
-            }
-            // Close expand panel on outside click
-            document.addEventListener('click', () => {
-                if (expandPanel) expandPanel.style.display = 'none';
-            });
+
+                // Close panel when clicking anywhere outside
+                document.addEventListener('click', () => {
+                    if (panelOpen) closePanel();
+                });
+            })();
 
             function updateAvatarPreview(shape, cornerRadius) {
                 const previewPartner = document.getElementById('preview-partner-avatar');
@@ -912,6 +942,23 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                 previewPartner.style.height = sz;
                 previewMy.style.width = sz;
                 previewMy.style.height = sz;
+
+                // Apply current alignment to preview avatars
+                const pos = settings.inChatAvatarPosition || 'center';
+                const alignSelfMap = { 'top': 'flex-start', 'center': 'center', 'bottom': 'flex-end', 'custom': 'flex-start' };
+                const alignSelf = alignSelfMap[pos] || 'flex-start';
+                const offset = pos === 'custom' ? (settings.inChatAvatarOffset ?? 0) : 0;
+                previewPartner.style.alignSelf = alignSelf;
+                previewPartner.style.marginTop = offset + 'px';
+                previewMy.style.alignSelf = alignSelf;
+                previewMy.style.marginTop = offset + 'px';
+
+                // Make preview rows use flex-start so align-self works
+                document.querySelectorAll('.preview-msg-row').forEach(row => {
+                    row.style.alignItems = 'flex-start';
+                    row.style.minHeight = '60px';
+                });
+
                 const partnerImg = DOMElements.partner && DOMElements.partner.avatar ? DOMElements.partner.avatar.querySelector('img') : null;
                 const myImg = DOMElements.me && DOMElements.me.avatar ? DOMElements.me.avatar.querySelector('img') : null;
                 const currentShape = shape || settings.myAvatarShape || 'circle';
