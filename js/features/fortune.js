@@ -166,9 +166,7 @@ async function generateFortune() {
     const weekKey = today.getFullYear() + '-W' + weekNum;
 
     const storageKey = `${APP_PREFIX}weekly_fortune`;
-    const dailyStorageKey = `${APP_PREFIX}daily_fortune`;
     let fortuneData = null;
-    let dailyData = null;
 
     try {
         const savedData = await localforage.getItem(storageKey);
@@ -177,169 +175,86 @@ async function generateFortune() {
         }
     } catch (e) { console.warn("读取运势失败", e); }
 
-    try {
-        const savedDaily = await localforage.getItem(dailyStorageKey);
-        if (savedDaily && savedDaily.day === todayKey) {
-            dailyData = savedDaily;
-        }
-    } catch (e) { console.warn("读取每日运势失败", e); }
-
-    const majorCards = CONSTANTS.TAROT_CARDS;
+const majorCards = CONSTANTS.TAROT_CARDS;
     if (!fortuneData) {
         const randomIndex = Math.floor(Math.random() * majorCards.length);
         const isUpright = Math.random() > 0.5;
+        
         const fixedStars = isUpright ? (Math.floor(Math.random() * 2) + 4) : (Math.floor(Math.random() * 2) + 3);
-        fortuneData = { week: weekKey, cardIndex: randomIndex, isUpright: isUpright, stars: fixedStars };
+
+        fortuneData = {
+            week: weekKey,
+            cardIndex: randomIndex,
+            isUpright: isUpright,
+            stars: fixedStars 
+        };
         await localforage.setItem(storageKey, fortuneData);
     }
 
-    // 每日运势：绝对随机抽取三张（每天刷新，不缓存旧结果）
-    if (!dailyData) {
-        const shuffled = [...majorCards].sort(() => Math.random() - 0.5);
-        const picked = shuffled.slice(0, 3).map(c => ({
-            cardIndex: majorCards.indexOf(c),
-            isUpright: Math.random() > 0.5
-        }));
-        dailyData = { day: todayKey, cards: picked };
-        await localforage.setItem(dailyStorageKey, dailyData);
-    }
-
-    renderFortuneCardInteractive(fortuneData, majorCards, todayKey, dailyData);
+    renderFortuneCardInteractive(fortuneData, majorCards, todayKey);
+    // Ensure weekly sub-tab is shown
+    setTimeout(() => showFortuneSub('weekly'), 50);
 }
-
-function renderFortuneCardInteractive(data, majorCards, todayKey, dailyData) {
+function renderFortuneCardInteractive(data, majorCards, todayKey) {
     const content = document.getElementById('fortune-content');
     if (!content) return showNotification('组件加载失败，请刷新页面', 'error');
 
     const card = majorCards[data.cardIndex];
     const isUpright = data.isUpright;
+
     const starCount = data.stars || 3; 
 
     let starsHtml = Array(5).fill(0).map((_, i) => 
         `<i class="fas fa-star" style="color: ${i < starCount ? 'var(--accent-color)' : 'var(--border-color)'}; font-size: 12px; margin: 0 2px;"></i>`
     ).join('');
 
-    // 每日运势三张牌 HTML
-    let dailyCardsHtml = '';
-    if (dailyData && dailyData.cards) {
-        dailyCardsHtml = dailyData.cards.map((c, i) => {
-            const dc = majorCards[c.cardIndex];
-            if (!dc) return '';
-            const posLabels = ['过去', '现在', '未来'];
-            return `
-            <div style="flex:1;min-width:0;background:var(--secondary-bg);border:1px solid var(--border-color);border-radius:12px;padding:12px 8px;text-align:center;cursor:pointer;"
-                onclick="this.classList.toggle('daily-card-flipped-${i}'); this.querySelector('.daily-card-back-${i}').style.display = this.querySelector('.daily-card-back-${i}').style.display==='none'?'block':'none';">
-                <div style="font-size:10px;color:var(--text-secondary);margin-bottom:6px;letter-spacing:1px;">${posLabels[i]}</div>
-                <div style="font-size:26px;margin-bottom:6px;${c.isUpright ? '' : 'transform:rotate(180deg);display:inline-block;'}">${dc.icon || '✦'}</div>
-                <div style="font-size:13px;font-weight:700;color:var(--text-primary);">${dc.name}</div>
-                <div style="font-size:10px;margin:3px 0;padding:2px 8px;border-radius:10px;display:inline-block;background:${c.isUpright ? 'rgba(var(--accent-color-rgb),0.12)' : 'rgba(180,80,80,0.1)'};color:${c.isUpright ? 'var(--accent-color)' : '#c0392b'};">${c.isUpright ? '正位' : '逆位'}</div>
-                <div style="font-size:11px;color:var(--accent-color);margin-top:4px;">「${dc.keyword}」</div>
-                <div class="daily-card-back-${i}" style="display:none;font-size:11px;color:var(--text-secondary);margin-top:8px;line-height:1.6;text-align:left;">${dc.meaning}</div>
-            </div>`;
-        }).join('');
-    }
-
     content.innerHTML = `
-        <div style="margin-bottom:20px;">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-                <div style="width:3px;height:18px;background:var(--accent-color);border-radius:2px;"></div>
-                <div style="font-size:13px;font-weight:600;color:var(--text-primary);">每日运势</div>
-                <div style="font-size:11px;color:var(--text-secondary);margin-left:auto;">${todayKey}</div>
-                <button onclick="window._rerollDailyFortune()" title="重新抽取（今日次数不限）"
-                    style="background:none;border:1px solid var(--border-color);border-radius:8px;padding:3px 8px;font-size:11px;color:var(--text-secondary);cursor:pointer;font-family:var(--font-family);transition:all 0.2s;"
-                    onmouseover="this.style.borderColor='var(--accent-color)';this.style.color='var(--accent-color)'"
-                    onmouseout="this.style.borderColor='var(--border-color)';this.style.color='var(--text-secondary)'">
-                    <i class="fas fa-dice"></i> 重新抽取
-                </button>
+        <div style="text-align:center; margin-bottom:15px; color:var(--text-secondary); font-size:12px; letter-spacing: 1px;">
+            <i class="fas fa-sparkles" style="color:var(--accent-color);"></i> 凭直觉点击翻开你的每周主牌
+        </div>
+        
+        <div class="tarot-container-3d" onclick="this.classList.toggle('flipped'); document.getElementById('fortune-text-area').style.display = 'block'; setTimeout(() => document.getElementById('fortune-text-area').classList.add('visible'), 50);">
+            <div class="tarot-card-inner">
+                <div class="tarot-face tarot-front">
+                    <div class="tarot-pattern"><i class="fas fa-star-and-crescent"></i></div>
+                </div>
+
+                <div class="tarot-face tarot-back" style="background: linear-gradient(135deg, var(--secondary-bg), rgba(var(--accent-color-rgb), 0.05)); border: 2px solid rgba(var(--accent-color-rgb), 0.3);">
+                    <div class="tarot-visual ${isUpright ? '' : 'reversed'}" style="height:100px;">
+                        <i class="fas ${card.icon} tarot-icon-vector" style="font-size:52px; color: var(--accent-color);"></i>
+                    </div>
+                    <div>
+                        <div class="tarot-card-name" style="font-size:20px; font-weight: 700;">${card.name}</div>
+                        <div class="tarot-position-badge ${isUpright ? 'upright' : 'reversed'}" style="margin:5px 0; background: var(--primary-bg);">
+                            ${isUpright ? "正位" : "逆位"}
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:10px;text-align:center;opacity:0.8;">
-                <i class="fas fa-hand-pointer"></i> 点击牌面查看详细解读
-            </div>
-            <div style="display:flex;gap:8px;">${dailyCardsHtml}</div>
         </div>
 
-        <div style="margin-bottom:4px;">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-                <div style="width:3px;height:18px;background:rgba(var(--accent-color-rgb),0.5);border-radius:2px;"></div>
-                <div style="font-size:13px;font-weight:600;color:var(--text-primary);">每周主牌</div>
-                <div style="font-size:11px;color:var(--text-secondary);margin-left:auto;opacity:0.7;">每周刷新</div>
-            </div>
-            <div style="text-align:center; margin-bottom:12px; color:var(--text-secondary); font-size:12px; letter-spacing: 1px;">
-                <i class="fas fa-sparkles" style="color:var(--accent-color);"></i> 凭直觉点击翻开你的每周主牌
+        <div id="fortune-text-area" class="fortune-result-area" style="display: none; background: var(--primary-bg); border-radius: 16px; padding: 20px; margin-top: 10px; border: 1px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.03);">
+            <div style="text-align: center; margin-bottom: 12px;">
+                <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase;">本周能量指数</div>
+                <div>${starsHtml}</div>
             </div>
             
-            <div class="tarot-container-3d" onclick="this.classList.toggle('flipped'); document.getElementById('fortune-text-area').style.display = 'block'; setTimeout(() => document.getElementById('fortune-text-area').classList.add('visible'), 50);">
-                <div class="tarot-card-inner">
-                    <div class="tarot-face tarot-front">
-                        <div class="tarot-pattern"><i class="fas fa-star-and-crescent"></i></div>
-                    </div>
-                    <div class="tarot-face tarot-back" style="background: linear-gradient(135deg, var(--secondary-bg), rgba(var(--accent-color-rgb), 0.05)); border: 2px solid rgba(var(--accent-color-rgb), 0.3);">
-                        <div class="tarot-visual ${isUpright ? '' : 'reversed'}" style="height:100px;">
-                            <i class="fas ${card.icon} tarot-icon-vector" style="font-size:52px; color: var(--accent-color);"></i>
-                        </div>
-                        <div>
-                            <div class="tarot-card-name" style="font-size:20px; font-weight: 700;">${card.name}</div>
-                            <div class="tarot-position-badge ${isUpright ? 'upright' : 'reversed'}" style="margin:5px 0; background: var(--primary-bg);">
-                                ${isUpright ? "正位" : "逆位"}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="tarot-keyword" style="font-size:16px; margin-bottom:12px; text-align:center; position:relative;">
+                <span style="background: var(--primary-bg); padding: 0 10px; position:relative; z-index:2; color: var(--accent-color);">「 ${card.keyword} 」</span>
+                <div style="position:absolute; top:50%; left:0; right:0; height:1px; background:var(--border-color); z-index:1;"></div>
             </div>
-
-            <div id="fortune-text-area" class="fortune-result-area" style="display: none; background: var(--primary-bg); border-radius: 16px; padding: 20px; margin-top: 10px; border: 1px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.03);">
-                <div style="text-align: center; margin-bottom: 12px;">
-                    <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase;">本周能量指数</div>
-                    <div>${starsHtml}</div>
-                </div>
-                <div class="tarot-keyword" style="font-size:16px; margin-bottom:12px; text-align:center; position:relative;">
-                    <span style="background: var(--primary-bg); padding: 0 10px; position:relative; z-index:2; color: var(--accent-color);">「 ${card.keyword} 」</span>
-                    <div style="position:absolute; top:50%; left:0; right:0; height:1px; background:var(--border-color); z-index:1;"></div>
-                </div>
-                <div class="fortune-desc" style="font-size:14px; margin-bottom:15px; text-align: justify; text-align-last: center; line-height: 1.8;">${card.upright || card.meaning}</div>
-                <div class="fortune-tip" style="font-size:12px; background: rgba(var(--accent-color-rgb), 0.08); padding: 10px 12px; border-radius: 8px; color: var(--text-primary);">
-                    <i class="fas fa-lightbulb" style="color:var(--accent-color); margin-right:5px;"></i>
-                    <b>命运低语：</b>${isUpright ? "顺势而为，宇宙正为你敞开大门，保持当下的能量。" : "换个角度思考，也许是转机，放慢脚步倾听内心的声音。"}
-                </div>
+            
+            <div class="fortune-desc" style="font-size:14px; margin-bottom:15px; text-align: justify; text-align-last: center; line-height: 1.8;">${card.upright || card.meaning}</div>
+            
+            <div class="fortune-tip" style="font-size:12px; background: rgba(var(--accent-color-rgb), 0.08); padding: 10px 12px; border-radius: 8px; color: var(--text-primary);">
+                <i class="fas fa-lightbulb" style="color:var(--accent-color); margin-right:5px;"></i>
+                <b>命运低语：</b>${isUpright ? "顺势而为，宇宙正为你敞开大门，保持当下的能量。" : "换个角度思考，也许是转机，放慢脚步倾听内心的声音。"}
             </div>
         </div>
     `;
 
     showModal(document.getElementById('fortune-lenormand-modal'));
 }
-
-// 每日运势重新抽取（不缓存，即时随机）
-window._rerollDailyFortune = async function() {
-    const majorCards = CONSTANTS.TAROT_CARDS;
-    const today = new Date();
-    const todayKey = today.toDateString();
-    const shuffled = [...majorCards].sort(() => Math.random() - 0.5);
-    const picked = shuffled.slice(0, 3).map(c => ({
-        cardIndex: majorCards.indexOf(c),
-        isUpright: Math.random() > 0.5
-    }));
-    const dailyData = { day: todayKey, cards: picked };
-    try { await localforage.setItem(`${APP_PREFIX}daily_fortune`, dailyData); } catch(e) {}
-
-    // Re-render only the daily section without reloading weekly
-    const storageKey = `${APP_PREFIX}weekly_fortune`;
-    const start = new Date(today.getFullYear(), 0, 1);
-    const diff = today - start + (start.getTimezoneOffset() - today.getTimezoneOffset()) * 60000;
-    const weekNum = Math.floor(diff / (1000 * 60 * 60 * 24) / 7);
-    const weekKey = today.getFullYear() + '-W' + weekNum;
-    let fortuneData = null;
-    try {
-        const saved = await localforage.getItem(storageKey);
-        if (saved && saved.week === weekKey) fortuneData = saved;
-    } catch(e) {}
-    if (!fortuneData) {
-        const idx = Math.floor(Math.random() * majorCards.length);
-        const up = Math.random() > 0.5;
-        fortuneData = { week: weekKey, cardIndex: idx, isUpright: up, stars: up ? (Math.floor(Math.random() * 2) + 4) : (Math.floor(Math.random() * 2) + 3) };
-        try { await localforage.setItem(storageKey, fortuneData); } catch(e) {}
-    }
-    renderFortuneCardInteractive(fortuneData, majorCards, todayKey, dailyData);
-};
 let lenormandSystem = 36;
 let lenormandCount = 1;
 
@@ -770,7 +685,134 @@ const _origSwitchFLTab = switchFLTab;
 window.switchFLTab = function(tab) {
     _origSwitchFLTab(tab);
     if (tab === 'divihistory') renderDiviHistory();
+    if (tab === 'fortune') {
+        // Default to weekly sub-tab when opening fortune panel
+        showFortuneSub('weekly');
+    }
 };
+
+// ── Fortune Sub-Tab Switcher ──────────────────────────────────────
+window.showFortuneSub = function(sub) {
+    const weeklySection = document.getElementById('fortune-weekly-section');
+    const dailySection = document.getElementById('fortune-daily-section');
+    const weeklyBtn = document.getElementById('fortune-sub-weekly-btn');
+    const dailyBtn = document.getElementById('fortune-sub-daily-btn');
+    if (!weeklySection || !dailySection) return;
+
+    if (sub === 'weekly') {
+        weeklySection.style.display = '';
+        dailySection.style.display = 'none';
+        if (weeklyBtn) { weeklyBtn.className = 'modal-btn modal-btn-primary'; weeklyBtn.style.flex='1'; weeklyBtn.style.fontSize='12px'; weeklyBtn.style.padding='7px 0'; }
+        if (dailyBtn) { dailyBtn.className = 'modal-btn modal-btn-secondary'; dailyBtn.style.flex='1'; dailyBtn.style.fontSize='12px'; dailyBtn.style.padding='7px 0'; }
+    } else {
+        weeklySection.style.display = 'none';
+        dailySection.style.display = '';
+        if (dailyBtn) { dailyBtn.className = 'modal-btn modal-btn-primary'; dailyBtn.style.flex='1'; dailyBtn.style.fontSize='12px'; dailyBtn.style.padding='7px 0'; }
+        if (weeklyBtn) { weeklyBtn.className = 'modal-btn modal-btn-secondary'; weeklyBtn.style.flex='1'; weeklyBtn.style.fontSize='12px'; weeklyBtn.style.padding='7px 0'; }
+        _initDailyFortuneView();
+    }
+};
+
+function _initDailyFortuneView() {
+    const todayKey = new Date().toDateString();
+    const DAILY_KEY = APP_PREFIX + 'daily_fortune_' + todayKey;
+    const savedDaily = (() => { try { return JSON.parse(localStorage.getItem(DAILY_KEY)); } catch(e) { return null; } })();
+    const contentEl = document.getElementById('fortune-daily-content');
+    if (!contentEl) return;
+
+    if (savedDaily && savedDaily.cards && savedDaily.cards.length === 3) {
+        _renderDailyFortuneResult(savedDaily.cards, contentEl, true);
+    } else {
+        contentEl.innerHTML = `
+            <div style="text-align:center;padding:20px 0 10px;">
+                <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;line-height:1.6;">每次抽取三张牌，绝对随机，当日永不重复</div>
+                <button class="modal-btn modal-btn-primary" id="draw-daily-fortune-btn" onclick="drawDailyFortune()" style="padding:10px 28px;font-size:14px;"><i class="fas fa-magic"></i> 开始今日抽取</button>
+            </div>`;
+    }
+}
+
+// Truly random shuffle using crypto.getRandomValues
+function _cryptoShuffle(arr) {
+    const a = [...arr];
+    const randoms = new Uint32Array(a.length);
+    window.crypto.getRandomValues(randoms);
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = randoms[i] % (i + 1);
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+window.drawDailyFortune = function() {
+    const todayKey = new Date().toDateString();
+    const DAILY_KEY = APP_PREFIX + 'daily_fortune_' + todayKey;
+
+    // Use ALL 78 cards for maximum randomness
+    const pool = ALL_78_TAROT_CARDS;
+    const shuffled = _cryptoShuffle(pool);
+    const drawn = shuffled.slice(0, 3).map(card => {
+        // Also randomly determine upright/reversed via crypto
+        const rndBytes = new Uint8Array(1);
+        window.crypto.getRandomValues(rndBytes);
+        const isReversed = rndBytes[0] < 128;
+        return { ...card, isReversed };
+    });
+
+    const payload = { date: todayKey, cards: drawn };
+    try { localStorage.setItem(DAILY_KEY, JSON.stringify(payload)); } catch(e) {}
+
+    const contentEl = document.getElementById('fortune-daily-content');
+    if (contentEl) _renderDailyFortuneResult(drawn, contentEl, false);
+};
+
+function _renderDailyFortuneResult(cards, container, isRestored) {
+    const positions = ['过去', '现在', '未来'];
+    const posColors = ['rgba(var(--accent-color-rgb),0.12)', 'rgba(var(--accent-color-rgb),0.22)', 'rgba(var(--accent-color-rgb),0.12)'];
+    const energySummary = cards.map(c => c.keyword || c.name).join(' · ');
+
+    const cardsHTML = cards.map((card, i) => {
+        const meaning = card.isReversed ? card.reversed : card.upright;
+        return `
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;">
+            <div style="font-size:10px;color:var(--text-secondary);font-weight:600;letter-spacing:0.5px;">${positions[i]}</div>
+            <div class="tarot-container-3d tarot-responsive" style="margin:0;cursor:pointer;" onclick="this.classList.toggle('flipped');">
+                <div class="tarot-card-inner">
+                    <div class="tarot-face tarot-front" style="padding:0;overflow:hidden;border:2px solid var(--border-color);">
+                        ${card.img ? `<img src="${card.img}" style="width:100%;height:100%;object-fit:cover;${card.isReversed?'transform:rotate(180deg);':''}">` : `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;background:var(--primary-bg);color:var(--accent-color);"><i class="fas ${card.icon||'fa-star'}" style="font-size:30px;${card.isReversed?'transform:rotate(180deg);':''}"></i></div>`}
+                    </div>
+                    <div class="tarot-face tarot-back" style="background:linear-gradient(135deg,var(--secondary-bg),rgba(var(--accent-color-rgb),0.05));border:2px solid rgba(var(--accent-color-rgb),0.3);padding:8px 6px;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow-y:auto;">
+                        <div style="font-size:13px;font-weight:700;text-align:center;">${card.name}</div>
+                        <div class="tarot-position-badge ${card.isReversed?'reversed':'upright'}" style="margin:4px auto;font-size:9px;padding:2px 6px;background:var(--primary-bg);">${card.isReversed?'逆位':'正位'}</div>
+                        <div style="font-weight:bold;color:var(--accent-color);font-size:11px;margin:4px 0;">「${card.keyword}」</div>
+                        <div style="font-size:10px;text-align:left;line-height:1.5;color:var(--text-primary);width:100%;">${meaning}</div>
+                    </div>
+                </div>
+            </div>
+            <div style="font-size:12px;font-weight:700;text-align:center;">${card.name}</div>
+            <div style="font-size:10px;color:var(--accent-color);text-align:center;">「${card.keyword}」</div>
+        </div>`;
+    }).join('');
+
+    container.innerHTML = `
+        <div style="text-align:center;margin-bottom:10px;font-size:11px;color:var(--text-secondary);">
+            ${isRestored ? '<i class="fas fa-history"></i> 今日已抽取' : '<i class="fas fa-sparkles" style="color:var(--accent-color);"></i> 今日运势已揭示'}
+        </div>
+        <div style="text-align:center;font-size:13px;font-weight:600;color:var(--accent-color);margin-bottom:14px;letter-spacing:0.5px;">
+            ${energySummary}
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-start;">
+            ${cardsHTML}
+        </div>
+        <div style="margin-top:14px;background:rgba(var(--accent-color-rgb),0.06);border-radius:12px;padding:12px 14px;font-size:12px;line-height:1.7;color:var(--text-primary);">
+            <i class="fas fa-lightbulb" style="color:var(--accent-color);margin-right:5px;"></i>
+            <b>今日能量：</b>
+            ${cards[0].isReversed ? '过去的羁绊尚未释怀' : '过去的积累已化为养分'}，
+            ${cards[1].isReversed ? '此刻需要向内审视' : '此刻能量正在流动'}。
+            ${cards[2].isReversed ? '未来或有些波折，但转机已近。' : '未来正向你敞开大门，保持觉知。'}
+        </div>
+        ${isRestored ? '' : `<div style="text-align:center;margin-top:12px;"><button class="modal-btn modal-btn-secondary" style="font-size:11px;padding:5px 14px;" onclick="_initDailyFortuneView()"><i class="fas fa-redo" style="font-size:10px;"></i> 查看今日已抽结果</button></div>`}
+    `;
+}
 
 document.addEventListener('click', function(e) {
     if (e.target.id === 'close-divihistory') {
