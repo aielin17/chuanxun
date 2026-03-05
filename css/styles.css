@@ -870,6 +870,9 @@
         .message-avatar.hidden {
             visibility: hidden;
         }
+        body.always-show-avatar .message-avatar.hidden {
+            visibility: visible;
+        }
         .message-content-wrapper {
             display: flex;
             flex-direction: column;
@@ -1097,11 +1100,11 @@
             background-color: var(--message-sent-bg, var(--accent-color-dark));
         }
 
-        .coin-btn, .batch-btn, .continue-btn, .attachment-btn, .poke-btn {
+        .coin-btn, .batch-btn, .continue-btn, .attachment-btn, .poke-btn, .combo-btn {
             background-color: var(--message-received-bg);
             color: var(--text-secondary);
         }
-        .attachment-btn:hover, .continue-btn:hover, .batch-btn:hover, .coin-btn:hover, .poke-btn:hover {
+        .attachment-btn:hover, .continue-btn:hover, .batch-btn:hover, .coin-btn:hover, .poke-btn:hover, .combo-btn:hover {
             color: var(--text-primary);
         }
 
@@ -4698,40 +4701,43 @@
         }
 
         .reply-action-mini {
-            width: 34px;
-            height: 34px;
-            border-radius: 10px;
-            border: none;
-            background-color: var(--primary-bg);
-
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: transparent;
             color: var(--text-secondary);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s ease;
-            font-size: 14px;
+            transition: all 0.18s ease;
+            font-size: 13px;
+            opacity: 0.7;
         }
-
+        .reply-action-mini:hover {
+            opacity: 1;
+            transform: translateY(-1px);
+        }
 
         .reply-action-mini.edit-reply:hover,
-        .reply-action-mini.modify-default:hover {
-            background-color: var(--accent-color);
-            color: var(--message-sent-text);
-            transform: rotate(10deg);
+        .reply-action-mini.modify-default:hover,
+        .reply-action-mini.edit-btn:hover {
+            background-color: rgba(var(--accent-color-rgb), 0.12);
+            border-color: rgba(var(--accent-color-rgb), 0.3);
+            color: var(--accent-color);
         }
 
-
-        .reply-action-mini.delete-reply:hover {
-            background-color: #ff4757;
-            color: white;
-            transform: rotate(-10deg);
+        .reply-action-mini.delete-reply:hover,
+        .reply-action-mini.delete-btn:hover {
+            background-color: rgba(239, 68, 68, 0.08);
+            border-color: rgba(239, 68, 68, 0.3);
+            color: #ef4444;
         }
-
 
         .reply-action-mini.toggle-default:hover {
-            background-color: var(--text-secondary);
-            color: var(--secondary-bg);
+            background-color: rgba(var(--accent-color-rgb), 0.08);
+            color: var(--accent-color);
         }
 
         #custom-replies-modal .modal-buttons {
@@ -4776,7 +4782,7 @@
             background-color: rgba(255,255,255,0.03);
         }
         html[data-theme="dark"] .reply-action-mini {
-            background-color: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.1);
         }
 
 
