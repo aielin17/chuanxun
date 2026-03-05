@@ -84,6 +84,7 @@
                 inChatAvatarEnabled: true,
                 inChatAvatarSize: 36,
                 inChatAvatarPosition: 'center',
+                inChatAvatarCustomOffset: 0,
                 alwaysShowAvatar: false,
                 showPartnerNameInChat: false,
                 customFontUrl: "", 
@@ -274,7 +275,7 @@ const loadData = async () => {
             }));
         } else {
             const backup = _tryRecoverFromBackup();
-            if (backup && Array.isArray(backup.messages) && backup.messages.length > 0) {
+            if (backup && Array.isArray(backup.messages) && backup.messages.length > 0 && backup.sessionId === SESSION_ID) {
                 const timeSince = Math.round((Date.now() - backup.ts) / 60000);
                 console.warn(`[loadData] 主存储无消息，正在从备份恢复（备份时间：${timeSince} 分钟前）`);
                 messages = backup.messages.map(m => ({
@@ -748,8 +749,10 @@ function manageAutoSendTimer() {
             document.documentElement.style.setProperty('--message-line-height', settings.messageLineHeight);
 
             document.documentElement.style.setProperty('--in-chat-avatar-size', `${settings.inChatAvatarSize}px`);
-            const _alignMap = { 'top': 'flex-start', 'center': 'center', 'bottom': 'flex-end' };
+            const _alignMap = { 'top': 'flex-start', 'center': 'center', 'bottom': 'flex-end', 'custom': 'flex-start' };
             document.documentElement.style.setProperty('--avatar-align', _alignMap[settings.inChatAvatarPosition || 'center'] || 'center');
+            document.documentElement.style.setProperty('--avatar-custom-offset', `${settings.inChatAvatarCustomOffset || 0}px`);
+            document.body.classList.toggle('avatar-position-custom', settings.inChatAvatarPosition === 'custom');
             document.body.classList.toggle('always-show-avatar', !!settings.alwaysShowAvatar);
             document.body.classList.toggle('show-partner-name', !!(settings.showPartnerNameInChat || showPartnerNameInChat));
 
@@ -906,6 +909,11 @@ function manageAutoSendTimer() {
                     nameLabel.textContent = groupMember.name;
                     const isSameSenderGroupForName = lastSender === 'group_' + groupMember.name;
                     if (!isSameSenderGroupForName) contentWrapper.appendChild(nameLabel);
+                } else if (!groupMember && msg.sender === 'partner' && (showPartnerNameInChat || settings.showPartnerNameInChat)) {
+                    const nameLabel = document.createElement('div');
+                    nameLabel.className = 'message-sender-name';
+                    nameLabel.textContent = settings.partnerName || '对方';
+                    if (lastSender !== 'partner') contentWrapper.appendChild(nameLabel);
                 }
                 
                 let messageHTML = '';
