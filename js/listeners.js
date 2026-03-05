@@ -691,9 +691,11 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                 document.documentElement.style.setProperty('--in-chat-avatar-size', `${settings.inChatAvatarSize}px`);
 
                 const pos = settings.inChatAvatarPosition || 'center';
-                // Map preset positions to offset values
-                const offsetMap = { 'top': 0, 'center': 18, 'bottom': 48, 'custom': (settings.inChatAvatarOffset ?? 0) };
-                const offset = offsetMap[pos] ?? 0;
+                // Preset positions use align-self; custom uses margin-top offset
+                const alignSelfMap = { 'top': 'flex-start', 'center': 'center', 'bottom': 'flex-end', 'custom': 'flex-start' };
+                document.documentElement.style.setProperty('--avatar-align-self', alignSelfMap[pos] || 'flex-start');
+                // Only apply offset in custom mode
+                const offset = pos === 'custom' ? (settings.inChatAvatarOffset ?? 0) : 0;
                 document.documentElement.style.setProperty('--avatar-offset', offset + 'px');
                 document.querySelectorAll('.preview-msg-row').forEach(row => {
                     row.style.alignItems = 'flex-start';
@@ -857,13 +859,29 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                     const panelBtn = e.target.closest('.compact-panel-btn');
                     if (panelBtn) {
                         const targetId = panelBtn.dataset.target;
-                        const realBtn = document.getElementById(targetId);
-                        if (realBtn) {
-                            realBtn.style.display = '';
-                            realBtn.click();
-                            realBtn.style.display = 'none';
-                        }
                         expandPanel.style.display = 'none';
+                        if (targetId === 'combo-btn') {
+                            // Directly toggle the sticker picker
+                            const picker = document.getElementById('user-sticker-picker');
+                            if (picker) {
+                                if (picker.classList.contains('active')) {
+                                    picker.classList.remove('active');
+                                } else {
+                                    // Render my-sticker tab first
+                                    const firstTab = picker.querySelector('.combo-tab-btn[data-tab="my-sticker"]');
+                                    if (firstTab) firstTab.click();
+                                    picker.classList.add('active');
+                                }
+                            }
+                        } else {
+                            // For attachment and others - show briefly, click, hide
+                            const realBtn = document.getElementById(targetId);
+                            if (realBtn) {
+                                realBtn.style.display = '';
+                                realBtn.click();
+                                realBtn.style.display = 'none';
+                            }
+                        }
                         return;
                     }
                     // Exit compact mode toggle
@@ -873,7 +891,6 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                         updateToolbarCompactUI();
                         throttledSaveData();
                         expandPanel.style.display = 'none';
-                        // Also update the settings toggle UI
                         const pill = document.getElementById('toolbar-compact-pill');
                         const knob = document.getElementById('toolbar-compact-knob');
                         if (pill) pill.style.background = 'var(--border-color)';

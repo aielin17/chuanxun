@@ -752,8 +752,10 @@ function manageAutoSendTimer() {
             document.documentElement.style.setProperty('--message-line-height', settings.messageLineHeight);
 
             document.documentElement.style.setProperty('--in-chat-avatar-size', `${settings.inChatAvatarSize}px`);
-            const _offsetMap = { 'top': 0, 'center': 18, 'bottom': 48, 'custom': (settings.inChatAvatarOffset ?? 0) };
-            const _offset = _offsetMap[settings.inChatAvatarPosition || 'center'] ?? 0;
+            const _alignSelfMap = { 'top': 'flex-start', 'center': 'center', 'bottom': 'flex-end', 'custom': 'flex-start' };
+            const _pos = settings.inChatAvatarPosition || 'center';
+            document.documentElement.style.setProperty('--avatar-align-self', _alignSelfMap[_pos] || 'flex-start');
+            const _offset = _pos === 'custom' ? (settings.inChatAvatarOffset ?? 0) : 0;
             document.documentElement.style.setProperty('--avatar-offset', _offset + 'px');
             document.body.classList.toggle('always-show-avatar', !!settings.alwaysShowAvatar);
             document.body.classList.toggle('show-partner-name', !!(settings.showPartnerNameInChat || showPartnerNameInChat));
