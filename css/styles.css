@@ -850,7 +850,7 @@
             opacity: 0;
             position: relative;
             gap: 10px;
-            align-items: var(--avatar-align, flex-end);
+            align-items: flex-start;
             flex-shrink: 0;
         }
         .message-avatar {
@@ -860,6 +860,8 @@
             flex-shrink: 0;
             background-color: var(--border-color);
             transition: all 0.3s ease;
+            align-self: flex-start;
+            margin-top: var(--avatar-offset, 0px);
         }
         .message-avatar img {
             width: 100%;
@@ -8089,14 +8091,6 @@
 
         body.show-partner-name .message-wrapper.received .message-sender-name {
     display: block;
-        }
-
-        body.avatar-position-custom .message-wrapper {
-    align-items: flex-start !important;
-        }
-        body.avatar-position-custom .message-avatar {
-    align-self: flex-start;
-    margin-top: var(--avatar-custom-offset, 0px) !important;
         }
 
         .mood-stats-card {
