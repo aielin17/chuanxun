@@ -315,25 +315,33 @@
         <button class="input-btn compact-expand-btn" id="compact-expand-btn" title="展开更多" style="display:none;position:relative;">
             <i class="fas fa-plus-circle"></i>
             <!-- 展开面板 -->
-            <div id="compact-expand-panel" style="display:none;position:absolute;bottom:calc(100% + 8px);right:0;background:var(--secondary-bg);border:1px solid var(--border-color);border-radius:16px;padding:12px 14px;box-shadow:0 8px 30px rgba(0,0,0,0.15);min-width:180px;z-index:200;text-align:left;">
-                <div style="font-size:11px;color:var(--text-secondary);margin-bottom:10px;letter-spacing:0.5px;font-weight:600;">更多操作</div>
-                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;" id="compact-panel-btns">
-                    <button class="compact-panel-btn" data-target="attachment-btn" title="发送图片" style="display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--primary-bg);border:1px solid var(--border-color);border-radius:10px;padding:8px 10px;cursor:pointer;transition:all 0.2s;min-width:48px;">
-                        <i class="fas fa-image" style="font-size:16px;color:var(--accent-color);"></i>
-                        <span style="font-size:10px;color:var(--text-secondary);">图片</span>
+            <div id="compact-expand-panel" style="display:none;position:absolute;bottom:calc(100% + 10px);right:0;background:var(--secondary-bg);border:1px solid var(--border-color);border-radius:18px;padding:14px 14px 10px;box-shadow:0 8px 32px rgba(0,0,0,0.18);min-width:200px;z-index:300;text-align:left;">
+                <div style="font-size:10px;color:var(--text-secondary);margin-bottom:10px;letter-spacing:0.8px;font-weight:700;text-transform:uppercase;">快捷操作</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+                    <button data-action="image" style="display:flex;flex-direction:column;align-items:center;gap:5px;background:var(--primary-bg);border:1px solid var(--border-color);border-radius:12px;padding:10px 8px;cursor:pointer;transition:all 0.18s;">
+                        <i class="fas fa-image" style="font-size:18px;color:var(--accent-color);"></i>
+                        <span style="font-size:11px;color:var(--text-secondary);">发送图片</span>
                     </button>
-                    <button class="compact-panel-btn" data-target="combo-btn" title="表情拍一拍" style="display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--primary-bg);border:1px solid var(--border-color);border-radius:10px;padding:8px 10px;cursor:pointer;transition:all 0.2s;min-width:48px;">
-                        <i class="fas fa-laugh-beam" style="font-size:16px;color:var(--accent-color);"></i>
-                        <span style="font-size:10px;color:var(--text-secondary);">表情</span>
+                    <button data-action="emoji" style="display:flex;flex-direction:column;align-items:center;gap:5px;background:var(--primary-bg);border:1px solid var(--border-color);border-radius:12px;padding:10px 8px;cursor:pointer;transition:all 0.18s;">
+                        <i class="fas fa-laugh-beam" style="font-size:18px;color:var(--accent-color);"></i>
+                        <span style="font-size:11px;color:var(--text-secondary);">表情拍一拍</span>
+                    </button>
+                    <button data-action="custom-reply" style="display:flex;flex-direction:column;align-items:center;gap:5px;background:var(--primary-bg);border:1px solid var(--border-color);border-radius:12px;padding:10px 8px;cursor:pointer;transition:all 0.18s;">
+                        <i class="fas fa-comment-dots" style="font-size:18px;color:var(--accent-color);"></i>
+                        <span style="font-size:11px;color:var(--text-secondary);">自定义回复</span>
+                    </button>
+                    <button data-action="fortune" style="display:flex;flex-direction:column;align-items:center;gap:5px;background:var(--primary-bg);border:1px solid var(--border-color);border-radius:12px;padding:10px 8px;cursor:pointer;transition:all 0.18s;">
+                        <i class="fas fa-moon" style="font-size:18px;color:var(--accent-color);"></i>
+                        <span style="font-size:11px;color:var(--text-secondary);">运势占卜</span>
                     </button>
                 </div>
-                <div style="border-top:1px solid var(--border-color);padding-top:10px;margin-top:2px;">
-                    <div id="compact-exit-toggle" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 0;" title="退出收纳模式">
-                        <div id="compact-exit-pill" style="width:32px;height:18px;border-radius:18px;background:var(--accent-color);position:relative;transition:background 0.3s;flex-shrink:0;">
-                            <div id="compact-exit-knob" style="position:absolute;width:13px;height:13px;border-radius:50%;background:#fff;top:2.5px;right:2.5px;transition:right 0.25s;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
+                <div style="border-top:1px solid var(--border-color);padding-top:10px;">
+                    <button data-action="exit-compact" style="display:flex;align-items:center;gap:8px;cursor:pointer;background:none;border:none;padding:4px 2px;width:100%;">
+                        <div id="compact-exit-pill" style="width:32px;height:18px;border-radius:18px;background:var(--accent-color);position:relative;flex-shrink:0;">
+                            <div id="compact-exit-knob" style="position:absolute;width:13px;height:13px;border-radius:50%;background:#fff;top:2.5px;right:2.5px;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
                         </div>
                         <span style="font-size:11px;color:var(--text-secondary);">收纳模式 · 点击退出</span>
-                    </div>
+                    </button>
                 </div>
             </div>
         </button>
@@ -879,7 +887,7 @@
 
             <div id="avatar-bubble-preview" style="margin-top:14px;background:var(--chat-bg,var(--primary-bg));border-radius:14px;padding:14px 12px;border:1px solid var(--border-color);">
                 <div style="font-size:11px;color:var(--text-secondary);margin-bottom:10px;opacity:0.7;text-align:center;letter-spacing:0.3px;">实时预览效果</div>
-                <div class="preview-msg-row" style="display:flex;align-items:flex-end;gap:8px;margin-bottom:10px;">
+                <div class="preview-msg-row" style="display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;min-height:60px;">
                     <div id="preview-partner-avatar" style="width:var(--in-chat-avatar-size,36px);height:var(--in-chat-avatar-size,36px);border-radius:50%;background:var(--border-color);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;transition:border-radius 0.2s ease;">
                         <i class="fas fa-user" style="font-size:14px;color:var(--text-secondary);"></i>
                     </div>
@@ -887,7 +895,7 @@
                         你是我朝夕相伴触手可及的虚拟
                     </div>
                 </div>
-                <div class="preview-msg-row" style="display:flex;align-items:flex-end;gap:8px;justify-content:flex-end;">
+                <div class="preview-msg-row" style="display:flex;align-items:flex-start;gap:8px;justify-content:flex-end;min-height:60px;">
                     <div style="background:var(--message-sent-bg);color:var(--message-sent-text);border-radius:16px 16px 4px 16px;padding:9px 13px;font-size:13px;max-width:160px;">
                         你是我未曾拥有无法捕捉的亲昵
                     </div>
