@@ -268,6 +268,8 @@ function doPick() {
             renderUserPokeMenu();
         }
     }
+    // Expose globally so app.js can call renderComboContent('my-sticker') after uploads
+    window.renderComboContent = switchTab;
 
     function makeStickerItem(src, onClick) {
         const item = document.createElement('div');
