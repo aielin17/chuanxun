@@ -407,14 +407,16 @@ document.getElementById('chat-settings').addEventListener('click', () => {
     const toggleSyncMap = {
         '#reply-toggle': { prop: 'replyEnabled', name: '引用回复' },
         '#sound-toggle': { prop: 'soundEnabled', name: '音效' },
-        '#emoji-mix-toggle': { prop: 'emojiMixEnabled', name: 'Emoji混合' },
         '#read-receipts-toggle': { prop: 'readReceiptsEnabled', name: '已读回执' },
         '#typing-indicator-toggle': { prop: 'typingIndicatorEnabled', name: '正在输入' },
-        '#read-no-reply-toggle': { prop: 'allowReadNoReply', name: '已读不回' }
+        '#read-no-reply-toggle': { prop: 'allowReadNoReply', name: '已读不回' },
+        '#emoji-mix-toggle': { prop: 'emojiMixEnabled', name: '表情混入消息' }
     };
     for (const [selector, { prop }] of Object.entries(toggleSyncMap)) {
         const el = document.querySelector(selector);
-        if (el) el.classList.toggle('active', !!settings[prop]);
+        // emojiMixEnabled defaults to true if not set
+        const val = prop === 'emojiMixEnabled' ? (settings[prop] !== false) : !!settings[prop];
+        if (el) el.classList.toggle('active', val);
     }
     const svSlider = document.getElementById('sound-volume-slider');
     const svVal = document.getElementById('sound-volume-value');
@@ -692,20 +694,43 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                 document.documentElement.style.setProperty('--in-chat-avatar-size', `${settings.inChatAvatarSize}px`);
 
                 const pos = settings.inChatAvatarPosition || 'center';
-                const alignMap = { 'top': 'flex-start', 'center': 'center', 'bottom': 'flex-end' };
+                const alignMap = { 'top': 'flex-start', 'center': 'center', 'bottom': 'flex-end', 'custom': 'flex-start' };
                 document.documentElement.style.setProperty('--avatar-align', alignMap[pos] || 'center');
-                document.documentElement.style.setProperty('--avatar-offset-y', (settings.inChatAvatarOffsetY || 0) + 'px');
                 document.querySelectorAll('.preview-msg-row').forEach(row => {
                     row.style.alignItems = alignMap[pos] || 'flex-start';
                 });
                 const topBtn = document.getElementById('avatar-pos-top-2');
                 const centerBtn = document.getElementById('avatar-pos-center-2');
                 const bottomBtn = document.getElementById('avatar-pos-bottom-2');
-                [topBtn, centerBtn, bottomBtn].forEach(btn => {
+                const customBtn = document.getElementById('avatar-pos-custom-2');
+                [topBtn, centerBtn, bottomBtn, customBtn].forEach(btn => {
                     if (!btn) return;
                     btn.className = btn.dataset.pos === pos ? 'modal-btn modal-btn-primary' : 'modal-btn modal-btn-secondary';
                     btn.style.flex = '1'; btn.style.fontSize = '12px'; btn.style.padding = '7px 0';
                 });
+
+                // Show/hide custom offset slider
+                const customOffsetCtrl = document.getElementById('avatar-custom-offset-control');
+                if (customOffsetCtrl) customOffsetCtrl.style.display = pos === 'custom' ? 'block' : 'none';
+                if (pos === 'custom') {
+                    const offset = settings.inChatAvatarCustomOffset || 0;
+                    document.documentElement.style.setProperty('--avatar-custom-offset', offset + 'px');
+                    const sl = document.getElementById('avatar-custom-offset-slider');
+                    const vl = document.getElementById('avatar-custom-offset-value');
+                    if (sl) sl.value = offset;
+                    if (vl) vl.textContent = offset + 'px';
+                    // Update preview
+                    const previewPartner = document.getElementById('preview-partner-avatar');
+                    if (previewPartner) previewPartner.style.marginTop = offset + 'px';
+                    const previewMy = document.getElementById('preview-my-avatar');
+                    if (previewMy) previewMy.style.marginTop = offset + 'px';
+                } else {
+                    document.documentElement.style.removeProperty('--avatar-custom-offset');
+                    const previewPartner = document.getElementById('preview-partner-avatar');
+                    if (previewPartner) previewPartner.style.marginTop = '';
+                    const previewMy = document.getElementById('preview-my-avatar');
+                    if (previewMy) previewMy.style.marginTop = '';
+                }
 
                 // 每次显示头像开关
                 const alwaysPill = document.getElementById('always-avatar-pill');
@@ -750,7 +775,7 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                 avatarSizeSlider.addEventListener('change', throttledSaveData);
             }
 
-            ['avatar-pos-top-2','avatar-pos-center-2','avatar-pos-bottom-2'].forEach(btnId => {
+            ['avatar-pos-top-2','avatar-pos-center-2','avatar-pos-bottom-2','avatar-pos-custom-2'].forEach(btnId => {
                 const btn = document.getElementById(btnId);
                 if (btn) {
                     btn.addEventListener('click', () => {
@@ -762,20 +787,28 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                 }
             });
 
-            // 头像垂直偏移滑块
-            const avatarOffsetSlider = document.getElementById('avatar-offset-y-slider-2');
-            const avatarOffsetValue = document.getElementById('avatar-offset-y-value-2');
-            if (avatarOffsetSlider) {
-                avatarOffsetSlider.value = settings.inChatAvatarOffsetY || 0;
-                if (avatarOffsetValue) avatarOffsetValue.textContent = (settings.inChatAvatarOffsetY || 0) + 'px';
-                document.documentElement.style.setProperty('--avatar-offset-y', (settings.inChatAvatarOffsetY || 0) + 'px');
-                avatarOffsetSlider.addEventListener('input', (e) => {
-                    const v = parseInt(e.target.value);
-                    settings.inChatAvatarOffsetY = v;
-                    if (avatarOffsetValue) avatarOffsetValue.textContent = v + 'px';
-                    document.documentElement.style.setProperty('--avatar-offset-y', v + 'px');
+            // Custom offset slider
+            const customOffsetSlider = document.getElementById('avatar-custom-offset-slider');
+            const customOffsetValue = document.getElementById('avatar-custom-offset-value');
+            if (customOffsetSlider) {
+                customOffsetSlider.value = settings.inChatAvatarCustomOffset || 0;
+                if (customOffsetValue) customOffsetValue.textContent = (settings.inChatAvatarCustomOffset || 0) + 'px';
+                customOffsetSlider.addEventListener('input', () => {
+                    const val = parseInt(customOffsetSlider.value, 10);
+                    settings.inChatAvatarCustomOffset = val;
+                    if (customOffsetValue) customOffsetValue.textContent = val + 'px';
+                    document.documentElement.style.setProperty('--avatar-custom-offset', val + 'px');
+                    // Update preview rows
+                    document.querySelectorAll('.preview-msg-row').forEach(row => {
+                        row.style.alignItems = 'flex-start';
+                    });
+                    const previewPartner = document.getElementById('preview-partner-avatar');
+                    if (previewPartner) previewPartner.style.marginTop = val + 'px';
+                    const previewMy = document.getElementById('preview-my-avatar');
+                    if (previewMy) previewMy.style.marginTop = val + 'px';
+                    renderMessages(true);
                 });
-                avatarOffsetSlider.addEventListener('change', throttledSaveData);
+                customOffsetSlider.addEventListener('change', throttledSaveData);
             }
 
             // 每条消息都显示头像 toggle
@@ -925,15 +958,13 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                 '#sound-toggle': {
                     prop: 'soundEnabled', name: '音效'
                 },
-                '#emoji-mix-toggle': {
-                    prop: 'emojiMixEnabled', name: 'Emoji混合'
-                },
                 '#read-receipts-toggle': {
                     prop: 'readReceiptsEnabled', name: '已读回执'
                 },
                 '#typing-indicator-toggle': {
                     prop: 'typingIndicatorEnabled', name: '正在输入'},
-                    '#read-no-reply-toggle': { prop: 'allowReadNoReply', name: '已读不回' }
+                    '#read-no-reply-toggle': { prop: 'allowReadNoReply', name: '已读不回' },
+                    '#emoji-mix-toggle': { prop: 'emojiMixEnabled', name: '表情混入消息' }
 };
 
             for (const [selector, {
@@ -942,9 +973,12 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                 const element = document.querySelector(selector);
                 if (!element) continue;
 
-                element.classList.toggle('active', !!settings[prop]);
+                const _initVal = prop === 'emojiMixEnabled' ? (settings[prop] !== false) : !!settings[prop];
+                element.classList.toggle('active', _initVal);
 
                 element.addEventListener('click', () => {
+                    // emojiMixEnabled defaults to true if unset
+                    if (prop === 'emojiMixEnabled' && settings[prop] === undefined) settings[prop] = true;
                     settings[prop] = !settings[prop];
                     throttledSaveData();
                     updateUI();
@@ -2420,109 +2454,4 @@ window.exitCollapseMode = function() {
     } else {
         setTimeout(tryApply, 400);
     }
-})();
-
-/* ════════════════════════════════════════
-   引用消息跳转  Reply Indicator Jump-to
-   ════════════════════════════════════════ */
-document.addEventListener('click', function(e) {
-    const indicator = e.target.closest('.reply-indicator');
-    if (!indicator) return;
-    const replyId = indicator.dataset.replyId;
-    if (!replyId) return;
-    const targetEl = document.querySelector(`.message-wrapper[data-id="${replyId}"]`);
-    if (!targetEl) {
-        if (typeof showNotification === 'function') showNotification('该消息已不在当前视图中', 'info', 2000);
-        return;
-    }
-    targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    targetEl.classList.add('reply-jump-flash');
-    setTimeout(() => targetEl.classList.remove('reply-jump-flash'), 1200);
-}, false);
-
-/* ════════════════════════════════════════
-   挂机保活音频  Keepalive Silent Audio
-   ════════════════════════════════════════ */
-(function() {
-    const KEEPALIVE_KEY = 'keepaliveAudioEnabled';
-    let _ka = null;
-    let _kaEnabled = false;
-
-    function _startKeepalive() {
-        if (_ka) return; // already running
-        try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const dest = ctx.createMediaStreamDestination();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            gain.gain.value = 0.00001; // virtually silent
-            osc.connect(gain);
-            gain.connect(dest);
-            osc.start();
-            const audio = new Audio();
-            audio.srcObject = dest.stream;
-            audio.loop = true;
-            audio.volume = 0.001;
-            audio.play().then(() => {
-                _updateStatus(true);
-            }).catch(() => _fallback());
-            _ka = { audio, ctx, osc };
-        } catch(e) { _fallback(); }
-    }
-
-    function _fallback() {
-        // Minimal silent WAV (44-byte header + empty data)
-        const wav = 'UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
-        try {
-            const audio = new Audio('data:audio/wav;base64,' + wav);
-            audio.loop = true;
-            audio.volume = 0.001;
-            audio.play().then(() => _updateStatus(true)).catch(() => {});
-            _ka = { audio };
-        } catch(e) {}
-    }
-
-    function _stopKeepalive() {
-        if (!_ka) return;
-        try {
-            if (_ka.audio) { _ka.audio.pause(); _ka.audio.srcObject = null; }
-            if (_ka.osc) _ka.osc.stop();
-            if (_ka.ctx) _ka.ctx.close();
-        } catch(e) {}
-        _ka = null;
-        _updateStatus(false);
-    }
-
-    function _updateStatus(on) {
-        const pill = document.getElementById('keepalive-pill');
-        const knob = document.getElementById('keepalive-knob');
-        const status = document.getElementById('keepalive-status-text');
-        const toggle = document.getElementById('keepalive-audio-toggle');
-        if (pill) pill.style.background = on ? 'var(--accent-color)' : 'var(--border-color)';
-        if (knob) { knob.style.right = on ? '3px' : '23px'; knob.style.left = 'auto'; }
-        if (toggle) toggle.classList.toggle('active', on);
-        if (status) status.textContent = on ? '⏳ 正在播放 — 切出后台将持续保活' : '已关闭';
-    }
-
-    function _apply(on) {
-        _kaEnabled = on;
-        localStorage.setItem(KEEPALIVE_KEY, on ? '1' : '0');
-        if (on) _startKeepalive(); else _stopKeepalive();
-        if (typeof showNotification === 'function') {
-            showNotification(on ? '挂机音频已开启 🎧 切出后台不会被打断' : '挂机音频已关闭', 'success', 2500);
-        }
-    }
-
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('#keepalive-audio-toggle')) return;
-        _apply(!_kaEnabled);
-    });
-
-    document.addEventListener('DOMContentLoaded', function() {
-        if (localStorage.getItem(KEEPALIVE_KEY) === '1') {
-            setTimeout(() => { _kaEnabled = true; _startKeepalive(); }, 1500);
-        } else {
-            setTimeout(() => _updateStatus(false), 500);
-        }
-    });
 })();

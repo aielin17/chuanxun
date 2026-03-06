@@ -259,11 +259,13 @@ function renderWeeklyFortune(data, majorCards) {
                 <div class="tarot-face tarot-front">
                     <div class="tarot-pattern"><i class="fas fa-star-and-crescent"></i></div>
                 </div>
-                <div class="tarot-face tarot-back" style="padding:0;overflow:hidden;border:2px solid rgba(var(--accent-color-rgb),0.3);">
-                    ${card.img
-                        ? `<img src="${card.img}" style="width:100%;height:100%;object-fit:cover;${isUpright ? '' : 'transform:rotate(180deg);'}" onerror="this.outerHTML='<div style=\'display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;background:var(--secondary-bg);gap:10px;\'><i class=\'fas ${card.icon} tarot-icon-vector\' style=\'font-size:52px;color:var(--accent-color);\'></i><div style=\'font-size:20px;font-weight:700;\'>${card.name}</div></div>'">`
-                        : `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;background:var(--secondary-bg);gap:10px;"><i class="fas ${card.icon} tarot-icon-vector" style="font-size:52px;color:var(--accent-color);${isUpright ? '' : 'transform:rotate(180deg);'}"></i><div style="font-size:20px;font-weight:700;">${card.name}</div></div>`
-                    }
+                <div class="tarot-face tarot-back" style="background: linear-gradient(135deg, var(--secondary-bg), rgba(var(--accent-color-rgb), 0.05)); border: 2px solid rgba(var(--accent-color-rgb), 0.3);">
+                    <div class="tarot-visual ${isUpright ? '' : 'reversed'}" style="height:100px;">
+                        <i class="fas ${card.icon} tarot-icon-vector" style="font-size:52px; color: var(--accent-color);"></i>
+                    </div>
+                    <div>
+                        <div class="tarot-card-name" style="font-size:20px; font-weight: 700;">${card.name}</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -318,24 +320,32 @@ async function renderDailyFortune(todayKey) {
             ${dailyData.cards.map((card, i) => `
                 <div style="flex:1;min-width:90px;max-width:130px;text-align:center;">
                     <div style="font-size:10px;color:${positionColors[i]};margin-bottom:6px;font-weight:600;letter-spacing:0.5px;">${positionLabels[i]}</div>
-                    <div class="tarot-container-3d tarot-responsive" style="cursor:pointer;margin-bottom:8px;" onclick="this.classList.toggle('flipped');">
+                    <div class="tarot-container-3d tarot-responsive" style="cursor:pointer;margin-bottom:8px;" onclick="this.classList.toggle('flipped'); document.getElementById('daily-interp-${i}').style.display = this.classList.contains('flipped') ? 'block' : 'none';">
                         <div class="tarot-card-inner">
                             <div class="tarot-face tarot-front"><div class="tarot-pattern" style="font-size:18px;"><i class="fas fa-star-and-crescent"></i></div></div>
-                            <div class="tarot-face tarot-back" style="background:linear-gradient(135deg,var(--secondary-bg),rgba(var(--accent-color-rgb),0.07));border:1.5px solid rgba(var(--accent-color-rgb),0.3);">
-                                <div class="tarot-visual ${card.isUpright ? '' : 'reversed'}" style="height:60px;">
-                                    ${card.img ? `<img src="${card.img}" style="height:55px;width:auto;object-fit:contain;border-radius:4px;" onerror="this.style.display='none';this.nextElementSibling.style.display='block';"><i class="fas ${card.icon}" style="display:none;font-size:28px;color:var(--accent-color);"></i>` : `<i class="fas ${card.icon}" style="font-size:28px;color:var(--accent-color);"></i>`}
+                            <div class="tarot-face tarot-back" style="background:linear-gradient(135deg,var(--secondary-bg),rgba(var(--accent-color-rgb),0.07));border:1.5px solid rgba(var(--accent-color-rgb),0.3);padding:0;overflow:hidden;">
+                                <div class="tarot-visual ${card.isUpright ? '' : 'reversed'}" style="height:100%;width:100%;margin:0;padding:0;">
+                                    ${card.img ? `<img src="${card.img}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><div style="display:none;height:100%;align-items:center;justify-content:center;"><i class="fas ${card.icon}" style="font-size:28px;color:var(--accent-color);"></i></div>` : `<div style="height:100%;display:flex;align-items:center;justify-content:center;"><i class="fas ${card.icon}" style="font-size:28px;color:var(--accent-color);"></i></div>`}
                                 </div>
-                                <div style="font-size:12px;font-weight:700;">${card.name}</div>
-
                             </div>
                         </div>
                     </div>
-
+                    <div id="daily-interp-${i}" style="display:none;text-align:left;margin-top:6px;padding:8px 10px;background:rgba(var(--accent-color-rgb),0.06);border-radius:10px;border:1px solid rgba(var(--accent-color-rgb),0.15);">
+                        <div style="font-size:11px;font-weight:700;color:var(--accent-color);margin-bottom:4px;">${card.keyword}</div>
+                        <div style="font-size:11px;color:var(--text-secondary);line-height:1.6;">${card.isUpright ? (card.upright || card.meaning || '') : (card.reversed || card.meaning || '')}</div>
+                    </div>
                 </div>
             `).join('')}
         </div>
+        <div style="margin-bottom:10px;">
+            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;font-weight:500;">✍️ 今日解读</div>
+            <textarea id="daily-fortune-notes" placeholder="写下你对今日牌阵的感悟..." style="width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid var(--border-color);border-radius:10px;background:var(--primary-bg);color:var(--text-primary);font-size:12px;font-family:var(--font-family);resize:vertical;min-height:72px;outline:none;transition:border 0.18s;line-height:1.6;" onfocus="this.style.borderColor='var(--accent-color)'" onblur="this.style.borderColor='var(--border-color)'">${(function(){try{return localStorage.getItem('dailyFortuneNotes_'+${JSON.stringify(todayKey)})||''}catch(e){return ''}}())}</textarea>
+            <div style="display:flex;justify-content:flex-end;margin-top:4px;">
+                <button onclick="(function(){var t=document.getElementById('daily-fortune-notes');try{localStorage.setItem('dailyFortuneNotes_'+${JSON.stringify(todayKey)},t.value);}catch(e){}this.textContent='已保存 ✓';var self=this;setTimeout(function(){self.textContent='保存';},1500);}).call(this)" style="font-size:11px;padding:4px 12px;border:1.5px solid var(--accent-color);border-radius:8px;background:transparent;color:var(--accent-color);cursor:pointer;font-family:var(--font-family);">保存</button>
+            </div>
+        </div>
         <div style="font-size:11px;color:var(--text-secondary);text-align:center;padding:8px;background:rgba(var(--accent-color-rgb),0.05);border-radius:8px;">
-            <i class="fas fa-sync-alt" style="color:var(--accent-color);margin-right:4px;"></i>每日零时自动更新 · 点击牌背翻开
+            <i class="fas fa-sync-alt" style="color:var(--accent-color);margin-right:4px;"></i>每日零时自动更新 · 点击牌背翻开查看解读
         </div>
     `;
 }

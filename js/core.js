@@ -104,7 +104,8 @@ autoSendInterval: 5,
         timeFormat: 'HH:mm',
         customSoundUrl: '',
         soundVolume: 0.15,
-        bottomCollapseMode: false
+        bottomCollapseMode: false,
+        emojiMixEnabled: true
             };
         }
 
@@ -756,8 +757,11 @@ function manageAutoSendTimer() {
             document.documentElement.style.setProperty('--message-line-height', settings.messageLineHeight);
 
             document.documentElement.style.setProperty('--in-chat-avatar-size', `${settings.inChatAvatarSize}px`);
-            const _alignMap = { 'top': 'flex-start', 'center': 'center', 'bottom': 'flex-end' };
+            const _alignMap = { 'top': 'flex-start', 'center': 'center', 'bottom': 'flex-end', 'custom': 'flex-start' };
             document.documentElement.style.setProperty('--avatar-align', _alignMap[settings.inChatAvatarPosition || 'center'] || 'center');
+            if (settings.inChatAvatarPosition === 'custom' && settings.inChatAvatarCustomOffset !== undefined) {
+                document.documentElement.style.setProperty('--avatar-custom-offset', settings.inChatAvatarCustomOffset + 'px');
+            }
             document.body.classList.toggle('always-show-avatar', !!settings.alwaysShowAvatar);
             if (typeof _applyCollapseState === 'function') _applyCollapseState(!!settings.bottomCollapseMode);
             document.body.classList.toggle('show-partner-name', !!(settings.showPartnerNameInChat || showPartnerNameInChat));
@@ -865,6 +869,7 @@ function manageAutoSendTimer() {
                 const wrapper = document.createElement('div');
                 wrapper.className = `message-wrapper ${msg.sender === 'user' ? 'sent': 'received'}`;
                 wrapper.dataset.id = msg.id;
+                wrapper.dataset.msgId = msg.id;
                 if (index < msgsToRender.length - Math.max(newMessageCount, 0)) {
                     wrapper.style.animation = 'none';
                     wrapper.style.opacity = '1';
@@ -872,6 +877,9 @@ function manageAutoSendTimer() {
                 
                 const avatarDiv = document.createElement('div');
                 avatarDiv.className = 'message-avatar';
+                if (settings.inChatAvatarPosition === 'custom' && settings.inChatAvatarCustomOffset) {
+                    avatarDiv.style.marginTop = settings.inChatAvatarCustomOffset + 'px';
+                }
 
                 const groupMember = (msg.sender !== 'user' && typeof getGroupMemberForMessage === 'function') ? getGroupMemberForMessage(msg.id) : null;
 
@@ -921,7 +929,7 @@ function manageAutoSendTimer() {
                 if (msg.replyTo) {
                     const repliedText = msg.replyTo.text || (msg.replyTo.image ? '🖼 图片' : '[消息]');
                     const repliedSender = msg.replyTo.sender === 'user' ? (settings.myName || '我') : (settings.partnerName || '对方');
-                    messageHTML += `<div class="reply-indicator" data-reply-id="${msg.replyTo.id || ''}"><span class="reply-indicator-sender">${repliedSender}</span><span class="reply-indicator-text">${repliedText}</span></div>`;
+                    messageHTML += `<div class="reply-indicator" data-reply-id="${msg.replyTo.id || ''}" style="cursor:pointer;" onclick="(function(el){var id=el.getAttribute('data-reply-id');if(!id)return;var target=document.querySelector('[data-msg-id=\\"'+id+'\\"]');if(target){target.scrollIntoView({behavior:'smooth',block:'center'});target.classList.add('msg-highlight');setTimeout(function(){target.classList.remove('msg-highlight');},1500);}else{if(typeof showNotification==='function')showNotification('消息可能已被删除','info');}})(this)"><span class="reply-indicator-sender">${repliedSender}</span><span class="reply-indicator-text">${repliedText}</span></div>`;
                 }
 
                 let content = msg.text ? `<div>${msg.text.replace(/\n/g, '<br>')}</div>`: '';
@@ -1329,6 +1337,8 @@ if (partnerPersonas && partnerPersonas.length > 0 && Math.random() < 0.3) {
                 return;
             }
             let delay = 0;
+            // Capture the user's last message to potentially reference it
+            const lastUserMsg = settings.replyEnabled ? [...messages].reverse().find(m => m.sender === 'user' && m.text) : null;
             for (let i = 0; i < replyCount; i++) {
                 const delayRange = settings.replyDelayMax - settings.replyDelayMin;
                 delay += settings.replyDelayMin + Math.random() * delayRange;
@@ -1337,13 +1347,20 @@ if (partnerPersonas && partnerPersonas.length > 0 && Math.random() < 0.3) {
                     const replyPool = customReplies;
                     const replyText = replyPool[Math.floor(Math.random() * replyPool.length)];
 
-                    // Occasionally append a random emoji (only if emojiMixEnabled setting is on)
+                    // Occasionally append a random emoji
                     let finalText = replyText;
-                    if (settings.emojiMixEnabled && customEmojis && customEmojis.length > 0 && Math.random() < 0.3) {
+                    let separateEmoji = null;
+                    if (customEmojis && customEmojis.length > 0 && Math.random() < 0.3) {
                         const emoji = customEmojis[Math.floor(Math.random() * customEmojis.length)];
-                        finalText = Math.random() < 0.5
-                            ? emoji + ' ' + replyText
-                            : replyText + ' ' + emoji;
+                        if (settings.emojiMixEnabled !== false) {
+                            // Mixed mode: emoji in same message
+                            finalText = Math.random() < 0.5
+                                ? emoji + ' ' + replyText
+                                : replyText + ' ' + emoji;
+                        } else {
+                            // Separate mode: emoji as its own message
+                            separateEmoji = emoji;
+                        }
                     }
 
                     addMessage({
@@ -1354,8 +1371,25 @@ if (partnerPersonas && partnerPersonas.length > 0 && Math.random() < 0.3) {
                         status: 'received',
                         favorited: false,
                         note: null,
+                        replyTo: (i === 0 && lastUserMsg && Math.random() < 0.5) ? { id: lastUserMsg.id, text: lastUserMsg.text, sender: lastUserMsg.sender } : null,
                         type: 'normal'
                     });
+
+                    // Send emoji as separate message if not mixing
+                    if (separateEmoji) {
+                        setTimeout(() => {
+                            addMessage({
+                                id: Date.now() + i + 1000,
+                                sender: settings.partnerName || '对方',
+                                text: separateEmoji,
+                                timestamp: new Date(),
+                                status: 'received',
+                                favorited: false,
+                                note: null,
+                                type: 'normal'
+                            });
+                        }, 300 + Math.random() * 400);
+                    }
 
                     // Hide typing indicator after the last reply in this batch
                     if (i === replyCount - 1) {
