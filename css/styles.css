@@ -27,7 +27,6 @@
             --message-received-bg: #f0f0f0;
             --message-received-text: #1a1a1a; 
             --header-bg: #ffffff;
-            --header-bg-rgb: 255,255,255;
             --input-area-bg: #ffffff; 
             --shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
             --radius: 16px;
@@ -105,8 +104,7 @@
             --message-sent-text: #ffffff;
             --message-received-bg: #2a2a2a;
             --message-received-text: #e5e5e5; 
-            --header-bg: #1e1e1e;
-            --header-bg-rgb: 30,30,30;
+            --header-bg: #1e1e1e; 
             --input-area-bg: #1e1e1e; 
             --shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
             --favorite-color: #ffd700;
@@ -540,10 +538,7 @@
             padding-top: env(safe-area-inset-top, 0px);
             border-bottom: 1px solid var(--border-color);
             background-color: var(--header-bg);
-            background: rgba(var(--header-bg-rgb, 255,255,255), 0.72);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            box-shadow: 0 1px 0 rgba(0,0,0,0.04);
+            box-shadow: 0 1px 0 rgba(0,0,0,0.06);
             z-index: 10;
             flex-shrink: 0;
             position: relative;
@@ -855,7 +850,7 @@
             opacity: 0;
             position: relative;
             gap: 10px;
-            align-items: flex-start;
+            align-items: var(--avatar-align, flex-end);
             flex-shrink: 0;
         }
         .message-avatar {
@@ -865,7 +860,6 @@
             flex-shrink: 0;
             background-color: var(--border-color);
             transition: all 0.3s ease;
-            margin-top: var(--avatar-offset-px, 0px);
         }
         .message-avatar img {
             width: 100%;
@@ -9512,6 +9506,7 @@
             padding: 13px 14px;
             border-bottom: 1px solid var(--border-color);
             cursor: default;
+            flex-wrap: wrap;
         }
         .dm-row:last-child { border-bottom: none; }
         .dm-row-icon {
@@ -9546,6 +9541,12 @@
             display: flex;
             gap: 6px;
             flex-shrink: 0;
+            margin-left: auto;
+        }
+        @media (max-width: 400px) {
+            .dm-row-info { min-width: calc(100% - 50px); }
+            .dm-row-action { margin-left: 44px; width: 100%; }
+            .dm-btn { flex: 1; justify-content: center; }
         }
         .dm-btn {
             padding: 5px 11px;
@@ -9608,26 +9609,28 @@
             display: block;
         }
 
+        /* ── 顶部栏半透明 ── */
+        :root { --header-bg-rgb: 255,255,255; }
+        html[data-theme="dark"] { --header-bg-rgb: 30,30,30; }
+        .header {
+            background: rgba(var(--header-bg-rgb), 0.72) !important;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 1px 0 rgba(0,0,0,0.04) !important;
+        }
+
         /* ── 底部栏收纳模式 ── */
-        body.bottom-collapse-mode .collapse-hideable {
-            display: none !important;
-        }
-        body.bottom-collapse-mode #collapse-expand-btn {
-            display: flex !important;
-        }
-        .collapse-expand-btn {
-            background: rgba(var(--accent-color-rgb), 0.12) !important;
-            color: var(--accent-color) !important;
-            border-radius: 50% !important;
-            width: 36px !important;
-            height: 36px !important;
-            transition: all 0.2s !important;
-        }
-        .collapse-expand-btn.open {
+        body.bottom-collapse-mode .collapse-hideable { display: none !important; }
+        body.bottom-collapse-mode #collapse-expand-btn { display: flex !important; }
+        #collapse-expand-btn.open {
             background: var(--accent-color) !important;
             color: #fff !important;
-            transform: rotate(180deg);
         }
-        #collapsed-extras-panel {
-            background: var(--secondary-bg);
-        }
+        #collapse-expand-btn.open i { transform: rotate(180deg); }
+        #collapse-expand-btn i { transition: transform 0.25s; }
+
+        /* ── 收纳按钮的 setting-pill-row 激活态 ── */
+        #bottom-collapse-cs-toggle.active .setting-pill-switch { background: var(--accent-color) !important; }
+        #bottom-collapse-cs-toggle.active .setting-pill-knob { right: 3px !important; left: auto !important; }
+        #bottom-collapse-cs-toggle .setting-pill-switch { transition: background 0.3s; }
+        #bottom-collapse-cs-toggle .setting-pill-knob { transition: right 0.25s, left 0.25s; }

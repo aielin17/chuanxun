@@ -275,7 +275,7 @@ const loadData = async () => {
             }));
         } else {
             const backup = _tryRecoverFromBackup();
-            if (backup && Array.isArray(backup.messages) && backup.messages.length > 0 && backup.sessionId === SESSION_ID) {
+            if (backup && Array.isArray(backup.messages) && backup.messages.length > 0) {
                 const timeSince = Math.round((Date.now() - backup.ts) / 60000);
                 console.warn(`[loadData] 主存储无消息，正在从备份恢复（备份时间：${timeSince} 分钟前）`);
                 messages = backup.messages.map(m => ({
@@ -749,10 +749,10 @@ function manageAutoSendTimer() {
             document.documentElement.style.setProperty('--message-line-height', settings.messageLineHeight);
 
             document.documentElement.style.setProperty('--in-chat-avatar-size', `${settings.inChatAvatarSize}px`);
-            const _posVal = typeof settings.inChatAvatarPosition === 'number' ? settings.inChatAvatarPosition : (settings.inChatAvatarPosition === 'top' ? 0 : settings.inChatAvatarPosition === 'bottom' ? 100 : 50);
-            document.documentElement.style.setProperty('--avatar-offset-px', `${_posVal * 0.6}px`);
+            const _alignMap = { 'top': 'flex-start', 'center': 'center', 'bottom': 'flex-end' };
+            document.documentElement.style.setProperty('--avatar-align', _alignMap[settings.inChatAvatarPosition || 'center'] || 'center');
             document.body.classList.toggle('always-show-avatar', !!settings.alwaysShowAvatar);
-            document.body.classList.toggle('bottom-collapse-mode', !!settings.bottomCollapseMode);
+            if (typeof _applyCollapseState === 'function') _applyCollapseState(!!settings.bottomCollapseMode);
             document.body.classList.toggle('show-partner-name', !!(settings.showPartnerNameInChat || showPartnerNameInChat));
 
             document.querySelectorAll('.theme-color-btn').forEach(btn => {
@@ -908,11 +908,6 @@ function manageAutoSendTimer() {
                     nameLabel.textContent = groupMember.name;
                     const isSameSenderGroupForName = lastSender === 'group_' + groupMember.name;
                     if (!isSameSenderGroupForName) contentWrapper.appendChild(nameLabel);
-                } else if (!groupMember && msg.sender !== 'user' && msg.type !== 'system' && (settings.showPartnerNameInChat || showPartnerNameInChat)) {
-                    const nameLabel = document.createElement('div');
-                    nameLabel.className = 'message-sender-name';
-                    nameLabel.textContent = settings.partnerName || '对方';
-                    contentWrapper.appendChild(nameLabel);
                 }
                 
                 let messageHTML = '';
@@ -1064,6 +1059,29 @@ actionsHTML += `<button class="meta-action-btn delete-btn" title="删除"><i cla
             });
         }
 
+        // Global reply preview updater - called from sendMessage and reply buttons
+        window.updateReplyPreview = function() {
+            const container = DOMElements.replyPreviewContainer;
+            if (!container) return;
+            if (!currentReplyTo) {
+                container.innerHTML = '';
+                container.style.display = 'none';
+                return;
+            }
+            const senderName = currentReplyTo.sender === 'user' ? (settings.myName || '我') : (settings.partnerName || '对方');
+            const previewText = currentReplyTo.text ? currentReplyTo.text.slice(0, 40) : '🖼 图片';
+            container.style.display = 'flex';
+            container.innerHTML = `
+                <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(var(--accent-color-rgb),0.07);border-left:3px solid var(--accent-color);border-radius:0 8px 8px 0;width:100%;">
+                    <div style="flex:1;min-width:0;">
+                        <span style="font-size:11px;color:var(--accent-color);font-weight:600;">回复 ${senderName}</span>
+                        <div style="font-size:12px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${previewText}</div>
+                    </div>
+                    <button onclick="currentReplyTo=null;window.updateReplyPreview();" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);padding:2px 4px;font-size:14px;">✕</button>
+                </div>`;
+        };
+        function updateReplyPreview() { window.updateReplyPreview(); }
+
         function sendMessage(textOverride = null, type = 'normal') {
             const text = textOverride || DOMElements.messageInput.value.trim();
             const imageFile = DOMElements.imageInput.files[0];
@@ -1112,12 +1130,12 @@ if (!isBatchMode && type === 'normal') {
             throttledSaveData();
         }
 
-        const shouldIgnore = settings.allowReadNoReply && (Math.random() < (settings.readNoReplyChance || 0.2));
+        const shouldIgnore = settings.allowReadNoReply && (Math.random() < settings.readNoReplyChance);
 
         if (shouldIgnore) {
             console.log("触发已读不回机制");
         } else {
-            try { simulateReply(); } catch(e) { console.error('[simulateReply] 出错:', e); }
+            simulateReply(); 
         }
 
     }, randomDelay);
@@ -1297,15 +1315,19 @@ if (partnerPersonas && partnerPersonas.length > 0 && Math.random() < 0.3) {
 }
 
             const replyCount = Math.random() < 0.75 ? 1: (Math.random() < 0.95 ? 2: 3);
+            // If no custom replies, show a prompt notification and abort
+            if (!customReplies || customReplies.length === 0) {
+                (function(){var _tiW=document.getElementById('typing-indicator-wrapper');if(_tiW){var _tiInner=_tiW.querySelector('.typing-indicator');if(_tiInner){_tiInner.classList.add('hiding');setTimeout(function(){_tiW.style.display='none';if(_tiInner)_tiInner.classList.remove('hiding');},240);}else{_tiW.style.display='none';}}})();
+                showNotification('💬 还没有添加字卡，请先到"自定义回复"中添加字卡', 'info', 4000);
+                return;
+            }
             let delay = 0;
             for (let i = 0; i < replyCount; i++) {
                 const delayRange = settings.replyDelayMax - settings.replyDelayMin;
                 delay += settings.replyDelayMin + Math.random() * delayRange;
                 setTimeout(() => {
                     // Pick a reply from the custom library, falling back to safe defaults
-                    const replyPool = (customReplies && customReplies.length > 0)
-                        ? customReplies
-                        : ['嗯', '好的', '哦', '🥰', '好呀'];
+                    const replyPool = customReplies;
                     const replyText = replyPool[Math.floor(Math.random() * replyPool.length)];
 
                     // Occasionally append a random emoji
