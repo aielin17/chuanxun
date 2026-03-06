@@ -254,7 +254,7 @@ function renderWeeklyFortune(data, majorCards) {
             <i class="fas fa-sparkles" style="color:var(--accent-color);"></i> 凭直觉点击翻开你的每周主牌
         </div>
         
-        <div class="tarot-container-3d" onclick="this.classList.toggle('flipped'); document.getElementById('fortune-text-area').style.display = 'block'; setTimeout(() => document.getElementById('fortune-text-area').classList.add('visible'), 50);">
+        <div class="tarot-container-3d" onclick="this.classList.toggle('flipped');">
             <div class="tarot-card-inner">
                 <div class="tarot-face tarot-front">
                     <div class="tarot-pattern"><i class="fas fa-star-and-crescent"></i></div>
@@ -265,29 +265,11 @@ function renderWeeklyFortune(data, majorCards) {
                     </div>
                     <div>
                         <div class="tarot-card-name" style="font-size:20px; font-weight: 700;">${card.name}</div>
-                        <div class="tarot-position-badge ${isUpright ? 'upright' : 'reversed'}" style="margin:5px 0; background: var(--primary-bg);">
-                            ${isUpright ? "正位" : "逆位"}
-                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div id="fortune-text-area" class="fortune-result-area" style="display: none; background: var(--primary-bg); border-radius: 16px; padding: 20px; margin-top: 10px; border: 1px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.03);">
-            <div style="text-align: center; margin-bottom: 12px;">
-                <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase;">本周能量指数</div>
-                <div>${starsHtml}</div>
-            </div>
-            <div class="tarot-keyword" style="font-size:16px; margin-bottom:12px; text-align:center; position:relative;">
-                <span style="background: var(--primary-bg); padding: 0 10px; position:relative; z-index:2; color: var(--accent-color);">「 ${card.keyword} 」</span>
-                <div style="position:absolute; top:50%; left:0; right:0; height:1px; background:var(--border-color); z-index:1;"></div>
-            </div>
-            <div class="fortune-desc" style="font-size:14px; margin-bottom:15px; text-align: justify; text-align-last: center; line-height: 1.8;">${card.upright || card.meaning}</div>
-            <div class="fortune-tip" style="font-size:12px; background: rgba(var(--accent-color-rgb), 0.08); padding: 10px 12px; border-radius: 8px; color: var(--text-primary);">
-                <i class="fas fa-lightbulb" style="color:var(--accent-color); margin-right:5px;"></i>
-                <b>命运低语：</b>${isUpright ? "顺势而为，宇宙正为你敞开大门，保持当下的能量。" : "换个角度思考，也许是转机，放慢脚步倾听内心的声音。"}
-            </div>
-        </div>
     `;
 }
 
@@ -338,7 +320,7 @@ async function renderDailyFortune(todayKey) {
             ${dailyData.cards.map((card, i) => `
                 <div style="flex:1;min-width:90px;max-width:130px;text-align:center;">
                     <div style="font-size:10px;color:${positionColors[i]};margin-bottom:6px;font-weight:600;letter-spacing:0.5px;">${positionLabels[i]}</div>
-                    <div class="tarot-container-3d tarot-responsive" style="cursor:pointer;margin-bottom:8px;" onclick="this.classList.toggle('flipped'); this.nextElementSibling.style.display='block';">
+                    <div class="tarot-container-3d tarot-responsive" style="cursor:pointer;margin-bottom:8px;" onclick="this.classList.toggle('flipped');">
                         <div class="tarot-card-inner">
                             <div class="tarot-face tarot-front"><div class="tarot-pattern" style="font-size:18px;"><i class="fas fa-star-and-crescent"></i></div></div>
                             <div class="tarot-face tarot-back" style="background:linear-gradient(135deg,var(--secondary-bg),rgba(var(--accent-color-rgb),0.07));border:1.5px solid rgba(var(--accent-color-rgb),0.3);">
@@ -346,14 +328,11 @@ async function renderDailyFortune(todayKey) {
                                     ${card.img ? `<img src="${card.img}" style="height:55px;width:auto;object-fit:contain;border-radius:4px;" onerror="this.style.display='none';this.nextElementSibling.style.display='block';"><i class="fas ${card.icon}" style="display:none;font-size:28px;color:var(--accent-color);"></i>` : `<i class="fas ${card.icon}" style="font-size:28px;color:var(--accent-color);"></i>`}
                                 </div>
                                 <div style="font-size:12px;font-weight:700;">${card.name}</div>
-                                <div class="tarot-position-badge ${card.isUpright ? 'upright' : 'reversed'}" style="font-size:9px;padding:2px 6px;margin-top:3px;">${card.isUpright ? '正位' : '逆位'}</div>
+
                             </div>
                         </div>
                     </div>
-                    <div style="display:none;font-size:10px;color:var(--text-secondary);line-height:1.5;padding:6px;background:var(--primary-bg);border-radius:8px;border:1px solid var(--border-color);">
-                        <b style="color:var(--accent-color);">「${card.keyword}」</b><br>
-                        ${(card.isUpright ? card.upright : card.reversed).slice(0,40)}…
-                    </div>
+
                 </div>
             `).join('')}
         </div>

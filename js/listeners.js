@@ -1478,10 +1478,14 @@ if (sessionId === currentSessionId) {
     const applyPlayerCover = (base64Data) => {
         if (base64Data) {
             vinylRecord.style.backgroundImage = `url(${base64Data})`;
+            vinylRecord.style.backgroundSize = 'cover';
+            vinylRecord.style.backgroundPosition = 'center';
+            vinylRecord.style.backgroundColor = 'transparent';
             vinylRecord.classList.add('has-cover');
             vinylRecord.style.borderWidth = '1px';
         } else {
             vinylRecord.style.backgroundImage = '';
+            vinylRecord.style.backgroundColor = '';
             vinylRecord.classList.remove('has-cover');
             vinylRecord.style.borderWidth = '2px';
         }
@@ -1512,9 +1516,7 @@ const savedCover = safeGetItem(APP_PREFIX + 'playerCover');
             showNotification('图片太大了，请上传 2MB 以内的图片', 'error');
             return;
         }
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const base64Data = event.target.result;
+        cropImageToSquare(file, 200).then(base64Data => {
             try {
                 localforage.setItem(APP_PREFIX + 'playerCover', base64Data);
                 applyPlayerCover(base64Data);
@@ -1523,8 +1525,9 @@ const savedCover = safeGetItem(APP_PREFIX + 'playerCover');
                 console.error(err);
                 showNotification('图片存储失败（可能超出了浏览器限制）', 'error');
             }
-        };
-        reader.readAsDataURL(file);
+        }).catch(() => {
+            showNotification('图片处理失败，请重试', 'error');
+        });
         e.target.value = '';
     });
 
@@ -1572,7 +1575,7 @@ const savedCover = safeGetItem(APP_PREFIX + 'playerCover');
 
     let currentIndex = 0;
     let isPlaying = false;
-    let isRandom = false;
+    let playMode = 'sequence'; // 'sequence' | 'single' | 'shuffle'
     let editModeIndex = -1;
     let searchTerm = '';
     let isSearchVisible = false;
@@ -1619,9 +1622,10 @@ const savedCover = safeGetItem(APP_PREFIX + 'playerCover');
 
     function nextSong() {
         if (songs.length === 0) return;
-        if (isRandom) currentIndex = Math.floor(Math.random() * songs.length);
+        if (playMode === 'single') { loadSong(currentIndex); }
+        else if (playMode === 'shuffle') currentIndex = Math.floor(Math.random() * songs.length);
         else currentIndex = (currentIndex + 1) % songs.length;
-        loadSong(currentIndex);
+        if (playMode !== 'single') loadSong(currentIndex);
         if (isPlaying) audio.play();
     }
 
@@ -1999,10 +2003,14 @@ playlist.style.top = (rect.top + (player.classList.contains('collapsed') ? 65 : 
     audio.addEventListener('ended', nextSong);
 
     document.getElementById('mode-btn').addEventListener('click', () => {
-        isRandom = !isRandom;
-        document.getElementById('icon-loop').style.display = isRandom ? 'none' : 'block';
-        document.getElementById('icon-shuffle').style.display = isRandom ? 'block' : 'none';
-        showNotification(isRandom ? '随机播放' : '顺序播放', 'info', 1000);
+        if (playMode === 'sequence') { playMode = 'single'; }
+        else if (playMode === 'single') { playMode = 'shuffle'; }
+        else { playMode = 'sequence'; }
+        document.getElementById('icon-loop').style.display   = playMode === 'sequence' ? 'block' : 'none';
+        document.getElementById('icon-single').style.display = playMode === 'single'   ? 'block' : 'none';
+        document.getElementById('icon-shuffle').style.display= playMode === 'shuffle'  ? 'block' : 'none';
+        const labels = { sequence: '顺序播放', single: '单曲循环', shuffle: '随机播放' };
+        showNotification(labels[playMode], 'info', 1000);
     });
 
     const listBtn = document.getElementById('list-btn');

@@ -299,19 +299,28 @@
         <div class="batch-preview" id="batch-preview"></div>
         <div id="reply-preview-container"></div>
         <!-- 收纳模式展开面板 -->
-        <div id="collapsed-extras-panel" style="display:none;padding:8px 12px 6px;border-top:1px solid var(--border-color);background:var(--secondary-bg);">
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                <button class="input-btn" id="attachment-btn-extra" title="发送图片" onclick="document.getElementById('image-input').click()" style="width:36px;height:36px;background:rgba(var(--accent-color-rgb),0.08);border:none;border-radius:50%;cursor:pointer;color:var(--accent-color);font-size:15px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-image"></i></button>
-                <button class="input-btn" id="combo-btn-extra" title="表情 & 拍一拍" style="width:36px;height:36px;background:rgba(var(--accent-color-rgb),0.08);border:none;border-radius:50%;cursor:pointer;color:var(--accent-color);font-size:15px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-laugh-beam"></i></button>
-                <button class="input-btn" id="batch-btn-extra" title="批量发送" style="width:36px;height:36px;background:rgba(var(--accent-color-rgb),0.08);border:none;border-radius:50%;cursor:pointer;color:var(--accent-color);font-size:15px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-layer-group"></i></button>
-                <button title="自定义回复" onclick="(function(){document.getElementById('collapsed-extras-panel').style.display='none';document.getElementById('collapse-expand-btn').classList.remove('open');showModal(document.getElementById('custom-replies-modal'));})()" style="width:36px;height:36px;background:rgba(var(--accent-color-rgb),0.08);border:none;border-radius:50%;cursor:pointer;color:var(--accent-color);font-size:15px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-comment-dots"></i></button>
-                <button title="塔罗占卜" onclick="(function(){document.getElementById('collapsed-extras-panel').style.display='none';document.getElementById('collapse-expand-btn').classList.remove('open');generateFortune();})()" style="width:36px;height:36px;background:rgba(var(--accent-color-rgb),0.08);border:none;border-radius:50%;cursor:pointer;color:var(--accent-color);font-size:15px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-star-and-crescent"></i></button>
-                <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
-                    <span style="font-size:11px;color:var(--text-secondary);">退出收纳</span>
-                    <div style="width:36px;height:20px;border-radius:20px;background:var(--border-color);position:relative;cursor:pointer;flex-shrink:0;" onclick="window.exitCollapseMode && window.exitCollapseMode()">
-                        <div style="position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;top:3px;right:19px;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
-                    </div>
+        <div id="collapsed-extras-panel" style="display:none;">
+            <div class="collapsed-extras-inner">
+                <div class="collapsed-extras-row">
+                    <button class="collapsed-extra-btn input-btn" id="attachment-btn-extra" title="发送图片" onclick="document.getElementById('image-input').click()">
+                        <i class="fas fa-image"></i><span>图片</span>
+                    </button>
+                    <button class="collapsed-extra-btn input-btn" id="combo-btn-extra" title="表情">
+                        <i class="fas fa-laugh-beam"></i><span>表情</span>
+                    </button>
+                    <button class="collapsed-extra-btn input-btn" id="batch-btn-extra" title="批量发送">
+                        <i class="fas fa-layer-group"></i><span>批量</span>
+                    </button>
+                    <button class="collapsed-extra-btn" title="字卡回复" onclick="(function(){document.getElementById('collapsed-extras-panel').style.display='none';document.getElementById('collapse-expand-btn').classList.remove('open');showModal(document.getElementById('custom-replies-modal'));})()">
+                        <i class="fas fa-comment-dots"></i><span>字卡</span>
+                    </button>
+                    <button class="collapsed-extra-btn" title="塔罗占卜" onclick="(function(){document.getElementById('collapsed-extras-panel').style.display='none';document.getElementById('collapse-expand-btn').classList.remove('open');generateFortune();})()">
+                        <i class="fas fa-star-and-crescent"></i><span>占卜</span>
+                    </button>
                 </div>
+                <button class="collapsed-exit-btn" onclick="window.exitCollapseMode && window.exitCollapseMode()" title="退出收纳">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
         </div>
         <div class="input-area">
@@ -1983,6 +1992,7 @@
             <div class="controls">
                 <button class="btn" id="mode-btn" title="切换模式">
                     <svg id="icon-loop" viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z" /></svg>
+                    <svg id="icon-single" style="display:none" viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/><text x="12" y="14" text-anchor="middle" font-size="7" fill="currentColor" font-weight="bold">1</text></svg>
                     <svg id="icon-shuffle" style="display:none" viewBox="0 0 24 24"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" /></svg>
                 </button>
                 <button class="btn" id="prev-btn"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" /></svg></button>

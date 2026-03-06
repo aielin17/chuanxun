@@ -46,11 +46,16 @@
     document.getElementById('_reset_all').onclick = () => {
         closeDialog();
         if (confirm('【高危操作】确定要重置所有数据吗？此操作将清除所有本地数据且无法恢复！')) {
+            // 设置标志，阻止 beforeunload/pagehide 重写备份数据
+            window._skipBackup = true;
+            messages = [];
+            settings = {};
             localforage.clear().then(() => {
                 localStorage.clear();
                 showNotification('所有数据已重置，页面即将刷新', 'info', 2000);
-                setTimeout(() => { window.location.href = window.location.pathname; }, 2000);
+                setTimeout(() => { window.location.href = window.location.pathname + '?reset=' + Date.now(); }, 2000);
             }).catch(e => {
+                window._skipBackup = false;
                 showNotification('清除数据时发生错误', 'error');
                 console.error("清除 localforage 失败:", e);
             });
@@ -412,6 +417,8 @@ window.deleteAnniversaryItem = function(id) {
 
 const _BACKUP_PREFIX = 'BACKUP_V1_';
 function _backupCriticalData() {
+    // 重置流程中跳过备份，避免重置后恢复旧数据
+    if (window._skipBackup) return;
     try {
         const backupPayload = {
             ts: Date.now(),

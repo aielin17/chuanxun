@@ -538,13 +538,19 @@
             padding-top: env(safe-area-inset-top, 0px);
             border-bottom: 1px solid var(--border-color);
             background-color: var(--header-bg);
+            opacity: 0.5;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             box-shadow: 0 1px 0 rgba(0,0,0,0.06);
             z-index: 10;
             flex-shrink: 0;
             position: relative;
             display: flex;
             flex-direction: column;
-            transition: background-color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
+            transition: background-color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease, opacity 0.3s ease;
+        }
+        .header:hover {
+            opacity: 1;
         }
 
         body.immersive-mode .header {
@@ -6016,7 +6022,10 @@
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            transition: border-color 0.5s ease, box-shadow 0.3s ease;
+            transition: border-color 0.5s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+        }
+        .vinyl-record.has-cover {
+            background-color: transparent;
         }
 
 
@@ -9628,6 +9637,79 @@
         }
         #collapse-expand-btn.open i { transform: rotate(180deg); }
         #collapse-expand-btn i { transition: transform 0.25s; }
+
+        /* ── 收纳展开面板 ── */
+        #collapsed-extras-panel {
+            overflow: hidden;
+        }
+        .collapsed-extras-inner {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px 7px;
+            border-top: 1px solid var(--border-color);
+            background: var(--secondary-bg);
+            animation: collapseSlideIn 0.22s cubic-bezier(0.4,0,0.2,1);
+        }
+        @keyframes collapseSlideIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .collapsed-extras-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+        }
+        .collapsed-extra-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            width: 52px;
+            height: 52px;
+            border: none;
+            border-radius: 14px;
+            background: rgba(var(--accent-color-rgb), 0.08);
+            color: var(--accent-color);
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.18s, transform 0.15s;
+            flex-shrink: 0;
+        }
+        .collapsed-extra-btn span {
+            font-size: 9px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            letter-spacing: 0.3px;
+            font-family: var(--font-family);
+        }
+        .collapsed-extra-btn:hover, .collapsed-extra-btn:active {
+            background: rgba(var(--accent-color-rgb), 0.18);
+            transform: scale(1.06);
+        }
+        .collapsed-exit-btn {
+            margin-left: auto;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid var(--border-color);
+            background: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background 0.18s, color 0.18s;
+        }
+        .collapsed-exit-btn:hover {
+            background: rgba(255,80,80,0.1);
+            color: #ff5050;
+            border-color: rgba(255,80,80,0.3);
+        }
 
         /* ── 收纳按钮的 setting-pill-row 激活态 ── */
         #bottom-collapse-cs-toggle.active .setting-pill-switch { background: var(--accent-color) !important; }

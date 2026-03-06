@@ -1737,10 +1737,9 @@ function initReplyLibraryListeners() {
     if (exportBtn) exportBtn.addEventListener('click', _showExportUI);
 
     // 导入
-    const importBtn = document.getElementById('import-replies-btn');
     const importInput = document.getElementById('import-replies-input');
-    if (importBtn && importInput) {
-        importBtn.addEventListener('click', () => importInput.click());
+    if (importInput && !importInput._bound) {
+        importInput._bound = true;
         importInput.addEventListener('change', e => {
             const file = e.target.files[0];
             if (!file) return;
