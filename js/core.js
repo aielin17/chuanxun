@@ -46,7 +46,6 @@
     document.getElementById('_reset_all').onclick = () => {
         closeDialog();
         if (confirm('【高危操作】确定要重置所有数据吗？此操作将清除所有本地数据且无法恢复！')) {
-            // 设置标志，阻止 beforeunload/pagehide 重写备份数据
             window._skipBackup = true;
             messages = [];
             settings = {};
@@ -253,7 +252,6 @@ const loadData = async () => {
         }
 
         if (savedSettings) Object.assign(settings, savedSettings);
-        // Sync showPartnerNameInChat from settings if set there
         if (settings.showPartnerNameInChat !== undefined) {
             showPartnerNameInChat = settings.showPartnerNameInChat;
             document.body.classList.toggle('show-partner-name', showPartnerNameInChat);
@@ -418,7 +416,6 @@ window.deleteAnniversaryItem = function(id) {
 
 const _BACKUP_PREFIX = 'BACKUP_V1_';
 function _backupCriticalData() {
-    // 重置流程中跳过备份，避免重置后恢复旧数据
     if (window._skipBackup) return;
     try {
         const backupPayload = {
@@ -923,6 +920,16 @@ function manageAutoSendTimer() {
                     nameLabel.textContent = groupMember.name;
                     const isSameSenderGroupForName = lastSender === 'group_' + groupMember.name;
                     if (!isSameSenderGroupForName) contentWrapper.appendChild(nameLabel);
+                } else if (!groupMember && msg.sender !== 'user' && msg.sender !== null &&
+                           (settings.showPartnerNameInChat || showPartnerNameInChat)) {
+                    // Single mode: show partner name when the option is enabled and sender changes
+                    const isSameSenderForName = lastSender === msg.sender;
+                    if (!isSameSenderForName) {
+                        const nameLabel = document.createElement('div');
+                        nameLabel.className = 'group-sender-name';
+                        nameLabel.textContent = settings.partnerName || msg.sender || '对方';
+                        contentWrapper.appendChild(nameLabel);
+                    }
                 }
                 
                 let messageHTML = '';
@@ -1074,7 +1081,6 @@ actionsHTML += `<button class="meta-action-btn delete-btn" title="删除"><i cla
             });
         }
 
-        // Global reply preview updater - called from sendMessage and reply buttons
         window.updateReplyPreview = function() {
             const container = DOMElements.replyPreviewContainer;
             if (!container) return;
@@ -1330,14 +1336,12 @@ if (partnerPersonas && partnerPersonas.length > 0 && Math.random() < 0.3) {
 }
 
             const replyCount = Math.random() < 0.75 ? 1: (Math.random() < 0.95 ? 2: 3);
-            // If no custom replies, show a prompt notification and abort
             if (!customReplies || customReplies.length === 0) {
                 (function(){var _tiW=document.getElementById('typing-indicator-wrapper');if(_tiW){var _tiInner=_tiW.querySelector('.typing-indicator');if(_tiInner){_tiInner.classList.add('hiding');setTimeout(function(){_tiW.style.display='none';if(_tiInner)_tiInner.classList.remove('hiding');},240);}else{_tiW.style.display='none';}}})();
-                showNotification('💬 还没有添加字卡，请先到"自定义回复"中添加字卡', 'info', 4000);
+                showNotification('还没有添加字卡，请先到"自定义回复"中添加字卡', 'info', 4000);
                 return;
             }
             let delay = 0;
-            // Capture up to last 10 user messages for random quote selection
             const recentUserMsgs = settings.replyEnabled
                 ? messages.filter(m => m.sender === 'user' && m.text).slice(-10)
                 : [];
@@ -1345,22 +1349,18 @@ if (partnerPersonas && partnerPersonas.length > 0 && Math.random() < 0.3) {
                 const delayRange = settings.replyDelayMax - settings.replyDelayMin;
                 delay += settings.replyDelayMin + Math.random() * delayRange;
                 setTimeout(() => {
-                    // Pick a reply from the custom library, falling back to safe defaults
                     const replyPool = customReplies;
                     const replyText = replyPool[Math.floor(Math.random() * replyPool.length)];
 
-                    // Occasionally append a random emoji
                     let finalText = replyText;
                     let separateEmoji = null;
                     if (customEmojis && customEmojis.length > 0 && Math.random() < 0.3) {
                         const emoji = customEmojis[Math.floor(Math.random() * customEmojis.length)];
                         if (settings.emojiMixEnabled !== false) {
-                            // Mixed mode: emoji in same message
                             finalText = Math.random() < 0.5
                                 ? emoji + ' ' + replyText
                                 : replyText + ' ' + emoji;
                         } else {
-                            // Separate mode: emoji as its own message
                             separateEmoji = emoji;
                         }
                     }
@@ -1379,7 +1379,6 @@ if (partnerPersonas && partnerPersonas.length > 0 && Math.random() < 0.3) {
                         type: 'normal'
                     });
 
-                    // Send emoji as separate message if not mixing
                     if (separateEmoji) {
                         setTimeout(() => {
                             addMessage({
@@ -1395,7 +1394,6 @@ if (partnerPersonas && partnerPersonas.length > 0 && Math.random() < 0.3) {
                         }, 300 + Math.random() * 400);
                     }
 
-                    // Hide typing indicator after the last reply in this batch
                     if (i === replyCount - 1) {
                         (function() {
                             var _tiW = document.getElementById('typing-indicator-wrapper');
@@ -1718,7 +1716,6 @@ if (customStatuses && customStatuses.length > 0) {
 
 
 
-// Session & Migration
         function getStorageKey(baseKey) {
             if (!SESSION_ID) {
                 console.error('[getStorageKey] SESSION_ID 尚未初始化，拒绝生成存储键:', baseKey);

@@ -143,9 +143,6 @@ if (target.classList.contains('delete-btn')) {
                 });
             });
 
-            // ---- BUG FIX: 聊天设置 & 数据管理 关闭按钮 ----
-            // These buttons live inside .cs-footer / .dm-footer (not .modal-buttons),
-            // so the generic loop above never wires them up. Add explicit listeners here.
             const closeChatBtn = document.getElementById('close-chat');
             if (closeChatBtn) {
                 closeChatBtn.addEventListener('click', () => {
@@ -159,7 +156,6 @@ if (target.classList.contains('delete-btn')) {
                     hideModal(DOMElements.dataModal.modal);
                 });
             }
-            // ---- END BUG FIX ----
 
             DOMElements.editModal.input.addEventListener('input', () => {
                 DOMElements.editModal.save.disabled = !DOMElements.editModal.input.value.trim();
@@ -410,11 +406,10 @@ document.getElementById('chat-settings').addEventListener('click', () => {
         '#read-receipts-toggle': { prop: 'readReceiptsEnabled', name: '已读回执' },
         '#typing-indicator-toggle': { prop: 'typingIndicatorEnabled', name: '正在输入' },
         '#read-no-reply-toggle': { prop: 'allowReadNoReply', name: '已读不回' },
-        '#emoji-mix-toggle': { prop: 'emojiMixEnabled', name: '表情混入消息' }
+        '#emoji-mix-toggle': { prop: 'emojiMixEnabled', name: '表情消息' }
     };
     for (const [selector, { prop }] of Object.entries(toggleSyncMap)) {
         const el = document.querySelector(selector);
-        // emojiMixEnabled defaults to true if not set
         const val = prop === 'emojiMixEnabled' ? (settings[prop] !== false) : !!settings[prop];
         if (el) el.classList.toggle('active', val);
     }
@@ -710,7 +705,6 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                     btn.style.flex = '1'; btn.style.fontSize = '12px'; btn.style.padding = '7px 0';
                 });
 
-                // Show/hide custom offset slider
                 const customOffsetCtrl = document.getElementById('avatar-custom-offset-control');
                 if (customOffsetCtrl) customOffsetCtrl.style.display = pos === 'custom' ? 'block' : 'none';
                 if (pos === 'custom') {
@@ -720,7 +714,6 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                     const vl = document.getElementById('avatar-custom-offset-value');
                     if (sl) sl.value = offset;
                     if (vl) vl.textContent = offset + 'px';
-                    // Update preview
                     const previewPartner = document.getElementById('preview-partner-avatar');
                     if (previewPartner) previewPartner.style.marginTop = offset + 'px';
                     const previewMy = document.getElementById('preview-my-avatar');
@@ -733,7 +726,6 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                     if (previewMy) previewMy.style.marginTop = '';
                 }
 
-                // 每次显示头像开关
                 const alwaysPill = document.getElementById('always-avatar-pill');
                 const alwaysKnob = document.getElementById('always-avatar-knob');
                 const alwaysStatus = document.getElementById('always-avatar-status');
@@ -743,7 +735,6 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                 if (alwaysStatus) alwaysStatus.textContent = alwaysOn ? '已开启 — 每条消息都显示头像' : '已关闭 — 仅首条消息显示';
                 document.body.classList.toggle('always-show-avatar', alwaysOn);
 
-                // 单人模式显示对方名字开关
                 const namePill = document.getElementById('partner-name-chat-pill');
                 const nameKnob = document.getElementById('partner-name-chat-knob');
                 const nameStatus = document.getElementById('partner-name-chat-status');
@@ -788,7 +779,6 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                 }
             });
 
-            // Custom offset slider
             const customOffsetSlider = document.getElementById('avatar-custom-offset-slider');
             const customOffsetValue = document.getElementById('avatar-custom-offset-value');
             if (customOffsetSlider) {
@@ -799,7 +789,6 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                     settings.inChatAvatarCustomOffset = val;
                     if (customOffsetValue) customOffsetValue.textContent = val + 'px';
                     document.documentElement.style.setProperty('--avatar-custom-offset', val + 'px');
-                    // Update preview rows
                     document.querySelectorAll('.preview-msg-row').forEach(row => {
                         row.style.alignItems = 'flex-start';
                     });
@@ -812,7 +801,6 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                 customOffsetSlider.addEventListener('change', throttledSaveData);
             }
 
-            // 每条消息都显示头像 toggle
             const alwaysAvatarToggle = document.getElementById('always-avatar-toggle');
             if (alwaysAvatarToggle) {
                 alwaysAvatarToggle.addEventListener('click', () => {
@@ -823,7 +811,6 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                 });
             }
 
-            // 单人模式显示对方名字 toggle
             const partnerNameChatToggle = document.getElementById('partner-name-chat-toggle');
             if (partnerNameChatToggle) {
                 partnerNameChatToggle.addEventListener('click', () => {
@@ -978,7 +965,6 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                 element.classList.toggle('active', _initVal);
 
                 element.addEventListener('click', () => {
-                    // emojiMixEnabled defaults to true if unset
                     if (prop === 'emojiMixEnabled' && settings[prop] === undefined) settings[prop] = true;
                     settings[prop] = !settings[prop];
                     throttledSaveData();
@@ -1631,7 +1617,7 @@ const savedCover = safeGetItem(APP_PREFIX + 'playerCover');
 
     let currentIndex = 0;
     let isPlaying = false;
-    let playMode = 'sequence'; // 'sequence' | 'single' | 'shuffle'
+    let playMode = 'sequence';
     let editModeIndex = -1;
     let searchTerm = '';
     let isSearchVisible = false;
@@ -2386,16 +2372,12 @@ playlist.style.top = (rect.top + (player.classList.contains('collapsed') ? 65 : 
         }
 
 
-/* ════════════════════════════════════════
-   底部栏收纳模式  Bottom Collapse Mode
-   ════════════════════════════════════════ */
 
 function _applyCollapseState(on) {
     document.body.classList.toggle('bottom-collapse-mode', on);
     // Sync cs-panel-display toggle pill
     const csToggle = document.getElementById('bottom-collapse-cs-toggle');
     if (csToggle) csToggle.classList.toggle('active', on);
-    // Ensure expand btn hidden when off, panel closed
     if (!on) {
         const panel = document.getElementById('collapsed-extras-panel');
         if (panel) panel.style.display = 'none';
@@ -2421,7 +2403,6 @@ window.toggleCollapsedExtras = function() {
     panel.style.display = willOpen ? 'block' : 'none';
     if (btn) btn.classList.toggle('open', willOpen);
 
-    // Wire up extra buttons once
     function wireExtra(extraId, primaryId) {
         const extra = document.getElementById(extraId);
         const primary = document.getElementById(primaryId);
@@ -2441,7 +2422,6 @@ window.exitCollapseMode = function() {
     if (typeof showNotification === 'function') showNotification('已退出收纳模式', 'success', 2000);
 };
 
-// Apply saved collapse state on load
 (function initCollapseMode() {
     function tryApply() {
         if (typeof settings !== 'undefined') {
