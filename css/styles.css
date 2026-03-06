@@ -4797,21 +4797,49 @@
         .stats-dashboard {
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            padding: 4px 0;
+            gap: 15px;
+            padding: 5px 0;
         }
+
 
         .stats-card {
             background-color: var(--primary-bg);
             border-radius: 16px;
             padding: 16px;
             border: 1px solid var(--border-color);
+            margin-bottom: 5px;
         }
 
+
         .stats-overview-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* 第一行：总消息数（大卡片） */
+        .overview-item.overview-large {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 16px 8px;
+            background: linear-gradient(135deg, rgba(var(--accent-color-rgb), 0.12), rgba(var(--accent-color-rgb), 0.04));
+            border-radius: 14px;
+            text-align: center;
+            border: 1px solid rgba(var(--accent-color-rgb), 0.2);
+        }
+
+        .overview-item.overview-large .overview-value {
+            font-size: 36px;
+            color: var(--accent-color);
+        }
+
+        /* 第二行：我发送 + 对方发送（各占一半） */
+        .overview-row-two {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
         }
 
         .overview-item {
@@ -4819,68 +4847,105 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 12px 6px 10px;
+            padding: 12px 8px;
             background-color: var(--secondary-bg);
             border-radius: 12px;
             text-align: center;
             border: 1px solid transparent;
-            transition: border-color 0.2s, background 0.2s;
         }
 
         .overview-item:hover {
-            border-color: rgba(var(--accent-color-rgb), 0.25);
-            background-color: rgba(var(--accent-color-rgb), 0.04);
+            border-color: var(--border-color);
+            background-color: var(--primary-bg);
+        }
+
+        /* 第三行：日期卡片（横向布局） */
+        .overview-item.overview-date {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 12px;
+            padding: 11px 14px;
+            text-align: left;
+        }
+
+        .overview-date-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(var(--accent-color-rgb), 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-color);
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+
+        .overview-date-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            margin-bottom: 3px;
+            letter-spacing: 0.3px;
+        }
+
+        .overview-date-value {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: 0.3px;
+        }
+
+        .overview-row-dates {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
         }
 
         .overview-value {
-            font-size: 18px;
+            font-family: 'Georgia', serif;
+            font-size: 22px;
             font-weight: 700;
             color: var(--accent-color);
             line-height: 1.2;
-            letter-spacing: -0.3px;
         }
 
         .overview-label {
-            font-size: 10px;
+            font-size: 11px;
             color: var(--text-secondary);
             margin-top: 4px;
-            letter-spacing: 0.2px;
         }
 
+
         .stats-card-title {
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 600;
             color: var(--text-secondary);
             margin-bottom: 10px;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border-bottom: 1px dashed var(--border-color);
+            padding-bottom: 8px;
         }
 
         .stats-rank-list {
             display: flex;
             flex-direction: column;
-            gap: 6px;
-        }
-
-        .stats-toggle-row {
-            display: flex;
             gap: 8px;
-            margin-bottom: 14px;
-            background: var(--secondary-bg);
-            border-radius: 12px;
-            padding: 4px;
         }
 
         .stats-toggle-btn {
             flex: 1;
-            padding: 7px 10px;
-            border: none;
-            border-radius: 9px;
-            background: transparent;
+            padding: 8px 12px;
+            border: 1.5px solid var(--border-color);
+            border-radius: 20px;
+            background: var(--secondary-bg);
             color: var(--text-secondary);
             font-size: 13px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.25s ease;
             font-family: var(--font-family);
             font-weight: 500;
             display: flex;
@@ -4891,10 +4956,11 @@
         .stats-toggle-btn.active {
             background: var(--accent-color);
             color: #fff;
-            box-shadow: 0 2px 8px rgba(var(--accent-color-rgb), 0.35);
+            border-color: var(--accent-color);
+            box-shadow: 0 2px 8px rgba(var(--accent-color-rgb), 0.3);
         }
         .stats-toggle-btn:not(.active):hover {
-            background: rgba(var(--accent-color-rgb), 0.08);
+            border-color: var(--accent-color);
             color: var(--accent-color);
         }
 
@@ -4902,60 +4968,69 @@
             position: relative;
             display: flex;
             align-items: center;
-            padding: 9px 10px;
-            background: var(--secondary-bg);
-            border-radius: 10px;
+            padding: 8px 10px;
+            background: transparent;
+            border-radius: 8px;
             overflow: hidden;
-            min-height: 42px;
-            border: 1px solid transparent;
-            transition: border-color 0.15s;
+            min-height: 44px;
         }
 
-        .rank-item:hover {
-            border-color: rgba(var(--accent-color-rgb), 0.2);
-        }
 
         .rank-progress-bg {
             position: absolute;
             top: 0;
             left: 0;
             bottom: 0;
-            background: linear-gradient(90deg, rgba(var(--accent-color-rgb), 0.12), transparent);
+            background-color: rgba(var(--accent-color-rgb), 0.12);
             z-index: 0;
-            border-radius: 10px;
-            transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+            border-radius: 8px;
+            transition: width 0.6s ease;
         }
+
 
         .rank-info {
             position: relative;
             z-index: 1;
             display: flex;
             align-items: center;
+            justify-content: space-between;
             width: 100%;
-            gap: 10px;
+            gap: 12px;
         }
 
         .rank-number {
-            width: 22px;
-            font-weight: 700;
+            width: 24px;
+            font-weight: 800;
+            font-style: italic;
             color: var(--text-secondary);
-            opacity: 0.45;
+            opacity: 0.5;
             flex-shrink: 0;
             text-align: center;
-            font-size: 13px;
-            font-style: italic;
+            font-size: 14px;
         }
 
-        .rank-number.rank-medal {
-            font-style: normal;
+        .rank-item:nth-child(1) .rank-number {
+            color: #FFD700;
             opacity: 1;
+            text-shadow: 0 1px 0 rgba(0,0,0,0.1);
             font-size: 16px;
         }
+        .rank-item:nth-child(2) .rank-number {
+            color: #9EA1A3;
+            opacity: 1;
+            font-size: 15px;
+        }
+        .rank-item:nth-child(3) .rank-number {
+            color: #CD7F32;
+            opacity: 1;
+            font-size: 15px;
+        }
+
 
         .rank-text {
             flex: 1;
             color: var(--text-primary);
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 500;
             line-height: 1.4;
             white-space: normal;
@@ -4968,18 +5043,27 @@
 
         .rank-count {
             flex-shrink: 0;
-            font-size: 14px;
+            font-size: 12px;
             color: var(--accent-color);
             font-weight: 700;
-            min-width: 32px;
-            text-align: right;
+            background-color: var(--secondary-bg);
+            padding: 4px 8px;
+            border-radius: 6px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+            min-width: 40px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             line-height: 1;
         }
         .rank-count small {
-            font-size: 10px;
-            opacity: 0.65;
-            font-weight: 400;
-            margin-left: 1px;
+            font-size: 9px;
+            opacity: 0.7;
+            font-weight: normal;
+            margin-top: 2px;
         }
 
         .stats-empty-state {
