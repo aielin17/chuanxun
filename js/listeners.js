@@ -605,6 +605,55 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                 });
             }
 
+            // 全局主题 CSS
+            const globalCssTextarea = document.getElementById('custom-global-css');
+            const applyGlobalCssBtn = document.getElementById('apply-global-css-btn');
+            const resetGlobalCssBtn = document.getElementById('reset-global-css-btn');
+            const globalCssLiveToggle = document.getElementById('global-css-live-toggle');
+            const globalCssStatus = document.getElementById('global-css-status');
+
+            if (globalCssTextarea) {
+                globalCssTextarea.value = settings.customGlobalCss || '';
+
+                globalCssTextarea.addEventListener('input', () => {
+                    if (globalCssLiveToggle && globalCssLiveToggle.checked) {
+                        applyGlobalThemeCss(globalCssTextarea.value);
+                        if (globalCssStatus) {
+                            globalCssStatus.style.display = 'block';
+                            globalCssStatus.textContent = '● 实时应用中';
+                            globalCssStatus.style.color = 'var(--accent-color)';
+                        }
+                    }
+                });
+            }
+
+            if (applyGlobalCssBtn) {
+                applyGlobalCssBtn.addEventListener('click', () => {
+                    const css = globalCssTextarea ? globalCssTextarea.value : '';
+                    settings.customGlobalCss = css;
+                    applyGlobalThemeCss(css);
+                    throttledSaveData();
+                    showNotification('全局主题 CSS 已应用', 'success');
+                    if (globalCssStatus) {
+                        globalCssStatus.style.display = 'block';
+                        globalCssStatus.textContent = '✓ 已应用到全局';
+                        globalCssStatus.style.color = '#51cf66';
+                        setTimeout(() => { if (globalCssStatus) globalCssStatus.style.display = 'none'; }, 2000);
+                    }
+                });
+            }
+
+            if (resetGlobalCssBtn) {
+                resetGlobalCssBtn.addEventListener('click', () => {
+                    if (globalCssTextarea) globalCssTextarea.value = '';
+                    settings.customGlobalCss = '';
+                    applyGlobalThemeCss('');
+                    throttledSaveData();
+                    showNotification('全局主题 CSS 已清除', 'success');
+                    if (globalCssStatus) globalCssStatus.style.display = 'none';
+                });
+            }
+
             const fontSizeSlider = document.getElementById('font-size-slider');
             const fontSizeValue = document.getElementById('font-size-value');
 
@@ -1025,6 +1074,8 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                 if (fontUrlInputEl) fontUrlInputEl.value = settings.customFontUrl || '';
                 const cssTextareaEl = document.getElementById('custom-bubble-css');
                 if (cssTextareaEl) cssTextareaEl.value = settings.customBubbleCss || '';
+                const globalCssTextareaEl = document.getElementById('custom-global-css');
+                if (globalCssTextareaEl) globalCssTextareaEl.value = settings.customGlobalCss || '';
                 
                 document.querySelectorAll('[data-bubble-style]').forEach(item => {
                     item.classList.toggle('active', item.dataset.bubbleStyle === settings.bubbleStyle);
@@ -2092,8 +2143,7 @@ playlist.style.top = (rect.top + (player.classList.contains('collapsed') ? 65 : 
 
             DOMElements.sendBtn.addEventListener('click', () => isBatchMode ? addToBatch(): sendMessage());
             DOMElements.messageInput.addEventListener('keydown', e => {
-                // isComposing: 输入法（中文/日文/韩文/苹果输入法）合字确认阶段，忽略 Enter
-                if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229) {
+                if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault(); isBatchMode ? addToBatch(): sendMessage();
                 }
             });

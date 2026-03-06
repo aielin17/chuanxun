@@ -227,3 +227,21 @@ function applyCustomBubbleCss(cssCode) {
     
     styleTag.textContent = cssCode;
 }
+
+function applyGlobalThemeCss(cssCode) {
+    const styleId = 'user-custom-global-theme-style';
+    let styleTag = document.getElementById(styleId);
+
+    if (!cssCode || !cssCode.trim()) {
+        if (styleTag) styleTag.remove();
+        return;
+    }
+
+    if (!styleTag) {
+        styleTag = document.createElement('style');
+        styleTag.id = styleId;
+        document.head.appendChild(styleTag);
+    }
+
+    styleTag.textContent = cssCode;
+}

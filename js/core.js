@@ -92,6 +92,7 @@
                 showPartnerNameInChat: false,
                 customFontUrl: "", 
         customBubbleCss: "",
+        customGlobalCss: "",
                 myAvatarFrame: null, 
                 partnerAvatarFrame: null,
                 myAvatarShape: 'circle',
@@ -259,6 +260,7 @@ const loadData = async () => {
         try {
             if (settings.customFontUrl) applyCustomFont(settings.customFontUrl);
             if (settings.customBubbleCss) applyCustomBubbleCss(settings.customBubbleCss);
+            if (settings.customGlobalCss) applyGlobalThemeCss(settings.customGlobalCss);
         } catch(e) { console.warn("样式应用失败", e); }
         
         if (savedPokes) customPokes = savedPokes;
@@ -1703,6 +1705,7 @@ function showModal(modalElement, focusElement = null) {
                                 try {
                                     if (settings.customFontUrl) applyCustomFont(settings.customFontUrl);
                                     if (settings.customBubbleCss) applyCustomBubbleCss(settings.customBubbleCss);
+                                    if (settings.customGlobalCss) applyGlobalThemeCss(settings.customGlobalCss);
                                 } catch(e2) { console.warn('导入后样式应用失败', e2); }
                             }
                             if (importedData.dgCustomData) { try { localStorage.setItem('dg_custom_data', JSON.stringify(importedData.dgCustomData)); } catch(e2) {} }
