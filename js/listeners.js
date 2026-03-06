@@ -2092,7 +2092,8 @@ playlist.style.top = (rect.top + (player.classList.contains('collapsed') ? 65 : 
 
             DOMElements.sendBtn.addEventListener('click', () => isBatchMode ? addToBatch(): sendMessage());
             DOMElements.messageInput.addEventListener('keydown', e => {
-                if (e.key === 'Enter' && !e.shiftKey) {
+                // isComposing: 输入法（中文/日文/韩文/苹果输入法）合字确认阶段，忽略 Enter
+                if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229) {
                     e.preventDefault(); isBatchMode ? addToBatch(): sendMessage();
                 }
             });
