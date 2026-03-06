@@ -10,6 +10,7 @@ let _batchSelectedIndices = new Set();
 let _batchModeActive = false;
 let _searchVisible = false;
 let _searchQuery = '';
+let _searchDebounceTimer = null;
 let _activeGroupFilter = null; 
 
 const GROUP_COLORS = [
@@ -306,8 +307,26 @@ function _renderModernToolbar() {
     if (_searchVisible) {
         const si = toolbar.querySelector('#rl-search-input');
         if (si) {
-            si.oninput = (e) => { _searchQuery = e.target.value; renderReplyLibrary(); };
-            si.onkeydown = (e) => { if (e.key === 'Escape') { _searchVisible = false; _searchQuery = ''; renderReplyLibrary(); } };
+            si.oninput = (e) => {
+                const val = e.target.value;
+                clearTimeout(_searchDebounceTimer);
+                _searchDebounceTimer = setTimeout(() => {
+                    _searchQuery = val;
+                    renderReplyLibrary();
+                }, 400);
+            };
+            si.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    clearTimeout(_searchDebounceTimer);
+                    _searchQuery = e.target.value;
+                    renderReplyLibrary();
+                } else if (e.key === 'Escape') {
+                    clearTimeout(_searchDebounceTimer);
+                    _searchVisible = false;
+                    _searchQuery = '';
+                    renderReplyLibrary();
+                }
+            };
         }
         toolbar.querySelector('#tb-search-clear').onclick = () => { _searchVisible = false; _searchQuery = ''; renderReplyLibrary(); };
     }
@@ -1670,9 +1689,13 @@ function initReplyLibraryListeners() {
     });
 
     const searchInput = document.getElementById('reply-search-input');
-    if (searchInput) searchInput.addEventListener('input', () => {
-        _searchQuery = searchInput.value;
-        renderReplyLibrary();
+    if (searchInput) searchInput.addEventListener('input', (e) => {
+        const val = e.target.value;
+        clearTimeout(_searchDebounceTimer);
+        _searchDebounceTimer = setTimeout(() => {
+            _searchQuery = val;
+            renderReplyLibrary();
+        }, 400);
     });
 
     const dedupBtn = document.getElementById('dedup-replies-btn');
