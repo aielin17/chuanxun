@@ -54,6 +54,58 @@ const ICONS = {
 };
 
 
+// 仅重渲染列表内容区域，不重建工具栏（搜索时使用，避免 input 焦点丢失）
+function _renderListContentOnly() {
+    const list = document.getElementById('custom-replies-list');
+    if (!list) return;
+
+    // 移除上次渲染的列表内容（保留 toolbar 和其子元素）
+    const toolbar = document.getElementById('batch-ops-toolbar');
+    // 清理 list 中非 toolbar 的节点
+    Array.from(list.children).forEach(child => {
+        if (child !== toolbar) child.remove();
+    });
+
+    let itemsToRender = [];
+    let renderType = 'text';
+
+    if (currentMajorTab === 'reply') {
+        if (currentSubTab === 'custom') {
+            itemsToRender = customReplies;
+        } else if (currentSubTab === 'emojis') {
+            itemsToRender = CONSTANTS.REPLY_EMOJIS;
+            renderType = 'emoji';
+        } else if (currentSubTab === 'stickers') {
+            itemsToRender = stickerLibrary;
+            renderType = 'image';
+        }
+    } else if (currentMajorTab === 'atmosphere') {
+        if (currentSubTab === 'pokes') itemsToRender = customPokes;
+        else if (currentSubTab === 'statuses') itemsToRender = customStatuses;
+        else if (currentSubTab === 'mottos') itemsToRender = customMottos;
+        else if (currentSubTab === 'intros') itemsToRender = customIntros;
+    }
+
+    if (renderType === 'emoji') { _renderEmojiTab(list, itemsToRender); return; }
+    if (renderType === 'image') { _renderStickerTab(list, itemsToRender); return; }
+
+    const q = _searchQuery.toLowerCase().trim();
+    const filtered = q ? itemsToRender.filter(item => item.toLowerCase().includes(q)) : itemsToRender;
+
+    if (filtered.length === 0) {
+        const empty = document.createElement('div');
+        empty.innerHTML = renderEmptyState(q ? `未找到 "${q}"` : '列表空空如也');
+        list.appendChild(empty.firstElementChild || empty);
+        return;
+    }
+
+    if (currentMajorTab === 'reply' && currentSubTab === 'custom') {
+        _renderCardViewWithGroups(list, filtered);
+    } else {
+        _renderAtmosphereList(list, filtered);
+    }
+}
+
 function renderReplyLibrary() {
     const list = document.getElementById('custom-replies-list');
     const titleEl = document.getElementById('cr-modal-title');
@@ -312,14 +364,14 @@ function _renderModernToolbar() {
                 clearTimeout(_searchDebounceTimer);
                 _searchDebounceTimer = setTimeout(() => {
                     _searchQuery = val;
-                    renderReplyLibrary();
-                }, 400);
+                    _renderListContentOnly();
+                }, 300);
             };
             si.onkeydown = (e) => {
                 if (e.key === 'Enter') {
                     clearTimeout(_searchDebounceTimer);
                     _searchQuery = e.target.value;
-                    renderReplyLibrary();
+                    _renderListContentOnly();
                 } else if (e.key === 'Escape') {
                     clearTimeout(_searchDebounceTimer);
                     _searchVisible = false;
