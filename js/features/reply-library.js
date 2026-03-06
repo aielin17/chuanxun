@@ -3,7 +3,6 @@
  * ✦ 移动优先 · 底部 Tab 导航 · 精美卡片 · 分组高度自定义 · 批量管理
  */
 
-// ─── 全局状态 ──────────────────────────────────────────────
 if (typeof customReplyGroups === 'undefined') window.customReplyGroups = [];
 if (typeof replyGroupsEnabled === 'undefined') window.replyGroupsEnabled = false;
 
@@ -11,9 +10,8 @@ let _batchSelectedIndices = new Set();
 let _batchModeActive = false;
 let _searchVisible = false;
 let _searchQuery = '';
-let _activeGroupFilter = null; // null = 全部, 'ungrouped' = 未分组, groupId = 某分组
+let _activeGroupFilter = null; 
 
-// ─── 分组预设色板（18色，饱和精致）─────────────────────────
 const GROUP_COLORS = [
     '#FF6B6B','#FF8E53','#FFC542','#51CF66',
     '#20C997','#4DABF7','#748FFC','#DA77F2',
@@ -22,7 +20,6 @@ const GROUP_COLORS = [
     '#868E96','#212529'
 ];
 
-// ─── SVG 图标库（纯矢量，无 FontAwesome 依赖）──────────────
 const ICONS = {
     reply:    `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 3a1 1 0 011-1h10a1 1 0 011 1v7a1 1 0 01-1 1H9l-3 2.5V11H3a1 1 0 01-1-1V3z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>`,
     magic:    `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2l.9 2.7L11.6 4l-1.8 2.2L12 8l-2.9-.1L8 10.8l-.9-2.9L4.4 8l1.8-2.2L4.4 4l2.7.7L8 2z" stroke="currentColor" stroke-width="1.2" fill="none"/><line x1="2" y1="14" x2="5" y2="11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
@@ -55,9 +52,7 @@ const ICONS = {
     palette:  `<svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1.5a6 6 0 100 12 2.5 2.5 0 010-5 2.5 2.5 0 000-7z" stroke="currentColor" stroke-width="1.2" fill="none"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="7.5" cy="3.5" r="1" fill="currentColor"/><circle cx="11" cy="6" r="1" fill="currentColor"/></svg>`,
 };
 
-// ─────────────────────────────────────────────────────────
-//  主渲染入口
-// ─────────────────────────────────────────────────────────
+
 function renderReplyLibrary() {
     const list = document.getElementById('custom-replies-list');
     const titleEl = document.getElementById('cr-modal-title');
@@ -66,7 +61,6 @@ function renderReplyLibrary() {
     const currentConfig = LIBRARY_CONFIG[currentMajorTab];
     if (titleEl) titleEl.textContent = currentConfig.title;
 
-    // 重建子 Tab 区
     const subTabsContainer = document.getElementById('cr-sub-tabs');
     if (subTabsContainer) {
         subTabsContainer.innerHTML = currentConfig.tabs.map(tab => `
@@ -94,10 +88,8 @@ function renderReplyLibrary() {
     const activeTabConfig = currentConfig.tabs.find(t => t.id === currentSubTab);
     if (activeTabConfig) list.classList.add(activeTabConfig.mode + '-mode');
 
-    // 工具栏重构
     _renderModernToolbar();
 
-    // 数据源 & 渲染类型
     let itemsToRender = [];
     let renderType = 'text';
 
@@ -121,7 +113,6 @@ function renderReplyLibrary() {
     if (renderType === 'emoji') { _renderEmojiTab(list, itemsToRender); return; }
     if (renderType === 'image') { _renderStickerTab(list, itemsToRender); return; }
 
-    // 应用搜索过滤
     const q = _searchQuery.toLowerCase().trim();
     let filtered = q ? itemsToRender.filter(item => item.toLowerCase().includes(q)) : itemsToRender;
 
@@ -130,7 +121,6 @@ function renderReplyLibrary() {
         return;
     }
 
-    // 主字卡 → 分组视图
     if (currentMajorTab === 'reply' && currentSubTab === 'custom') {
         _renderCardViewWithGroups(list, filtered);
     } else {
@@ -138,9 +128,6 @@ function renderReplyLibrary() {
     }
 }
 
-// ─────────────────────────────────────────────────────────
-//  现代工具栏（固定在顶部）
-// ─────────────────────────────────────────────────────────
 function _renderModernToolbar() {
     let toolbar = document.getElementById('batch-ops-toolbar');
     const isMainCustom = currentMajorTab === 'reply' && currentSubTab === 'custom';
@@ -162,7 +149,6 @@ function _renderModernToolbar() {
         return '新增字卡';
     })();
 
-    // 分组过滤器 Pills（仅主字卡）
     let groupFilterHtml = '';
     if (isMainCustom && customReplyGroups && customReplyGroups.length > 0) {
         const allCount = customReplies.length;
@@ -194,7 +180,6 @@ function _renderModernToolbar() {
         `;
     }
 
-    // 批量操作区
     let batchActionsHtml = '';
     if (_batchModeActive) {
         batchActionsHtml = `
@@ -274,38 +259,30 @@ function _renderModernToolbar() {
             .group-filter-pills::-webkit-scrollbar { display:none; }
         </style>
 
-        <!-- 主工具行 -->
         <div style="display:flex;align-items:center;gap:8px;padding:10px 15px;border-bottom:1px solid var(--border-color);">
-            <!-- 搜索 toggle -->
             <button class="toolbar-icon-btn ${_searchVisible ? 'active' : ''}" id="tb-search-btn" title="搜索">
                 ${ICONS.search}
             </button>
-            <!-- 分组管理（仅主字卡） -->
             ${isMainCustom ? `
             <button class="toolbar-icon-btn" id="tb-groups-btn" title="分组管理">
                 ${ICONS.folder}
             </button>` : ''}
-            <!-- 去重 -->
             <button class="toolbar-icon-btn" id="tb-dedup-btn" title="一键去重">
                 ${ICONS.dedup}
             </button>
             <div style="flex:1;"></div>
-            <!-- 批量模式 toggle -->
             ${isMainCustom ? `
             <button class="toolbar-icon-btn ${_batchModeActive ? 'active' : ''}" id="tb-batch-btn" title="${_batchModeActive ? '退出批量' : '批量管理'}">
                 ${ICONS.batch}
             </button>` : ''}
-            <!-- 导入 -->
             <button class="toolbar-icon-btn" id="tb-import-btn" title="导入">
                 ${ICONS.import}
             </button>
-            <!-- 导出 -->
             <button class="toolbar-icon-btn" id="tb-export-btn" title="导出">
                 ${ICONS.export}
             </button>
         </div>
 
-        <!-- 搜索栏（按需展开）-->
         ${_searchVisible ? `
         <div class="search-input-line">
             <div style="color:var(--text-secondary);">${ICONS.search}</div>
@@ -315,14 +292,11 @@ function _renderModernToolbar() {
             </button>
         </div>` : ''}
 
-        <!-- 分组过滤器 Pills -->
         ${groupFilterHtml}
 
-        <!-- 批量操作栏 -->
         ${batchActionsHtml}
     `;
 
-    // ── 绑定事件 ──────────────────────────────
     toolbar.querySelector('#tb-search-btn').onclick = () => {
         _searchVisible = !_searchVisible;
         if (!_searchVisible) _searchQuery = '';
@@ -352,7 +326,6 @@ function _renderModernToolbar() {
     toolbar.querySelector('#tb-import-btn')?.addEventListener('click', () => document.getElementById('import-replies-input')?.click());
     toolbar.querySelector('#tb-export-btn')?.addEventListener('click', _showExportUI);
 
-    // 分组过滤 Pills 事件
     toolbar.querySelectorAll('.gfp-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const f = btn.dataset.filter;
@@ -361,7 +334,6 @@ function _renderModernToolbar() {
         });
     });
 
-    // 批量操作按钮
     if (_batchModeActive) {
         toolbar.querySelector('#batch-select-all-btn')?.addEventListener('click', () => {
             if (_batchSelectedIndices.size === totalItems) _batchSelectedIndices.clear();
@@ -395,9 +367,6 @@ function _renderModernToolbar() {
     }
 }
 
-// ─────────────────────────────────────────────────────────
-//  主字卡渲染 — 精美卡片式 + 分组
-// ─────────────────────────────────────────────────────────
 function _renderCardViewWithGroups(list, items) {
     const disabledSet = _getDisabledItemsSet();
     const itemsWithIdx = items.map((text, idx) => ({
@@ -405,9 +374,7 @@ function _renderCardViewWithGroups(list, items) {
         idx: customReplies.indexOf(text)
     }));
 
-    // 根据过滤器决定显示哪些
     if (_activeGroupFilter === null) {
-        // 全部 — 按分组分块显示
         if (!customReplyGroups || customReplyGroups.length === 0) {
             _renderCardList(list, itemsWithIdx, disabledSet);
             return;
@@ -439,7 +406,6 @@ function _renderCardViewWithGroups(list, items) {
             _renderCardList(list, ungrouped, disabledSet);
         }
     } else {
-        // 某具体分组
         const g = customReplyGroups.find(g => g.id === _activeGroupFilter);
         if (!g) { list.innerHTML = renderEmptyState('分组不存在'); return; }
         const filtered = itemsWithIdx.filter(x => (g.items || []).includes(x.text));
@@ -507,7 +473,6 @@ function _renderGroupBlock(list, group, groupItems, disabledSet, isUngrouped = f
         _renderCardList(body, groupItems, disabledSet);
     }
 
-    // 折叠
     section.querySelector(`#grp-hdr-${group.id}`).addEventListener('click', e => {
         if (e.target.closest('.grp-edit-btn') || e.target.closest(`#grp-tag-${group.id}`)) return;
         group._collapsed = !group._collapsed;
@@ -516,7 +481,6 @@ function _renderGroupBlock(list, group, groupItems, disabledSet, isUngrouped = f
         section.querySelector('.rl-group-header').style.borderRadius = group._collapsed ? '12px' : '12px 12px 0 0';
     });
 
-    // 屏蔽 Tag
     const tag = section.querySelector(`#grp-tag-${group.id}`);
     if (tag && !isUngrouped) {
         tag.addEventListener('click', e => {
@@ -528,7 +492,6 @@ function _renderGroupBlock(list, group, groupItems, disabledSet, isUngrouped = f
         });
     }
 
-    // 编辑
     section.querySelector('.grp-edit-btn')?.addEventListener('click', e => {
         e.stopPropagation();
         _showGroupEditor(group);
@@ -652,9 +615,6 @@ function _createCard(item, index, disabledSet) {
     return div;
 }
 
-// ─────────────────────────────────────────────────────────
-//  氛围感列表（简洁行列）
-// ─────────────────────────────────────────────────────────
 function _renderAtmosphereList(list, items) {
     const disabledSet = _getDisabledItemsSet();
     items.forEach((item, idx) => {
@@ -680,9 +640,6 @@ function _renderAtmosphereList(list, items) {
     });
 }
 
-// ─────────────────────────────────────────────────────────
-//  Emoji & 表情包
-// ─────────────────────────────────────────────────────────
 function _renderEmojiTab(list, itemsToRender) {
     if (itemsToRender.length === 0 && customEmojis.length === 0) {
         list.innerHTML = renderEmptyState('暂无 Emoji'); return;
@@ -732,10 +689,6 @@ function _renderStickerTab(list, itemsToRender) {
         list.appendChild(div);
     });
 }
-
-// ─────────────────────────────────────────────────────────
-//  屏蔽功能
-// ─────────────────────────────────────────────────────────
 function _getDisabledItemsSet() {
     try {
         const raw = localStorage.getItem('disabledReplyItems');
@@ -771,9 +724,6 @@ function _batchToggleDisable() {
     renderReplyLibrary();
 }
 
-// ─────────────────────────────────────────────────────────
-//  去重
-// ─────────────────────────────────────────────────────────
 function _runDedup() {
     let totalRemoved = 0;
     const crDedup = deduplicateContentArray(customReplies, CONSTANTS.REPLY_MESSAGES);
@@ -797,9 +747,6 @@ function _runDedup() {
     }
 }
 
-// ─────────────────────────────────────────────────────────
-//  分组管理弹窗（全新设计）
-// ─────────────────────────────────────────────────────────
 function _showGroupManager() {
     const overlay = _makeOverlay();
 
@@ -895,9 +842,6 @@ function _showGroupManager() {
     panel.querySelector('#gm-add').onclick = () => { overlay.remove(); _showGroupEditor(null); };
 }
 
-// ─────────────────────────────────────────────────────────
-//  分组编辑器（支持完全自定义颜色）
-// ─────────────────────────────────────────────────────────
 function _showGroupEditor(group) {
     const isNew = !group;
     const overlay = _makeOverlay();
@@ -917,7 +861,6 @@ function _showGroupEditor(group) {
             ${isNew ? '新建分组' : '编辑分组'}
         </div>
 
-        <!-- 名称 -->
         <div style="margin-bottom:16px;">
             <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:7px;letter-spacing:.5px;">LABEL</label>
             <input id="ge-name" value="${group?.name || ''}" placeholder="分组名称…" style="
@@ -928,7 +871,6 @@ function _showGroupEditor(group) {
             ">
         </div>
 
-        <!-- 颜色预设色板 -->
         <div style="margin-bottom:12px;">
             <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:8px;letter-spacing:.5px;">COLOR PRESET</label>
             <div id="ge-presets" style="display:flex;gap:7px;flex-wrap:wrap;">
@@ -943,7 +885,6 @@ function _showGroupEditor(group) {
             </div>
         </div>
 
-        <!-- 自定义颜色 -->
         <div style="margin-bottom:20px;">
             <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:8px;letter-spacing:.5px;">CUSTOM COLOR</label>
             <div style="display:flex;gap:10px;align-items:center;">
@@ -956,7 +897,6 @@ function _showGroupEditor(group) {
                     border-radius:10px;background:var(--primary-bg);color:var(--text-primary);
                     font-size:13px;font-family:monospace;outline:none;transition:border 0.18s;
                 ">
-                <!-- 预览 -->
                 <div id="ge-color-preview" style="
                     display:flex;align-items:center;gap:6px;padding:7px 12px;
                     border-radius:20px;border:1.5px solid ${selectedColor}40;
@@ -1039,9 +979,6 @@ function _showGroupEditor(group) {
     };
 }
 
-// ─────────────────────────────────────────────────────────
-//  单条分组选择器
-// ─────────────────────────────────────────────────────────
 function _showSingleItemGroupPicker(itemText) {
     if (!customReplyGroups || customReplyGroups.length === 0) {
         if (confirm('还没有分组，是否立即创建？')) _showGroupEditor(null);
@@ -1100,9 +1037,6 @@ function _showSingleItemGroupPicker(itemText) {
     };
 }
 
-// ─────────────────────────────────────────────────────────
-//  批量分组选择器
-// ─────────────────────────────────────────────────────────
 function _showBatchGroupPicker() {
     if (!customReplyGroups || customReplyGroups.length === 0) {
         if (confirm('还没有分组，是否立即创建？')) { _showGroupEditor(null); return; }
@@ -1165,9 +1099,6 @@ function _showBatchGroupPicker() {
     };
 }
 
-// ─────────────────────────────────────────────────────────
-//  CRUD 操作
-// ─────────────────────────────────────────────────────────
 function deleteItem(index) {
     if (!confirm('确定删除吗？')) return;
     const item = (currentMajorTab === 'reply' && currentSubTab === 'custom') ? customReplies[index] : null;
@@ -1220,9 +1151,6 @@ function renderEmptyState(text) {
     </div>`;
 }
 
-// ─────────────────────────────────────────────────────────
-//  导出 UI（底部抽屉）
-// ─────────────────────────────────────────────────────────
 function _showExportUI() {
     const modules = [
         { id: '_re_replies',  icon: ICONS.comment,   label: '主字卡',    count: customReplies.length,          key: 'customReplies' },
@@ -1234,7 +1162,6 @@ function _showExportUI() {
         { id: '_re_groups',   icon: ICONS.folderBig, label: '字卡分组',  count: (customReplyGroups||[]).length, key: 'customReplyGroups', extra: true },
     ];
 
-    // 如果有分组，提供按分组导出的入口
     if (customReplyGroups && customReplyGroups.length > 0) {
         const overlay = _makeOverlay();
         const panel = document.createElement('div');
@@ -1301,7 +1228,6 @@ function _showExportUI() {
         return;
     }
 
-    // 无分组时直接全量导出
     _showIOSheet('导出字卡', '选择要导出的模块', modules, ICONS.export, (selected) => {
         if (!selected.length) { showNotification('请至少选择一项', 'error'); return; }
         _doExport(selected);
@@ -1396,9 +1322,6 @@ function _showGroupExportPicker() {
     };
 }
 
-// ─────────────────────────────────────────────────────────
-//  导入 UI（底部抽屉）
-// ─────────────────────────────────────────────────────────
 function _showImportUI(data) {
     const knownFields = ['customReplies','customPokes','customStatuses','customMottos','customIntros','customEmojis','customReplyGroups'];
     const hasValid = knownFields.some(f => Array.isArray(data[f]));
@@ -1471,9 +1394,6 @@ function _showImportUI(data) {
     }, true);
 }
 
-// ─────────────────────────────────────────────────────────
-//  通用 IO 底部抽屉
-// ─────────────────────────────────────────────────────────
 function _showIOSheet(title, subtitle, modules, icon, onConfirm, showMode = false) {
     const overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);backdrop-filter:blur(10px);display:flex;align-items:flex-end;justify-content:center;animation:fadeIn 0.2s ease;';
@@ -1585,18 +1505,12 @@ function _showIOSheet(title, subtitle, modules, icon, onConfirm, showMode = fals
     };
 }
 
-// ─────────────────────────────────────────────────────────
-//  辅助：创建通用遮罩
-// ─────────────────────────────────────────────────────────
 function _makeOverlay() {
     const overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;';
     return overlay;
 }
 
-// ─────────────────────────────────────────────────────────
-//  批量添加弹窗
-// ─────────────────────────────────────────────────────────
 function _showBatchAddDialog() {
     const overlay = _makeOverlay();
     const panel = document.createElement('div');
@@ -1662,9 +1576,6 @@ function _showBatchAddDialog() {
     };
 }
 
-// ─────────────────────────────────────────────────────────
-//  监听器初始化
-// ─────────────────────────────────────────────────────────
 function initReplyLibraryListeners() {
     const entryBtn = document.getElementById('custom-replies-function');
     if (entryBtn) {
@@ -1716,27 +1627,22 @@ function initReplyLibraryListeners() {
         });
     });
 
-    // 分组管理按钮（全局事件委托）
     document.addEventListener('click', e => {
         if (e.target.closest('#manage-groups-btn')) _showGroupManager();
     });
 
-    // 搜索
     const searchInput = document.getElementById('reply-search-input');
     if (searchInput) searchInput.addEventListener('input', () => {
         _searchQuery = searchInput.value;
         renderReplyLibrary();
     });
 
-    // 去重
     const dedupBtn = document.getElementById('dedup-replies-btn');
     if (dedupBtn) dedupBtn.addEventListener('click', _runDedup);
 
-    // 导出
     const exportBtn = document.getElementById('export-replies-btn');
     if (exportBtn) exportBtn.addEventListener('click', _showExportUI);
 
-    // 导入
     const importInput = document.getElementById('import-replies-input');
     if (importInput && !importInput._bound) {
         importInput._bound = true;
@@ -1757,7 +1663,6 @@ function initReplyLibraryListeners() {
         });
     }
 
-    // 新增按钮
     const addBtn = document.getElementById('add-custom-reply');
     if (addBtn) {
         addBtn.addEventListener('click', () => {
@@ -1773,11 +1678,9 @@ function initReplyLibraryListeners() {
                 }
                 return;
             }
-            // 主字卡：提供"批量添加"
             if (currentSubTab === 'custom') {
                 _showBatchAddDialog(); return;
             }
-            // 其他标签
             let input;
             if (currentSubTab === 'intros') {
                 const l1 = prompt('请输入主标题 (如: 𝑳𝒐𝒗𝒆):');
@@ -1819,9 +1722,6 @@ function updateTabUI() {
     if (si) si.value = '';
 }
 
-// ─────────────────────────────────────────────────────────
-//  波纹反馈 & 头像框（不变）
-// ─────────────────────────────────────────────────────────
 function initRippleFeedback() {
     const targets = ['.input-btn','.action-btn','.modal-btn','.settings-item','.batch-action-btn','.coin-btn-action','.import-export-btn','.reply-tab-btn','.anniversary-type-btn','.reply-tool-btn','.session-action-btn','.fav-action-btn'];
     document.addEventListener('mousedown', e => {
@@ -1856,8 +1756,12 @@ function applyAvatarFrame(avatarContainer, frameSettings) {
         frameElement.style.width = `${frameSettings.size || 100}%`;
         frameElement.style.height = `${frameSettings.size || 100}%`;
         frameElement.style.transform = `translate(calc(-50% + ${frameSettings.offsetX || 0}px), calc(-50% + ${frameSettings.offsetY || 0}px))`;
+        // Override overflow:hidden !important from shape classes so the frame is not clipped
+        avatarContainer.style.setProperty('overflow', 'visible', 'important');
     } else {
         frameElement?.remove();
+        // Restore overflow management to CSS shape classes
+        avatarContainer.style.removeProperty('overflow');
     }
 }
 
