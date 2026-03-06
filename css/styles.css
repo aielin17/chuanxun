@@ -1,6 +1,3 @@
-/* ============================================================ */
-/* 传讯 - Main Styles                                           */
-/* ============================================================ */
         * {
             scrollbar-width: none;
             -ms-overflow-style: none;
@@ -4245,6 +4242,11 @@
             opacity: 0.6;
         }
 
+        .tarot-visual.reversed img {
+            transform: rotate(180deg);
+            transform-origin: center center;
+        }
+
 
         .tarot-card-name {
             font-family: var(--font-family);
@@ -7239,22 +7241,25 @@
 
         .frame-settings-container {
     display: flex;
-    gap: 20px;
-    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
     padding-top: 10px;
         }
         .frame-preview-wrapper {
-    flex-shrink: 0;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    gap: 10px;
+    gap: 14px;
         }
         .frame-preview {
     width: 80px;
     height: 80px;
     position: relative;
-        flex-shrink: 0; 
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--secondary-bg);
+    border: 2px dashed var(--border-color);
+    overflow: visible;
         }
         .frame-preview .preview-avatar {
     width: 100%;
@@ -7283,8 +7288,6 @@
     background-color: var(--secondary-bg);
     border: 2px dashed var(--border-color);
     box-sizing: border-box; 
-    -webkit-mask-image: radial-gradient(white, black);
-    mask-image: radial-gradient(white, black);
     overflow: hidden; 
         }
         .frame-preview .preview-bg-layer img {
@@ -7323,11 +7326,20 @@
     max-width: none; 
     max-height: none;
         }
+        .frame-upload-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+        }
         .frame-controls {
-    flex-grow: 1;
     display: flex;
     flex-direction: column;
     gap: 10px;
+    padding: 10px 12px;
+    background: var(--secondary-bg);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
         }
         .frame-slider-group {
     display: flex;
@@ -7336,12 +7348,21 @@
     font-size: 13px;
         }
         .frame-slider-group label {
-    width: 40px;
+    width: 36px;
     flex-shrink: 0;
     color: var(--text-secondary);
+    font-size: 12px;
         }
         .frame-slider-group input[type="range"] {
     flex-grow: 1;
+    min-width: 0;
+        }
+        .frame-slider-group span {
+    width: 36px;
+    flex-shrink: 0;
+    text-align: right;
+    font-size: 11px;
+    color: var(--text-secondary);
         }
 
         @media (max-width: 768px) {
@@ -9174,9 +9195,6 @@
         }
 
 
-/* ============================================================ */
-/* Chat Modal / Settings Styles                                  */
-/* ============================================================ */
         #chat-modal .modal-content {
             padding: 0 !important;
             overflow: hidden;
@@ -9393,9 +9411,6 @@
             background: var(--secondary-bg);
         }
 
-/* ============================================================ */
-/* Data Modal Styles                                             */
-/* ============================================================ */
         #data-modal .modal-content {
             padding: 0 !important;
             overflow: hidden;
@@ -9591,7 +9606,6 @@
             background: var(--secondary-bg);
         }
 
-        /* ── 字卡分组 & 批量管理新增样式 ── */
         @keyframes slideUpSheet {
             from { transform: translateY(100%); opacity: 0; }
             to   { transform: translateY(0);    opacity: 1; }
@@ -9618,7 +9632,6 @@
             display: block;
         }
 
-        /* ── 顶部栏半透明 ── */
         :root { --header-bg-rgb: 255,255,255; }
         html[data-theme="dark"] { --header-bg-rgb: 30,30,30; }
         .header {
@@ -9628,7 +9641,6 @@
             box-shadow: 0 1px 0 rgba(0,0,0,0.04) !important;
         }
 
-        /* ── 底部栏收纳模式 ── */
         body.bottom-collapse-mode .collapse-hideable { display: none !important; }
         body.bottom-collapse-mode #collapse-expand-btn { display: flex !important; }
         #collapse-expand-btn.open {
@@ -9638,7 +9650,6 @@
         #collapse-expand-btn.open i { transform: rotate(180deg); }
         #collapse-expand-btn i { transition: transform 0.25s; }
 
-        /* ── 收纳展开面板 ── */
         #collapsed-extras-panel {
             overflow: hidden;
         }
@@ -9654,17 +9665,17 @@
             align-items: center;
             justify-content: center;
             width: 100%;
-            height: 48px; /* 减小高度，让整体不再占太多空间 */
+            height: 48px; 
             border: none;
             border-radius: 12px;
             background: rgba(var(--accent-color-rgb), 0.08);
             color: var(--accent-color);
             cursor: pointer;
-            font-size: 20px; /* 去除文字后，适当调大图标 */
+            font-size: 20px; 
             transition: background 0.18s, transform 0.15s;
         }
         .collapsed-extra-btn span {
-            display: none; /* 强制隐藏所有内部可能残留的文字 */
+            display: none; 
         }
         .collapsed-extra-btn:hover, .collapsed-extra-btn:active {
             background: rgba(var(--accent-color-rgb), 0.18);
@@ -9692,7 +9703,6 @@
             border-color: rgba(255,80,80,0.3);
         }
 
-        /* ── 收纳按钮的 setting-pill-row 激活态 ── */
         #bottom-collapse-cs-toggle.active .setting-pill-switch { background: var(--accent-color) !important; }
         #bottom-collapse-cs-toggle.active .setting-pill-knob { right: 3px !important; left: auto !important; }
         #bottom-collapse-cs-toggle .setting-pill-switch { transition: background 0.3s; }
@@ -9710,12 +9720,10 @@
         .reply-indicator { cursor: pointer; }
         .reply-indicator:hover .reply-indicator-text { color: var(--accent-color); }
 
-        /* Custom avatar offset */
         body[data-avatar-pos="custom"] .message-avatar {
             margin-top: var(--avatar-custom-offset, 0px);
         }
 
-        /* Daily fortune tarot card image fill fix */
         #fortune-sub-daily .tarot-face.tarot-back {
             padding: 0 !important;
             overflow: hidden !important;
