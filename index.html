@@ -25,38 +25,6 @@
 
     <!-- Inline live-preview style placeholder (dynamically updated by JS) -->
     <style id="css-live-preview-style"></style>
-    <style>
-        /* 收纳按钮跟随主题色，不强制蓝色 */
-        .compact-expand-btn {
-            background-color: var(--message-received-bg) !important;
-            color: var(--text-secondary) !important;
-        }
-        .compact-expand-btn:hover {
-            color: var(--accent-color) !important;
-        }
-        /* 收纳面板按钮 hover 效果 */
-        .compact-panel-btn:hover {
-            background: var(--secondary-bg) !important;
-            border-color: var(--accent-color) !important;
-            color: var(--accent-color);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(var(--accent-color-rgb), 0.15);
-        }
-        .compact-panel-btn:active {
-            transform: translateY(0) scale(0.95);
-        }
-        .compact-panel-btn i {
-            transition: color 0.18s;
-        }
-        .compact-panel-btn:hover i {
-            color: var(--accent-color) !important;
-        }
-        /* 硬币翻转动画类 */
-        .coin.flip-heads { animation: flip-coin-heads 1.4s ease forwards; }
-        .coin.flip-tails { animation: flip-coin-tails 1.4s ease forwards; }
-        /* cs-panel-display 截图按钮 hover */
-        #cs-screenshot-btn:hover { background: rgba(var(--accent-color-rgb), 0.06) !important; border-radius: 10px; }
-    </style>
 </head>
 <body>
 <div id="splash-declaration">
@@ -343,10 +311,6 @@
     <button class="continue-btn input-btn" id="continue-btn" title="让对方继续说"><i class="fas fa-ellipsis-h"></i></button>
         <button class="batch-btn input-btn" id="batch-btn" title="批量发送模式"><i class="fas fa-layer-group"></i></button>
         <button class="send-btn input-btn" id="send-btn" title="发送消息"><i class="fas fa-paper-plane"></i></button>
-        <!-- 收纳模式展开按钮 -->
-        <button class="input-btn compact-expand-btn" id="compact-expand-btn" title="展开更多" style="display:none;">
-            <i class="fas fa-plus-circle"></i>
-        </button>
         
         <div class="sticker-picker-popover" id="user-sticker-picker">
             <div class="combo-tabs-header">
@@ -367,54 +331,6 @@
 </div>
     </div>
 
-    <!-- 收纳模式展开面板 (fixed overlay, NOT inside the button) -->
-    <div id="compact-expand-panel" style="
-        display:none;
-        position:fixed;
-        bottom:80px;
-        right:16px;
-        background:var(--secondary-bg);
-        border:1px solid var(--border-color);
-        border-radius:20px;
-        padding:14px 16px;
-        box-shadow:0 12px 40px rgba(0,0,0,0.18),0 2px 8px rgba(0,0,0,0.08);
-        min-width:200px;
-        max-width:calc(100vw - 32px);
-        z-index:1500;
-        text-align:left;
-        opacity:0;
-        transform:translateY(12px) scale(0.97);
-        transition:opacity 0.22s cubic-bezier(0.4,0,0.2,1), transform 0.22s cubic-bezier(0.4,0,0.2,1);
-        pointer-events:none;
-    ">
-        <div style="font-size:11px;color:var(--text-secondary);margin-bottom:10px;letter-spacing:0.5px;font-weight:600;text-transform:uppercase;">更多操作</div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;" id="compact-panel-btns">
-            <button class="compact-panel-btn" data-target="attachment-btn" title="发送图片" style="display:flex;flex-direction:column;align-items:center;gap:5px;background:var(--primary-bg);border:1px solid var(--border-color);border-radius:12px;padding:10px 6px;cursor:pointer;transition:all 0.18s;touch-action:manipulation;">
-                <i class="fas fa-image" style="font-size:18px;color:var(--accent-color);"></i>
-                <span style="font-size:10px;color:var(--text-secondary);white-space:nowrap;">图片</span>
-            </button>
-            <button class="compact-panel-btn" data-target="combo-btn" title="表情拍一拍" style="display:flex;flex-direction:column;align-items:center;gap:5px;background:var(--primary-bg);border:1px solid var(--border-color);border-radius:12px;padding:10px 6px;cursor:pointer;transition:all 0.18s;touch-action:manipulation;">
-                <i class="fas fa-laugh-beam" style="font-size:18px;color:var(--accent-color);"></i>
-                <span style="font-size:10px;color:var(--text-secondary);white-space:nowrap;">表情</span>
-            </button>
-            <button class="compact-panel-btn" data-target="custom-replies-shortcut" title="自定义回复" style="display:flex;flex-direction:column;align-items:center;gap:5px;background:var(--primary-bg);border:1px solid var(--border-color);border-radius:12px;padding:10px 6px;cursor:pointer;transition:all 0.18s;touch-action:manipulation;">
-                <i class="fas fa-comment-dots" style="font-size:18px;color:var(--accent-color);"></i>
-                <span style="font-size:10px;color:var(--text-secondary);white-space:nowrap;">回复库</span>
-            </button>
-            <button class="compact-panel-btn" data-target="fortune-shortcut" title="运势占卜" style="display:flex;flex-direction:column;align-items:center;gap:5px;background:var(--primary-bg);border:1px solid var(--border-color);border-radius:12px;padding:10px 6px;cursor:pointer;transition:all 0.18s;touch-action:manipulation;">
-                <i class="fas fa-star" style="font-size:18px;color:var(--accent-color);"></i>
-                <span style="font-size:10px;color:var(--text-secondary);white-space:nowrap;">运势</span>
-            </button>
-        </div>
-        <div style="border-top:1px solid var(--border-color);padding-top:10px;margin-top:2px;">
-            <div id="compact-exit-toggle" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:5px 0;touch-action:manipulation;" title="退出收纳模式">
-                <div id="compact-exit-pill" style="width:32px;height:18px;border-radius:18px;background:var(--accent-color);position:relative;transition:background 0.3s;flex-shrink:0;">
-                    <div id="compact-exit-knob" style="position:absolute;width:13px;height:13px;border-radius:50%;background:#fff;top:2.5px;right:2.5px;transition:right 0.25s;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
-                </div>
-                <span style="font-size:11px;color:var(--text-secondary);">收纳模式 · 点击退出</span>
-            </div>
-        </div>
-    </div>
 
     <div class="modal" id="edit-modal" style="z-index:3000;">
         <div class="modal-content">
@@ -884,39 +800,17 @@
                     <div id="partner-name-chat-knob" style="position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:3px;right:23px;transition:right 0.25s;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
                 </div>
             </div>
-            <!-- 底部栏收纳模式 -->
-            <div id="toolbar-compact-toggle" style="display:flex;align-items:center;gap:12px;background:var(--primary-bg);border:1px solid var(--border-color);border-radius:12px;padding:12px 14px;cursor:pointer;transition:all 0.2s;margin-bottom:10px;">
-                <div style="width:36px;height:36px;border-radius:50%;background:rgba(var(--accent-color-rgb),0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    <i class="fas fa-compress-alt" style="font-size:16px;color:var(--accent-color);"></i>
-                </div>
-                <div style="flex:1;">
-                    <div style="font-size:13px;font-weight:600;color:var(--text-primary);">底部栏收纳模式</div>
-                    <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;" id="toolbar-compact-status">已关闭 — 开启后只保留常用按钮</div>
-                </div>
-                <div id="toolbar-compact-pill" style="width:44px;height:24px;border-radius:24px;background:var(--border-color);position:relative;transition:background 0.3s;flex-shrink:0;">
-                    <div id="toolbar-compact-knob" style="position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:3px;right:23px;transition:right 0.25s;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
-                </div>
-            </div>
             <div class="font-size-control" id="in-chat-avatar-size-control-2">
                 <span class="font-size-label">头像尺寸:</span>
                 <input type="range" min="24" max="48" value="36" class="font-size-slider" id="in-chat-avatar-size-slider-2">
                 <span class="font-size-value" id="in-chat-avatar-size-value-2">36px</span>
             </div>
             <div id="in-chat-avatar-position-control-2" style="margin-top:10px;">
-                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;font-weight:500;">头像垂直对齐</div>
-                <div style="display:flex;gap:6px;margin-bottom:10px;">
-                    <button id="avatar-pos-top-2" class="modal-btn modal-btn-secondary" data-pos="top" style="flex:1;font-size:11px;padding:6px 0;"><i class="fas fa-arrow-up"></i> 顶部</button>
-                    <button id="avatar-pos-center-2" class="modal-btn modal-btn-primary" data-pos="center" style="flex:1;font-size:11px;padding:6px 0;"><i class="fas fa-arrows-alt-v"></i> 居中</button>
-                    <button id="avatar-pos-bottom-2" class="modal-btn modal-btn-secondary" data-pos="bottom" style="flex:1;font-size:11px;padding:6px 0;"><i class="fas fa-arrow-down"></i> 底部</button>
-                    <button id="avatar-pos-custom-2" class="modal-btn modal-btn-secondary" data-pos="custom" style="flex:1;font-size:11px;padding:6px 0;"><i class="fas fa-sliders-h"></i> 自定</button>
-                </div>
-                <div id="avatar-custom-offset-row" style="display:none;">
-                    <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;">自定义偏移量（向下移动）</div>
-                    <div class="font-size-control">
-                        <span class="font-size-label" style="font-size:11px;">0px</span>
-                        <input type="range" min="0" max="200" value="0" class="font-size-slider" id="avatar-offset-slider-2">
-                        <span class="font-size-value" id="avatar-offset-value-2">0px</span>
-                    </div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;font-weight:500;">头像对齐方式</div>
+                <div style="display:flex;gap:8px;">
+                    <button id="avatar-pos-top-2" class="modal-btn modal-btn-secondary" data-pos="top" style="flex:1;font-size:12px;padding:7px 0;"><i class="fas fa-arrow-up"></i> 顶部</button>
+                    <button id="avatar-pos-center-2" class="modal-btn modal-btn-primary" data-pos="center" style="flex:1;font-size:12px;padding:7px 0;"><i class="fas fa-arrows-alt-v"></i> 居中</button>
+                    <button id="avatar-pos-bottom-2" class="modal-btn modal-btn-secondary" data-pos="bottom" style="flex:1;font-size:12px;padding:7px 0;"><i class="fas fa-arrow-down"></i> 底部</button>
                 </div>
             </div>
             <div id="in-chat-avatar-shape-control-2" style="margin-top:12px;">
@@ -1212,24 +1106,6 @@
                             <div class="setting-pill-switch"><div class="setting-pill-knob"></div></div>
                         </div>
                     </div>
-
-                    <p class="cs-group-label" style="margin-top:10px;">输入栏</p>
-                    <div class="cs-card">
-                        <div id="toolbar-compact-toggle-cs" style="display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="(function(){if(typeof settings!=='undefined'){settings.toolbarCompact=!settings.toolbarCompact;if(typeof window._updateToolbarCompactUI==='function')window._updateToolbarCompactUI();if(typeof throttledSaveData==='function')throttledSaveData();}})()">
-                            <span class="setting-pill-icon"><i class="fas fa-compress-alt"></i></span>
-                            <span class="setting-pill-label">收纳多余按钮 <span style="font-size:11px;color:var(--text-secondary);font-weight:400;">只保留常用按钮</span></span>
-                            <div class="setting-pill-switch" id="toolbar-compact-switch-cs"><div class="setting-pill-knob"></div></div>
-                        </div>
-                    </div>
-
-                    <p class="cs-group-label" style="margin-top:10px;">截图</p>
-                    <div class="cs-card">
-                        <button id="cs-screenshot-btn" onclick="window._takeChatScreenshot && window._takeChatScreenshot()" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 2px;background:none;border:none;cursor:pointer;color:var(--text-primary);font-size:13px;font-family:var(--font-family);">
-                            <span class="setting-pill-icon"><i class="fas fa-camera"></i></span>
-                            <span style="flex:1;text-align:left;">长截屏 <span style="font-size:11px;color:var(--text-secondary);font-weight:400;">保存聊天记录为图片</span></span>
-                            <i class="fas fa-chevron-right" style="font-size:11px;color:var(--text-secondary);"></i>
-                        </button>
-                    </div>
                 </div>
 
                 <div class="cs-panel" id="cs-panel-names">
@@ -1493,29 +1369,10 @@
                 </button>
             </div>
             <div id="fl-panel-fortune" class="fl-panel fl-panel-active">
-                <div style="display:flex;gap:6px;margin-bottom:12px;">
-                    <button id="fortune-sub-weekly-btn" class="modal-btn modal-btn-primary" style="flex:1;font-size:12px;padding:7px 0;" onclick="showFortuneSub('weekly')"><i class="fas fa-calendar-week"></i> 每周主牌</button>
-                    <button id="fortune-sub-daily-btn" class="modal-btn modal-btn-secondary" style="flex:1;font-size:12px;padding:7px 0;" onclick="showFortuneSub('daily')"><i class="fas fa-dice-three"></i> 每日运势</button>
-                </div>
-                <!-- 每周主牌区域 -->
-                <div id="fortune-weekly-section">
-                    <div id="fortune-content"></div>
-                    <div class="modal-buttons" style="margin-top:16px;">
-                        <button class="modal-btn modal-btn-primary" id="share-fortune"><i class="fas fa-share-alt"></i> 分享运势</button>
-                        <button class="modal-btn modal-btn-secondary" id="close-fortune">关闭</button>
-                    </div>
-                </div>
-                <!-- 每日运势区域 -->
-                <div id="fortune-daily-section" style="display:none;">
-                    <div id="fortune-daily-content">
-                        <div style="text-align:center;padding:20px 0 10px;">
-                            <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;line-height:1.6;">每次抽取三张牌，绝对随机，当日永不重复</div>
-                            <button class="modal-btn modal-btn-primary" id="draw-daily-fortune-btn" onclick="drawDailyFortune()" style="padding:10px 28px;font-size:14px;"><i class="fas fa-magic"></i> 开始今日抽取</button>
-                        </div>
-                    </div>
-                    <div class="modal-buttons" style="margin-top:16px;">
-                        <button class="modal-btn modal-btn-secondary" onclick="hideModal(document.getElementById('fortune-lenormand-modal'))">关闭</button>
-                    </div>
+                <div id="fortune-content"></div>
+                <div class="modal-buttons" style="margin-top:16px;">
+                    <button class="modal-btn modal-btn-primary" id="share-fortune"><i class="fas fa-share-alt"></i> 分享运势</button>
+                    <button class="modal-btn modal-btn-secondary" id="close-fortune">关闭</button>
                 </div>
             </div>
             <div id="fl-panel-lenormand" class="fl-panel">
@@ -2238,7 +2095,6 @@
     <script src="js/features/daily-greeting.js"></script>
     <script src="js/features/notifications.js"></script>
     <script src="js/features/group-chat.js"></script>
-    <script src="js/features/screenshot.js"></script>
 
     <!-- 6. Event listeners (wires everything together; bug-fixed close buttons here) -->
     <script src="js/listeners.js"></script>
