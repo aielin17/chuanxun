@@ -701,7 +701,6 @@ function manageAutoSendTimer() {
     }
     if (settings.autoSendEnabled) {
         const intervalMs = settings.autoSendInterval * 60 * 1000;
-        console.log(`主动发送已开启，间隔: ${settings.autoSendInterval}分钟`);
         
         autoSendTimer = setInterval(() => {
             if (!document.body.classList.contains('batch-favorite-mode')) {
@@ -785,6 +784,38 @@ function manageAutoSendTimer() {
             localforage.removeItem(getStorageKey('chatBackground'));
             safeRemoveItem(getStorageKey('chatBackground'));
             showNotification('背景图片已移除', 'success');
+        };
+
+        window.scrollToQuotedMessage = function(el) {
+            const id = el.getAttribute('data-reply-id');
+            if (!id) return;
+            const tryScroll = () => {
+                const target = document.querySelector(`[data-msg-id="${id}"]`);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    target.classList.add('msg-highlight');
+                    setTimeout(() => target.classList.remove('msg-highlight'), 1500);
+                    return true;
+                }
+                return false;
+            };
+            if (!tryScroll()) {
+                // Message not rendered yet - check if it exists in messages array
+                const msgIndex = messages.findIndex(m => String(m.id) === String(id));
+                if (msgIndex === -1) {
+                    if (typeof showNotification === 'function') showNotification('消息可能已被删除', 'info');
+                    return;
+                }
+                // Load enough messages to include this one
+                const needed = messages.length - msgIndex;
+                if (needed > displayedMessageCount) {
+                    displayedMessageCount = needed;
+                    renderMessages(false);
+                    setTimeout(tryScroll, 150);
+                } else {
+                    if (typeof showNotification === 'function') showNotification('消息可能已被删除', 'info');
+                }
+            }
         };
 
         function renderMessages(preserveScroll = false) {
@@ -936,7 +967,7 @@ function manageAutoSendTimer() {
                 if (msg.replyTo) {
                     const repliedText = msg.replyTo.text || (msg.replyTo.image ? '🖼 图片' : '[消息]');
                     const repliedSender = msg.replyTo.sender === 'user' ? (settings.myName || '我') : (settings.partnerName || '对方');
-                    messageHTML += `<div class="reply-indicator" data-reply-id="${msg.replyTo.id || ''}" style="cursor:pointer;" onclick="(function(el){var id=el.getAttribute('data-reply-id');if(!id)return;var target=document.querySelector('[data-msg-id=\\"'+id+'\\"]');if(target){target.scrollIntoView({behavior:'smooth',block:'center'});target.classList.add('msg-highlight');setTimeout(function(){target.classList.remove('msg-highlight');},1500);}else{if(typeof showNotification==='function')showNotification('消息可能已被删除','info');}})(this)"><span class="reply-indicator-sender">${repliedSender}</span><span class="reply-indicator-text">${repliedText}</span></div>`;
+                    messageHTML += `<div class="reply-indicator" data-reply-id="${msg.replyTo.id || ''}" style="cursor:pointer;" onclick="scrollToQuotedMessage(this)"><span class="reply-indicator-sender">${repliedSender}</span><span class="reply-indicator-text">${repliedText}</span></div>`;
                 }
 
                 let content = msg.text ? `<div>${msg.text.replace(/\n/g, '<br>')}</div>`: '';
@@ -1153,9 +1184,7 @@ if (!isBatchMode && type === 'normal') {
 
         const shouldIgnore = settings.allowReadNoReply && (Math.random() < 0.5);
 
-        if (shouldIgnore) {
-            console.log("触发已读不回机制");
-        } else {
+        if (!shouldIgnore) {
             simulateReply(); 
         }
 
@@ -1728,7 +1757,6 @@ if (customStatuses && customStatuses.length > 0) {
             const isMigrated = await localforage.getItem(APP_PREFIX + 'MIGRATION_V2_DONE');
             if (isMigrated) return;
 
-            console.log("开始从 localStorage 迁移数据至更稳定的存储...");
             try {
                 const keys = Object.keys(localStorage);
                 for (const key of keys) {
@@ -1753,7 +1781,6 @@ if (customStatuses && customStatuses.length > 0) {
                 }
                 
                 await localforage.setItem(APP_PREFIX + 'MIGRATION_V2_DONE', 'true');
-                console.log("数据迁移成功完成。");
             } catch (e) {
                 console.error("数据迁移过程中发生严重错误:", e);
                 showNotification('数据迁移失败，部分旧数据可能丢失', 'error');

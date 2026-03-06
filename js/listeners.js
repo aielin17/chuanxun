@@ -4,8 +4,6 @@
  */
 
 function setupEventListeners() {
-    console.log("正在初始化事件监听..."); 
-    
     try {
         initCoreListeners();
         initModalListeners();
@@ -1171,27 +1169,6 @@ document.getElementById('send-envelope').addEventListener('click', handleSendEnv
 document.getElementById('cancel-envelope').addEventListener('click', () => {
     hideModal(document.getElementById('envelope-modal'));
 });
-            const shareFortuneBtnEl = document.getElementById('share-fortune');
-            if (shareFortuneBtnEl) {
-                shareFortuneBtnEl.addEventListener('click', () => {
-                    const fortuneDescEl = document.querySelector('.fortune-desc');
-                    if (!fortuneDescEl) return;
-                    const fortuneText = fortuneDescEl.textContent;
-                    const shareText = `我的今日运势：${fortuneText}`;
-
-                    if (navigator.share) {
-                        navigator.share({
-                            title: '今日运势',
-                            text: shareText
-                        });
-                    } else {
-                        navigator.clipboard.writeText(shareText).then(() => {
-                            showNotification('运势已复制到剪贴板', 'success');
-                        });
-                    }
-                });
-            }
-
             const closeFortune = document.getElementById('close-fortune');
             if (closeFortune) {
                 closeFortune.addEventListener('click', () => {
