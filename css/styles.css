@@ -4797,24 +4797,21 @@
         .stats-dashboard {
             display: flex;
             flex-direction: column;
-            gap: 15px;
-            padding: 5px 0;
+            gap: 12px;
+            padding: 4px 0;
         }
-
 
         .stats-card {
             background-color: var(--primary-bg);
             border-radius: 16px;
             padding: 16px;
             border: 1px solid var(--border-color);
-            margin-bottom: 5px;
         }
-
 
         .stats-overview-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
         }
 
         .overview-item {
@@ -4822,61 +4819,68 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 12px 8px;
+            padding: 12px 6px 10px;
             background-color: var(--secondary-bg);
             border-radius: 12px;
             text-align: center;
             border: 1px solid transparent;
+            transition: border-color 0.2s, background 0.2s;
         }
 
         .overview-item:hover {
-            border-color: var(--border-color);
-            background-color: var(--primary-bg);
+            border-color: rgba(var(--accent-color-rgb), 0.25);
+            background-color: rgba(var(--accent-color-rgb), 0.04);
         }
 
         .overview-value {
-            font-family: 'Georgia', serif;
-            font-size: 22px;
+            font-size: 18px;
             font-weight: 700;
             color: var(--accent-color);
             line-height: 1.2;
+            letter-spacing: -0.3px;
         }
 
         .overview-label {
-            font-size: 11px;
+            font-size: 10px;
             color: var(--text-secondary);
             margin-top: 4px;
+            letter-spacing: 0.2px;
         }
 
-
         .stats-card-title {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             color: var(--text-secondary);
             margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            border-bottom: 1px dashed var(--border-color);
-            padding-bottom: 8px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
         }
 
         .stats-rank-list {
             display: flex;
             flex-direction: column;
+            gap: 6px;
+        }
+
+        .stats-toggle-row {
+            display: flex;
             gap: 8px;
+            margin-bottom: 14px;
+            background: var(--secondary-bg);
+            border-radius: 12px;
+            padding: 4px;
         }
 
         .stats-toggle-btn {
             flex: 1;
-            padding: 8px 12px;
-            border: 1.5px solid var(--border-color);
-            border-radius: 20px;
-            background: var(--secondary-bg);
+            padding: 7px 10px;
+            border: none;
+            border-radius: 9px;
+            background: transparent;
             color: var(--text-secondary);
             font-size: 13px;
             cursor: pointer;
-            transition: all 0.25s ease;
+            transition: all 0.2s ease;
             font-family: var(--font-family);
             font-weight: 500;
             display: flex;
@@ -4887,11 +4891,10 @@
         .stats-toggle-btn.active {
             background: var(--accent-color);
             color: #fff;
-            border-color: var(--accent-color);
-            box-shadow: 0 2px 8px rgba(var(--accent-color-rgb), 0.3);
+            box-shadow: 0 2px 8px rgba(var(--accent-color-rgb), 0.35);
         }
         .stats-toggle-btn:not(.active):hover {
-            border-color: var(--accent-color);
+            background: rgba(var(--accent-color-rgb), 0.08);
             color: var(--accent-color);
         }
 
@@ -4899,69 +4902,60 @@
             position: relative;
             display: flex;
             align-items: center;
-            padding: 8px 10px;
-            background: transparent;
-            border-radius: 8px;
+            padding: 9px 10px;
+            background: var(--secondary-bg);
+            border-radius: 10px;
             overflow: hidden;
-            min-height: 44px;
+            min-height: 42px;
+            border: 1px solid transparent;
+            transition: border-color 0.15s;
         }
 
+        .rank-item:hover {
+            border-color: rgba(var(--accent-color-rgb), 0.2);
+        }
 
         .rank-progress-bg {
             position: absolute;
             top: 0;
             left: 0;
             bottom: 0;
-            background-color: rgba(var(--accent-color-rgb), 0.12);
+            background: linear-gradient(90deg, rgba(var(--accent-color-rgb), 0.12), transparent);
             z-index: 0;
-            border-radius: 8px;
-            transition: width 0.6s ease;
+            border-radius: 10px;
+            transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
         }
-
 
         .rank-info {
             position: relative;
             z-index: 1;
             display: flex;
             align-items: center;
-            justify-content: space-between;
             width: 100%;
-            gap: 12px;
+            gap: 10px;
         }
 
         .rank-number {
-            width: 24px;
-            font-weight: 800;
-            font-style: italic;
+            width: 22px;
+            font-weight: 700;
             color: var(--text-secondary);
-            opacity: 0.5;
+            opacity: 0.45;
             flex-shrink: 0;
             text-align: center;
-            font-size: 14px;
+            font-size: 13px;
+            font-style: italic;
         }
 
-        .rank-item:nth-child(1) .rank-number {
-            color: #FFD700;
+        .rank-number.rank-medal {
+            font-style: normal;
             opacity: 1;
-            text-shadow: 0 1px 0 rgba(0,0,0,0.1);
             font-size: 16px;
         }
-        .rank-item:nth-child(2) .rank-number {
-            color: #9EA1A3;
-            opacity: 1;
-            font-size: 15px;
-        }
-        .rank-item:nth-child(3) .rank-number {
-            color: #CD7F32;
-            opacity: 1;
-            font-size: 15px;
-        }
-
 
         .rank-text {
             flex: 1;
             color: var(--text-primary);
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
             line-height: 1.4;
             white-space: normal;
@@ -4974,27 +4968,18 @@
 
         .rank-count {
             flex-shrink: 0;
-            font-size: 12px;
+            font-size: 14px;
             color: var(--accent-color);
             font-weight: 700;
-            background-color: var(--secondary-bg);
-            padding: 4px 8px;
-            border-radius: 6px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            border: 1px solid var(--border-color);
-            min-width: 40px;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            min-width: 32px;
+            text-align: right;
             line-height: 1;
         }
         .rank-count small {
-            font-size: 9px;
-            opacity: 0.7;
-            font-weight: normal;
-            margin-top: 2px;
+            font-size: 10px;
+            opacity: 0.65;
+            font-weight: 400;
+            margin-left: 1px;
         }
 
         .stats-empty-state {
