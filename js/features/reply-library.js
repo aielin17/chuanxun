@@ -1322,6 +1322,44 @@ function _showGroupExportPicker() {
     };
 }
 
+/**
+ * 宽容JSON解析器：自动修复常见语法问题（尾随逗号、缺失逗号等）
+ */
+function _parseFlexibleJSON(text) {
+    // First try strict parse
+    try { return JSON.parse(text); } catch (_) {}
+    // Repair: remove trailing commas before ] or }
+    let repaired = text
+        .replace(/,\s*([}\]])/g, '$1')      // trailing commas
+        .replace(/(["\d\w}])\s*\n\s*"/g, (m, p1) => {  // missing commas between string items
+            if (p1 === '}' || p1 === ']') return m;
+            return p1 + ',\n"';
+        });
+    try { return JSON.parse(repaired); } catch (_) {}
+    // More aggressive repair: fix missing commas between quoted strings on consecutive lines
+    repaired = text.replace(/("(?:[^"\\]|\\.)*")\s*\n(\s*")/g, '$1,\n$2')
+                   .replace(/,\s*([}\]])/g, '$1');
+    return JSON.parse(repaired);
+}
+
+/**
+ * 旧格式兼容转换：将旧版导出的字卡文件规范化为当前格式
+ * 旧格式特征：有 exportDate 或 modules 字段
+ * 新格式特征：有 version 字段
+ */
+function _normalizeImportData(data) {
+    if (!data || typeof data !== 'object') return data;
+    // Already new format with known keys
+    const knownKeys = ['customReplies','customPokes','customStatuses','customMottos','customIntros','customEmojis','customReplyGroups','disabledDefaultReplies'];
+    const hasNewFormat = knownKeys.some(k => Array.isArray(data[k]));
+    if (hasNewFormat) return data;
+    // Old format: might have different structure or just plain array
+    if (Array.isArray(data)) {
+        return { customReplies: data };
+    }
+    return data;
+}
+
 function _showImportUI(data) {
     const knownFields = ['customReplies','customPokes','customStatuses','customMottos','customIntros','customEmojis','customReplyGroups'];
     const hasValid = knownFields.some(f => Array.isArray(data[f]));
@@ -1654,8 +1692,13 @@ function initReplyLibraryListeners() {
             const reader = new FileReader();
             reader.onload = ev => {
                 let data;
-                try { data = JSON.parse(ev.target.result); }
-                catch { showNotification('文件解析失败', 'error'); return; }
+                try {
+                    data = _parseFlexibleJSON(ev.target.result);
+                } catch {
+                    showNotification('文件解析失败，请检查文件格式', 'error');
+                    return;
+                }
+                data = _normalizeImportData(data);
                 _showImportUI(data);
             };
             reader.onerror = () => showNotification('文件读取失败', 'error');
@@ -1767,16 +1810,16 @@ function applyAvatarFrame(avatarContainer, frameSettings) {
 
 function setupAvatarFrameSettings() {
     const setupControlsFor = (type) => {
-        const preview = document.getElementById(`${type}-frame-preview`);
-        const uploadBtn = document.getElementById(`${type}-frame-upload-btn`);
-        const removeBtn = document.getElementById(`${type}-frame-remove-btn`);
-        const fileInput = document.getElementById(`${type}-frame-file-input`);
-        const sizeSlider = document.getElementById(`${type}-frame-size`);
-        const sizeValue = document.getElementById(`${type}-frame-size-value`);
-        const xSlider = document.getElementById(`${type}-frame-offset-x`);
-        const xValue = document.getElementById(`${type}-frame-offset-x-value`);
-        const ySlider = document.getElementById(`${type}-frame-offset-y`);
-        const yValue = document.getElementById(`${type}-frame-offset-y-value`);
+        const preview = document.getElementById(`${type}-frame-preview-2`);
+        const uploadBtn = document.getElementById(`${type}-frame-upload-btn-2`);
+        const removeBtn = document.getElementById(`${type}-frame-remove-btn-2`);
+        const fileInput = document.getElementById(`${type}-frame-file-input-2`);
+        const sizeSlider = document.getElementById(`${type}-frame-size-2`);
+        const sizeValue = document.getElementById(`${type}-frame-size-value-2`);
+        const xSlider = document.getElementById(`${type}-frame-offset-x-2`);
+        const xValue = document.getElementById(`${type}-frame-offset-x-value-2`);
+        const ySlider = document.getElementById(`${type}-frame-offset-y-2`);
+        const yValue = document.getElementById(`${type}-frame-offset-y-value-2`);
         if (!preview || !uploadBtn || !sizeSlider) return;
         const settingsKey = type === 'my' ? 'myAvatarFrame' : 'partnerAvatarFrame';
         const avatarContainer = type === 'my' ? DOMElements.me.avatarContainer : DOMElements.partner.avatarContainer;
@@ -1816,6 +1859,26 @@ function setupAvatarFrameSettings() {
             };
             reader.readAsDataURL(file);
         });
+
+        // URL import button
+        const urlBtn = document.getElementById(`${type}-frame-url-btn-2`);
+        if (urlBtn) {
+            urlBtn.addEventListener('click', () => {
+                const url = prompt('请输入头像框图片的URL地址（支持 png/webp/gif）:');
+                if (!url?.trim()) return;
+                const trimmed = url.trim();
+                const img = new Image();
+                img.onload = () => {
+                    if (!settings[settingsKey]) settings[settingsKey] = { size: 100, offsetX: 0, offsetY: 0 };
+                    settings[settingsKey].src = trimmed;
+                    applyAvatarFrame(avatarContainer, settings[settingsKey]);
+                    updateControls(); throttledSaveData();
+                    showNotification('✓ 头像框已通过URL加载', 'success');
+                };
+                img.onerror = () => showNotification('URL无法加载图片，请检查链接', 'error');
+                img.src = trimmed;
+            });
+        }
         removeBtn.addEventListener('click', () => {
             settings[settingsKey] = null;
             applyAvatarFrame(avatarContainer, null);

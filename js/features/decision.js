@@ -255,12 +255,12 @@ function startCoinFlipAnimation() {
     lastCoinResult = result;
 
     // Animate: add flip class, then show result
-    coin.classList.remove('flip-heads', 'flip-tails', 'flipping');
+    coin.classList.remove('flipping-heads', 'flipping-tails');
     void coin.offsetWidth; // force reflow
-    coin.classList.add('flipping', isHeads ? 'flip-heads' : 'flip-tails');
+    coin.classList.add(isHeads ? 'flipping-heads' : 'flipping-tails');
 
     setTimeout(() => {
-        coin.classList.remove('flipping', 'flip-heads', 'flip-tails');
+        coin.classList.remove('flipping-heads', 'flipping-tails');
         if (resultText) resultText.textContent = result;
         overlay.classList.add('finished');
         if (sendBtn) sendBtn.style.display = '';
