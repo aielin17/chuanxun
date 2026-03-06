@@ -615,14 +615,14 @@ function _createCard(item, index, disabledSet) {
             .rl-card:hover .rl-card-actions { opacity:1; }
             @media (hover:none) { .rl-card-actions { opacity:1; } }
             .rl-act-btn {
-                width:28px;height:28px;border-radius:8px;border:1px solid var(--border-color);
-                background:var(--primary-bg);color:var(--text-secondary);cursor:pointer;
+                width:28px;height:28px;border-radius:8px;border:none;
+                background:transparent;color:var(--text-secondary);cursor:pointer;
                 display:flex;align-items:center;justify-content:center;transition:all 0.15s;
                 flex-shrink:0;
             }
-            .rl-act-btn:hover { border-color:var(--accent-color);color:var(--accent-color); }
-            .rl-act-btn.danger:hover { border-color:#ef4444;color:#ef4444; }
-            .rl-act-btn.active { background:var(--accent-color);border-color:var(--accent-color);color:#fff; }
+            .rl-act-btn:hover { color:var(--accent-color); }
+            .rl-act-btn.danger:hover { color:#ef4444; }
+            .rl-act-btn.active { background:var(--accent-color);color:#fff; }
         </style>
         <div style="flex:1;min-width:0;${isDisabled ? 'opacity:0.4;text-decoration:line-through;' : ''}">
             ${displayText}
@@ -670,8 +670,8 @@ function _renderAtmosphereList(list, items) {
         div.innerHTML = `
             <span class="custom-reply-text">${item.replace('|','<br><small style="opacity:.65">')}</span>
             <div class="custom-reply-actions">
-                <button class="reply-action-mini edit-btn" title="编辑">${ICONS.edit}</button>
-                <button class="reply-action-mini delete-btn" title="删除">${ICONS.trash}</button>
+                <button class="reply-action-mini edit-btn" title="编辑" style="background:none;border:none;box-shadow:none;">${ICONS.edit}</button>
+                <button class="reply-action-mini delete-btn" title="删除" style="background:none;border:none;box-shadow:none;">${ICONS.trash}</button>
             </div>
         `;
         div.querySelector('.delete-btn').onclick = () => deleteItem(realIdx);

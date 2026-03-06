@@ -2400,3 +2400,133 @@ window.exitCollapseMode = function() {
         setTimeout(tryApply, 400);
     }
 })();
+
+/* ════════════════════════════════════════
+   引用消息跳转  Reply Indicator Jump-to
+   ════════════════════════════════════════ */
+document.addEventListener('click', function(e) {
+    const indicator = e.target.closest('.reply-indicator');
+    if (!indicator) return;
+    const replyId = indicator.dataset.replyId;
+    if (!replyId) return;
+    
+    const targetEl = document.querySelector(`.message-wrapper[data-id="${replyId}"]`);
+    if (!targetEl) {
+        if (typeof showNotification === 'function') showNotification('该消息已不在当前视图中', 'info', 2000);
+        return;
+    }
+    
+    targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
+    // Flash highlight effect
+    targetEl.style.transition = 'background 0.2s';
+    targetEl.style.background = 'rgba(var(--accent-color-rgb, 180,140,100), 0.18)';
+    setTimeout(() => {
+        targetEl.style.background = '';
+    }, 1200);
+}, false);
+
+/* ════════════════════════════════════════
+   挂机保活音频  Keepalive Silent Audio
+   ════════════════════════════════════════ */
+(function() {
+    const KEEPALIVE_KEY = 'keepaliveAudioEnabled';
+    let _keepaliveAudio = null;
+    let _keepaliveEnabled = false;
+
+    function _createSilentAudio() {
+        // Create an 8-hour silent audio using Web Audio API + MediaStream
+        // This keeps the audio context alive and prevents browser from suspending the tab
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const dest = ctx.createMediaStreamDestination();
+            // Oscillator at near-zero gain — completely inaudible but keeps stream alive
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            gain.gain.value = 0.00001;
+            osc.connect(gain);
+            gain.connect(dest);
+            osc.start();
+
+            const audio = new Audio();
+            audio.srcObject = dest.stream;
+            audio.loop = true;
+            audio.volume = 0.001;
+            audio.play().then(() => {
+                const statusEl = document.getElementById('keepalive-audio-status');
+                if (statusEl) statusEl.style.display = '';
+            }).catch(err => {
+                console.warn('[Keepalive] 播放失败，尝试用 data:audio', err);
+                _fallbackSilentAudio();
+            });
+            _keepaliveAudio = { audio, ctx, osc };
+            return true;
+        } catch(e) {
+            console.warn('[Keepalive] AudioContext 不可用:', e);
+            return _fallbackSilentAudio();
+        }
+    }
+
+    function _fallbackSilentAudio() {
+        // Fallback: 1-second near-silent WAV loop
+        try {
+            // Minimal valid WAV: 44-byte header + 1 sample of silence
+            const wav = 'UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+            const audio = new Audio('data:audio/wav;base64,' + wav);
+            audio.loop = true;
+            audio.volume = 0.001;
+            audio.play().catch(() => {});
+            _keepaliveAudio = { audio };
+            const statusEl = document.getElementById('keepalive-audio-status');
+            if (statusEl) statusEl.style.display = '';
+            return true;
+        } catch(e) { return false; }
+    }
+
+    function _stopKeepalive() {
+        if (_keepaliveAudio) {
+            try {
+                if (_keepaliveAudio.audio) {
+                    _keepaliveAudio.audio.pause();
+                    _keepaliveAudio.audio.srcObject = null;
+                }
+                if (_keepaliveAudio.osc) _keepaliveAudio.osc.stop();
+                if (_keepaliveAudio.ctx) _keepaliveAudio.ctx.close();
+            } catch(e) {}
+            _keepaliveAudio = null;
+        }
+        const statusEl = document.getElementById('keepalive-audio-status');
+        if (statusEl) statusEl.style.display = 'none';
+    }
+
+    function _applyKeepaliveState(on) {
+        _keepaliveEnabled = on;
+        const toggle = document.getElementById('keepalive-audio-toggle');
+        const sw = document.getElementById('keepalive-audio-switch');
+        if (toggle) toggle.classList.toggle('active', on);
+        if (sw) sw.classList.toggle('active', on);
+        if (on) {
+            _createSilentAudio();
+        } else {
+            _stopKeepalive();
+        }
+        localStorage.setItem(KEEPALIVE_KEY, on ? '1' : '0');
+    }
+
+    window.toggleKeepaliveAudio = function() {
+        _applyKeepaliveState(!_keepaliveEnabled);
+        if (typeof showNotification === 'function') {
+            showNotification(
+                _keepaliveEnabled ? '挂机音频已开启，切出后台将不会被打断 🎧' : '挂机音频已关闭',
+                'success', 2500
+            );
+        }
+    };
+
+    // Restore state on load
+    document.addEventListener('DOMContentLoaded', function() {
+        if (localStorage.getItem(KEEPALIVE_KEY) === '1') {
+            setTimeout(() => _applyKeepaliveState(true), 1500);
+        }
+    });
+})();

@@ -1049,6 +1049,18 @@
             align-items: flex-end;
             transition: border-color 0.5s ease;
         }
+        .input-left-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+        .input-left-col .input-btn {
+            width: 36px !important;
+            height: 36px !important;
+            font-size: 15px;
+        }
         .message-input {
             flex: 1;
             border: 1px solid transparent;
