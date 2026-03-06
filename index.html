@@ -17,13 +17,10 @@
     <link rel="apple-touch-icon" href="https://file.youtochat.com/images/20260216/1771224856844_qdqqd.jpeg">
     <meta name="apple-mobile-web-app-title" content="ʚ𝑳𝑶𝑽𝑬ɞ">
 
-    <!-- External Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
 
-    <!-- App Styles -->
     <link rel="stylesheet" href="css/styles.css">
 
-    <!-- Inline live-preview style placeholder (dynamically updated by JS) -->
     <style id="css-live-preview-style"></style>
 </head>
 <body>
@@ -298,7 +295,6 @@
     <div class="input-area-wrapper">
         <div class="batch-preview" id="batch-preview"></div>
         <div id="reply-preview-container"></div>
-       <!-- 收纳模式展开面板 -->
         <div id="collapsed-extras-panel" style="display:none;">
             <div class="collapsed-extras-inner" style="padding:12px; background:var(--secondary-bg); border-top:1px solid var(--border-color);">
                 <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:12px;">
@@ -799,7 +795,6 @@
                 </div>
             </div>
 
-            <!-- 每条消息都显示头像 -->
             <div id="always-avatar-toggle" style="display:flex;align-items:center;gap:12px;background:var(--primary-bg);border:1px solid var(--border-color);border-radius:12px;padding:12px 14px;cursor:pointer;transition:all 0.2s;margin-bottom:10px;">
                 <div style="width:36px;height:36px;border-radius:50%;background:rgba(var(--accent-color-rgb),0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                     <i class="fas fa-users" style="font-size:16px;color:var(--accent-color);"></i>
@@ -813,7 +808,6 @@
                 </div>
             </div>
 
-            <!-- 单人模式显示对方名字 -->
             <div id="partner-name-chat-toggle" style="display:flex;align-items:center;gap:12px;background:var(--primary-bg);border:1px solid var(--border-color);border-radius:12px;padding:12px 14px;cursor:pointer;transition:all 0.2s;margin-bottom:10px;">
                 <div style="width:36px;height:36px;border-radius:50%;background:rgba(var(--accent-color-rgb),0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                     <i class="fas fa-tag" style="font-size:16px;color:var(--accent-color);"></i>
@@ -890,8 +884,9 @@
             <div class="frame-settings-container">
                 <div class="frame-preview-wrapper">
                     <div class="frame-preview" id="my-frame-preview-2"></div>
-                    <div style="display:flex;gap:8px;margin-top:6px;">
-                        <button class="modal-btn modal-btn-secondary" id="my-frame-upload-btn-2" style="padding:5px 10px;font-size:12px;">上传</button>
+                    <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">
+                        <button class="modal-btn modal-btn-secondary" id="my-frame-upload-btn-2" style="padding:5px 10px;font-size:12px;">上传文件</button>
+                        <button class="modal-btn modal-btn-secondary" id="my-frame-url-btn-2" style="padding:5px 10px;font-size:12px;">URL链接</button>
                         <button class="modal-btn modal-btn-secondary" id="my-frame-remove-btn-2" style="padding:5px 10px;font-size:12px;">移除</button>
                     </div>
                 </div>
@@ -919,8 +914,9 @@
             <div class="frame-settings-container">
                 <div class="frame-preview-wrapper">
                     <div class="frame-preview" id="partner-frame-preview-2"></div>
-                    <div style="display:flex;gap:8px;margin-top:6px;">
-                        <button class="modal-btn modal-btn-secondary" id="partner-frame-upload-btn-2" style="padding:5px 10px;font-size:12px;">上传</button>
+                    <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">
+                        <button class="modal-btn modal-btn-secondary" id="partner-frame-upload-btn-2" style="padding:5px 10px;font-size:12px;">上传文件</button>
+                        <button class="modal-btn modal-btn-secondary" id="partner-frame-url-btn-2" style="padding:5px 10px;font-size:12px;">URL链接</button>
                         <button class="modal-btn modal-btn-secondary" id="partner-frame-remove-btn-2" style="padding:5px 10px;font-size:12px;">移除</button>
                     </div>
                 </div>
@@ -1419,7 +1415,7 @@
             <div id="fl-panel-fortune" class="fl-panel fl-panel-active">
                 <div id="fortune-content"></div>
                 <div class="modal-buttons" style="margin-top:16px;">
-                    <button class="modal-btn modal-btn-primary" id="share-fortune"><i class="fas fa-share-alt"></i> 分享运势</button>
+
                     <button class="modal-btn modal-btn-secondary" id="close-fortune">关闭</button>
                 </div>
             </div>
@@ -2113,26 +2109,10 @@
 </div>
 
 <div id="dg-editor-modal" style="display:none;"></div>
-
-    <!--
-    ============================================================
-    JavaScript Modules — loaded in dependency order
-    ============================================================
-    -->
-
-    <!-- 1. Constants & data structures -->
     <script src="js/config.js"></script>
-
-    <!-- 2. Pure utility functions -->
     <script src="js/utils.js"></script>
-
-    <!-- 3. App state & DOM element references -->
     <script src="js/state.js"></script>
-
-    <!-- 4. Core application logic (session, data, render, messaging) -->
     <script src="js/core.js"></script>
-
-    <!-- 5. Feature modules -->
     <script src="js/features/fortune.js"></script>
     <script src="js/features/mood.js"></script>
     <script src="js/features/envelope.js"></script>
@@ -2145,13 +2125,10 @@
     <script src="js/features/notifications.js"></script>
     <script src="js/features/group-chat.js"></script>
 
-    <!-- 6. Event listeners (wires everything together; bug-fixed close buttons here) -->
     <script src="js/listeners.js"></script>
 
-    <!-- 7. App entry point (DOMContentLoaded bootstrap) -->
     <script src="js/app.js"></script>
 
-    <!-- 8. Splash screen (typing indicator + pledge IIFE) -->
     <script src="js/splash.js"></script>
 
 </body>
