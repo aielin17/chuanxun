@@ -696,6 +696,7 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                 const pos = settings.inChatAvatarPosition || 'center';
                 const alignMap = { 'top': 'flex-start', 'center': 'center', 'bottom': 'flex-end', 'custom': 'flex-start' };
                 document.documentElement.style.setProperty('--avatar-align', alignMap[pos] || 'center');
+                document.body.dataset.avatarPos = pos;
                 document.querySelectorAll('.preview-msg-row').forEach(row => {
                     row.style.alignItems = alignMap[pos] || 'flex-start';
                 });

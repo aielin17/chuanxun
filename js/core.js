@@ -877,7 +877,7 @@ function manageAutoSendTimer() {
                 
                 const avatarDiv = document.createElement('div');
                 avatarDiv.className = 'message-avatar';
-                if (settings.inChatAvatarPosition === 'custom' && settings.inChatAvatarCustomOffset) {
+                if (settings.inChatAvatarPosition === 'custom' && settings.inChatAvatarCustomOffset !== undefined) {
                     avatarDiv.style.marginTop = settings.inChatAvatarCustomOffset + 'px';
                 }
 
@@ -1145,7 +1145,7 @@ if (!isBatchMode && type === 'normal') {
             throttledSaveData();
         }
 
-        const shouldIgnore = settings.allowReadNoReply && (Math.random() < settings.readNoReplyChance);
+        const shouldIgnore = settings.allowReadNoReply && (Math.random() < 0.5);
 
         if (shouldIgnore) {
             console.log("触发已读不回机制");
@@ -1337,8 +1337,10 @@ if (partnerPersonas && partnerPersonas.length > 0 && Math.random() < 0.3) {
                 return;
             }
             let delay = 0;
-            // Capture the user's last message to potentially reference it
-            const lastUserMsg = settings.replyEnabled ? [...messages].reverse().find(m => m.sender === 'user' && m.text) : null;
+            // Capture up to last 10 user messages for random quote selection
+            const recentUserMsgs = settings.replyEnabled
+                ? messages.filter(m => m.sender === 'user' && m.text).slice(-10)
+                : [];
             for (let i = 0; i < replyCount; i++) {
                 const delayRange = settings.replyDelayMax - settings.replyDelayMin;
                 delay += settings.replyDelayMin + Math.random() * delayRange;
@@ -1371,7 +1373,9 @@ if (partnerPersonas && partnerPersonas.length > 0 && Math.random() < 0.3) {
                         status: 'received',
                         favorited: false,
                         note: null,
-                        replyTo: (i === 0 && lastUserMsg && Math.random() < 0.5) ? { id: lastUserMsg.id, text: lastUserMsg.text, sender: lastUserMsg.sender } : null,
+                        replyTo: (i === 0 && recentUserMsgs.length > 0 && Math.random() < 0.3)
+                            ? (function(){ const m = recentUserMsgs[Math.floor(Math.random() * recentUserMsgs.length)]; return { id: m.id, text: m.text, sender: m.sender }; })()
+                            : null,
                         type: 'normal'
                     });
 

@@ -9733,3 +9733,14 @@
         body[data-avatar-pos="custom"] .message-avatar {
             margin-top: var(--avatar-custom-offset, 0px);
         }
+
+        /* Daily fortune tarot card image fill fix */
+        #fortune-sub-daily .tarot-face.tarot-back {
+            padding: 0 !important;
+            overflow: hidden !important;
+        }
+        #fortune-sub-daily .tarot-visual {
+            height: 100% !important;
+            width: 100% !important;
+            margin: 0 !important;
+        }
