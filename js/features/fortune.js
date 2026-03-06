@@ -27,93 +27,83 @@ function renderStatsContent() {
                 const countMap = {};
                 msgs.forEach(msg => {
                     const text = msg.text.trim();
-                    if (text) countMap[text] = (countMap[text] || 0) + 1;
+                    if (text) {
+                        countMap[text] = (countMap[text] || 0) + 1;
+                    }
                 });
                 return Object.entries(countMap)
                     .map(([text, count]) => ({ text, count }))
                     .sort((a, b) => b.count - a.count)
-                    .slice(0, 5);
+                    .slice(0, 5); 
             };
 
             const partnerTop = getTopReplies(partnerMessages);
             const myTop = getTopReplies(myMessages);
 
             const generateRankHTML = (list) => {
-                if (list.length === 0) return '<div style="text-align:center;color:var(--text-secondary);font-size:12px;padding:20px 0;">暂无数据</div>';
+                if (list.length === 0) return '<div style="text-align:center;color:var(--text-secondary);font-size:12px;padding:10px;">暂无数据</div>';
                 const maxVal = list[0].count;
-                const medals = ['🥇', '🥈', '🥉', '4', '5'];
                 return list.map((item, index) => {
-                    const percent = Math.max(8, (item.count / maxVal) * 100);
-                    const isMedal = index < 3;
+                    const percent = (item.count / maxVal) * 100;
                     return `
                     <div class="rank-item">
-                        <div class="rank-progress-bg" style="width:${percent}%;"></div>
+                        <div class="rank-progress-bg" style="width: ${percent}%; opacity: 0.1; background-color: var(--text-primary);"></div>
                         <div class="rank-info">
-                            <div class="rank-number ${isMedal ? 'rank-medal' : ''}">${isMedal ? medals[index] : index + 1}</div>
-                            <div class="rank-text" title="${item.text.replace(/"/g,'&quot;')}">${item.text}</div>
-                            <div class="rank-count">${item.count}<small>次</small></div>
+                            <div class="rank-number">#${index + 1}</div>
+                            <div class="rank-text" title="${item.text}">${item.text}</div>
+                            <div class="rank-count">${item.count}次</div>
                         </div>
                     </div>`;
                 }).join('');
             };
 
             const allMsgs = messages.filter(m => m.timestamp);
-            const firstMsg = allMsgs.length > 0 ? allMsgs[0] : null;
-            const lastMsg = allMsgs.length > 0 ? allMsgs[allMsgs.length - 1] : null;
+            const firstMsg = allMsgs.length > 0 ? allMsgs[0] : { timestamp: new Date() };
+            const lastMsg = allMsgs.length > 0 ? allMsgs[allMsgs.length - 1] : { timestamp: new Date() };
 
-            const fmt = (d) => d ? new Date(d).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }) : '--';
-
-            const myAvgLen = myMessages.length > 0
-                ? Math.round(myMessages.reduce((s, m) => s + m.text.length, 0) / myMessages.length)
-                : 0;
-            const partnerAvgLen = partnerMessages.length > 0
-                ? Math.round(partnerMessages.reduce((s, m) => s + m.text.length, 0) / partnerMessages.length)
-                : 0;
-
-            const imgCount = messages.filter(m => m.type === 'image' || m.imageUrl).length;
-            const totalCount = messages.length;
-            const myRatio = totalCount > 0 ? Math.round((myMessages.length / totalCount) * 100) : 0;
+            const formatDate = (dateObj) => {
+                return new Date(dateObj).toLocaleDateString('zh-CN', {
+                    month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+                });
+            };
 
             statsContent.innerHTML = `
                 <div class="stats-dashboard">
-
                     <div class="stats-overview-grid">
-                        <div class="overview-item">
-                            <div class="overview-value">${totalCount.toLocaleString()}</div>
+                        <div class="overview-item overview-large">
+                            <div class="overview-value">${messages.length}</div>
                             <div class="overview-label">总消息数</div>
                         </div>
-                        <div class="overview-item">
-                            <div class="overview-value">${myRatio}<span style="font-size:14px;font-weight:500;">%</span></div>
-                            <div class="overview-label">我的占比</div>
+                        <div class="overview-row-two">
+                            <div class="overview-item">
+                                <div class="overview-value">${myMessages.length}</div>
+                                <div class="overview-label">我发送的</div>
+                            </div>
+                            <div class="overview-item">
+                                <div class="overview-value">${partnerMessages.length}</div>
+                                <div class="overview-label">对方发送的</div>
+                            </div>
                         </div>
-                        <div class="overview-item">
-                            <div class="overview-value">${myMessages.length.toLocaleString()}</div>
-                            <div class="overview-label">我发送的</div>
-                        </div>
-                        <div class="overview-item">
-                            <div class="overview-value">${partnerMessages.length.toLocaleString()}</div>
-                            <div class="overview-label">对方发送的</div>
-                        </div>
-                        <div class="overview-item">
-                            <div class="overview-value">${fmt(firstMsg && firstMsg.timestamp)}</div>
-                            <div class="overview-label">初次相遇</div>
-                        </div>
-                        <div class="overview-item">
-                            <div class="overview-value">${fmt(lastMsg && lastMsg.timestamp)}</div>
-                            <div class="overview-label">最近联络</div>
-                        </div>
-                        <div class="overview-item">
-                            <div class="overview-value">${myAvgLen}</div>
-                            <div class="overview-label">我的均长</div>
-                        </div>
-                        <div class="overview-item">
-                            <div class="overview-value">${partnerAvgLen}</div>
-                            <div class="overview-label">对方均长</div>
+                        <div class="overview-row-dates">
+                            <div class="overview-item overview-date">
+                                <div class="overview-date-icon"><i class="fas fa-seedling"></i></div>
+                                <div>
+                                    <div class="overview-date-label">初次相遇</div>
+                                    <div class="overview-date-value">${formatDate(firstMsg.timestamp)}</div>
+                                </div>
+                            </div>
+                            <div class="overview-item overview-date">
+                                <div class="overview-date-icon"><i class="fas fa-heart"></i></div>
+                                <div>
+                                    <div class="overview-date-label">最近联络</div>
+                                    <div class="overview-date-value">${formatDate(lastMsg.timestamp)}</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <div class="stats-card">
-                        <div class="stats-toggle-row">
+                        <div style="display:flex; gap:8px; margin-bottom:12px;">
                             <button id="stats-toggle-partner" class="stats-toggle-btn active" onclick="switchStatsView('partner')">
                                 <i class="fas fa-user-circle"></i> 对方
                             </button>
@@ -122,19 +112,17 @@ function renderStatsContent() {
                             </button>
                         </div>
                         <div class="stats-card-title" id="stats-rank-title">
-                            高频消息 TOP 5
+                            <i class="fas fa-user-circle"></i> 对方高频词 TOP 5
                         </div>
                         <div class="stats-rank-list" id="stats-rank-list">
                             ${generateRankHTML(partnerTop)}
                         </div>
                     </div>
-
                 </div>
             `;
 
             statsContent._partnerHTML = generateRankHTML(partnerTop);
             statsContent._myHTML = generateRankHTML(myTop);
-        }
         }
 
         window.switchStatsView = function(who) {
@@ -148,13 +136,13 @@ function renderStatsContent() {
             if (who === 'partner') {
                 partnerBtn.classList.add('active');
                 meBtn.classList.remove('active');
-                title.textContent = '高频消息 TOP 5';
-                list.innerHTML = statsContent._partnerHTML || '<div style="text-align:center;color:var(--text-secondary);font-size:12px;padding:20px 0;">暂无数据</div>';
+                title.innerHTML = '<i class="fas fa-user-circle"></i> 对方高频词 TOP 5';
+                list.innerHTML = statsContent._partnerHTML || '<div style="text-align:center;color:var(--text-secondary);font-size:12px;padding:10px;">暂无数据</div>';
             } else {
                 meBtn.classList.add('active');
                 partnerBtn.classList.remove('active');
-                title.textContent = '高频消息 TOP 5';
-                list.innerHTML = statsContent._myHTML || '<div style="text-align:center;color:var(--text-secondary);font-size:12px;padding:20px 0;">暂无数据</div>';
+                title.innerHTML = '<i class="fas fa-user"></i> 我方高频词 TOP 5';
+                list.innerHTML = statsContent._myHTML || '<div style="text-align:center;color:var(--text-secondary);font-size:12px;padding:10px;">暂无数据</div>';
             }
         };
         function renderSessionList() {
