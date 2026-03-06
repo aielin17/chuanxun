@@ -98,7 +98,8 @@ autoSendInterval: 5,
         readNoReplyChance: 0.2,
         timeFormat: 'HH:mm',
         customSoundUrl: '',
-        soundVolume: 0.15
+        soundVolume: 0.15,
+        bottomCollapseMode: false
             };
         }
 
@@ -274,7 +275,7 @@ const loadData = async () => {
             }));
         } else {
             const backup = _tryRecoverFromBackup();
-            if (backup && Array.isArray(backup.messages) && backup.messages.length > 0) {
+            if (backup && Array.isArray(backup.messages) && backup.messages.length > 0 && backup.sessionId === SESSION_ID) {
                 const timeSince = Math.round((Date.now() - backup.ts) / 60000);
                 console.warn(`[loadData] 主存储无消息，正在从备份恢复（备份时间：${timeSince} 分钟前）`);
                 messages = backup.messages.map(m => ({
@@ -748,9 +749,10 @@ function manageAutoSendTimer() {
             document.documentElement.style.setProperty('--message-line-height', settings.messageLineHeight);
 
             document.documentElement.style.setProperty('--in-chat-avatar-size', `${settings.inChatAvatarSize}px`);
-            const _alignMap = { 'top': 'flex-start', 'center': 'center', 'bottom': 'flex-end' };
-            document.documentElement.style.setProperty('--avatar-align', _alignMap[settings.inChatAvatarPosition || 'center'] || 'center');
+            const _posVal = typeof settings.inChatAvatarPosition === 'number' ? settings.inChatAvatarPosition : (settings.inChatAvatarPosition === 'top' ? 0 : settings.inChatAvatarPosition === 'bottom' ? 100 : 50);
+            document.documentElement.style.setProperty('--avatar-offset-px', `${_posVal * 0.6}px`);
             document.body.classList.toggle('always-show-avatar', !!settings.alwaysShowAvatar);
+            document.body.classList.toggle('bottom-collapse-mode', !!settings.bottomCollapseMode);
             document.body.classList.toggle('show-partner-name', !!(settings.showPartnerNameInChat || showPartnerNameInChat));
 
             document.querySelectorAll('.theme-color-btn').forEach(btn => {
@@ -906,6 +908,11 @@ function manageAutoSendTimer() {
                     nameLabel.textContent = groupMember.name;
                     const isSameSenderGroupForName = lastSender === 'group_' + groupMember.name;
                     if (!isSameSenderGroupForName) contentWrapper.appendChild(nameLabel);
+                } else if (!groupMember && msg.sender !== 'user' && msg.type !== 'system' && (settings.showPartnerNameInChat || showPartnerNameInChat)) {
+                    const nameLabel = document.createElement('div');
+                    nameLabel.className = 'message-sender-name';
+                    nameLabel.textContent = settings.partnerName || '对方';
+                    contentWrapper.appendChild(nameLabel);
                 }
                 
                 let messageHTML = '';
@@ -1105,12 +1112,12 @@ if (!isBatchMode && type === 'normal') {
             throttledSaveData();
         }
 
-        const shouldIgnore = settings.allowReadNoReply && (Math.random() < settings.readNoReplyChance);
+        const shouldIgnore = settings.allowReadNoReply && (Math.random() < (settings.readNoReplyChance || 0.2));
 
         if (shouldIgnore) {
             console.log("触发已读不回机制");
         } else {
-            simulateReply(); 
+            try { simulateReply(); } catch(e) { console.error('[simulateReply] 出错:', e); }
         }
 
     }, randomDelay);

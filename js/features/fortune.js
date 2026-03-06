@@ -191,22 +191,65 @@ const majorCards = CONSTANTS.TAROT_CARDS;
         await localforage.setItem(storageKey, fortuneData);
     }
 
-    renderFortuneCardInteractive(fortuneData, majorCards, todayKey);
+    renderFortunePanel(fortuneData, majorCards, todayKey);
 }
-function renderFortuneCardInteractive(data, majorCards, todayKey) {
+
+function renderFortunePanel(weeklyData, majorCards, todayKey) {
     const content = document.getElementById('fortune-content');
-    if (!content) return showNotification('组件加载失败，请刷新页面', 'error');
+    if (!content) return;
+
+    content.innerHTML = `
+        <div class="fortune-sub-tabs" style="display:flex;gap:8px;margin-bottom:14px;">
+            <button id="fsub-weekly" class="modal-btn modal-btn-primary" style="flex:1;font-size:12px;padding:7px 0;" onclick="showFortuneSub('weekly')"><i class="fas fa-calendar-week"></i> 每周主牌</button>
+            <button id="fsub-daily" class="modal-btn modal-btn-secondary" style="flex:1;font-size:12px;padding:7px 0;" onclick="showFortuneSub('daily')"><i class="fas fa-sun"></i> 每日运势</button>
+        </div>
+        <div id="fortune-sub-weekly"></div>
+        <div id="fortune-sub-daily" style="display:none;"></div>
+    `;
+
+    renderWeeklyFortune(weeklyData, majorCards);
+    renderDailyFortune(todayKey);
+
+    showModal(document.getElementById('fortune-lenormand-modal'));
+}
+
+window.showFortuneSub = function(tab) {
+    const weeklyEl = document.getElementById('fortune-sub-weekly');
+    const dailyEl = document.getElementById('fortune-sub-daily');
+    const weeklyBtn = document.getElementById('fsub-weekly');
+    const dailyBtn = document.getElementById('fsub-daily');
+    if (tab === 'weekly') {
+        if (weeklyEl) weeklyEl.style.display = '';
+        if (dailyEl) dailyEl.style.display = 'none';
+        if (weeklyBtn) weeklyBtn.className = 'modal-btn modal-btn-primary';
+        if (dailyBtn) dailyBtn.className = 'modal-btn modal-btn-secondary';
+        weeklyBtn.style.flex = dailyBtn.style.flex = '1';
+        weeklyBtn.style.fontSize = dailyBtn.style.fontSize = '12px';
+        weeklyBtn.style.padding = dailyBtn.style.padding = '7px 0';
+    } else {
+        if (weeklyEl) weeklyEl.style.display = 'none';
+        if (dailyEl) dailyEl.style.display = '';
+        if (weeklyBtn) weeklyBtn.className = 'modal-btn modal-btn-secondary';
+        if (dailyBtn) dailyBtn.className = 'modal-btn modal-btn-primary';
+        weeklyBtn.style.flex = dailyBtn.style.flex = '1';
+        weeklyBtn.style.fontSize = dailyBtn.style.fontSize = '12px';
+        weeklyBtn.style.padding = dailyBtn.style.padding = '7px 0';
+    }
+};
+
+function renderWeeklyFortune(data, majorCards) {
+    const el = document.getElementById('fortune-sub-weekly');
+    if (!el) return;
 
     const card = majorCards[data.cardIndex];
     const isUpright = data.isUpright;
-
-    const starCount = data.stars || 3; 
+    const starCount = data.stars || 3;
 
     let starsHtml = Array(5).fill(0).map((_, i) => 
         `<i class="fas fa-star" style="color: ${i < starCount ? 'var(--accent-color)' : 'var(--border-color)'}; font-size: 12px; margin: 0 2px;"></i>`
     ).join('');
 
-    content.innerHTML = `
+    el.innerHTML = `
         <div style="text-align:center; margin-bottom:15px; color:var(--text-secondary); font-size:12px; letter-spacing: 1px;">
             <i class="fas fa-sparkles" style="color:var(--accent-color);"></i> 凭直觉点击翻开你的每周主牌
         </div>
@@ -216,7 +259,6 @@ function renderFortuneCardInteractive(data, majorCards, todayKey) {
                 <div class="tarot-face tarot-front">
                     <div class="tarot-pattern"><i class="fas fa-star-and-crescent"></i></div>
                 </div>
-
                 <div class="tarot-face tarot-back" style="background: linear-gradient(135deg, var(--secondary-bg), rgba(var(--accent-color-rgb), 0.05)); border: 2px solid rgba(var(--accent-color-rgb), 0.3);">
                     <div class="tarot-visual ${isUpright ? '' : 'reversed'}" style="height:100px;">
                         <i class="fas ${card.icon} tarot-icon-vector" style="font-size:52px; color: var(--accent-color);"></i>
@@ -236,23 +278,91 @@ function renderFortuneCardInteractive(data, majorCards, todayKey) {
                 <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase;">本周能量指数</div>
                 <div>${starsHtml}</div>
             </div>
-            
             <div class="tarot-keyword" style="font-size:16px; margin-bottom:12px; text-align:center; position:relative;">
                 <span style="background: var(--primary-bg); padding: 0 10px; position:relative; z-index:2; color: var(--accent-color);">「 ${card.keyword} 」</span>
                 <div style="position:absolute; top:50%; left:0; right:0; height:1px; background:var(--border-color); z-index:1;"></div>
             </div>
-            
             <div class="fortune-desc" style="font-size:14px; margin-bottom:15px; text-align: justify; text-align-last: center; line-height: 1.8;">${card.upright || card.meaning}</div>
-            
             <div class="fortune-tip" style="font-size:12px; background: rgba(var(--accent-color-rgb), 0.08); padding: 10px 12px; border-radius: 8px; color: var(--text-primary);">
                 <i class="fas fa-lightbulb" style="color:var(--accent-color); margin-right:5px;"></i>
                 <b>命运低语：</b>${isUpright ? "顺势而为，宇宙正为你敞开大门，保持当下的能量。" : "换个角度思考，也许是转机，放慢脚步倾听内心的声音。"}
             </div>
         </div>
     `;
-
-    showModal(document.getElementById('fortune-lenormand-modal'));
 }
+
+async function renderDailyFortune(todayKey) {
+    const el = document.getElementById('fortune-sub-daily');
+    if (!el) return;
+
+    const storageKey = `${APP_PREFIX}daily_fortune_3`;
+    let dailyData = null;
+
+    try {
+        const saved = await localforage.getItem(storageKey);
+        if (saved && saved.day === todayKey) {
+            dailyData = saved;
+        }
+    } catch(e) {}
+
+    if (!dailyData) {
+        // Absolutely random draw from ALL 78 cards, no repeat
+        const deck = [...ALL_78_TAROT_CARDS];
+        // True Fisher-Yates shuffle
+        for (let i = deck.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [deck[i], deck[j]] = [deck[j], deck[i]];
+        }
+        const drawn = deck.slice(0, 3).map(card => ({
+            name: card.name,
+            type: card.type || 'major',
+            keyword: card.keyword,
+            upright: card.upright || card.meaning,
+            reversed: card.reversed || card.meaning,
+            icon: card.icon || 'fa-star',
+            img: card.img || null,
+            isUpright: Math.random() > 0.5
+        }));
+        dailyData = { day: todayKey, cards: drawn };
+        try { await localforage.setItem(storageKey, dailyData); } catch(e) {}
+    }
+
+    const positionLabels = ['过去 · 根源', '现在 · 核心', '未来 · 启示'];
+    const positionColors = ['rgba(var(--accent-color-rgb),0.6)', 'var(--accent-color)', 'rgba(var(--accent-color-rgb),0.8)'];
+
+    el.innerHTML = `
+        <div style="text-align:center; margin-bottom:14px; color:var(--text-secondary); font-size:12px; letter-spacing:1px;">
+            <i class="fas fa-moon" style="color:var(--accent-color);"></i> ${new Date().toLocaleDateString('zh-CN', {month:'long',day:'numeric'})} · 三牌展开
+        </div>
+        <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-bottom:16px;">
+            ${dailyData.cards.map((card, i) => `
+                <div style="flex:1;min-width:90px;max-width:130px;text-align:center;">
+                    <div style="font-size:10px;color:${positionColors[i]};margin-bottom:6px;font-weight:600;letter-spacing:0.5px;">${positionLabels[i]}</div>
+                    <div class="tarot-container-3d tarot-responsive" style="cursor:pointer;margin-bottom:8px;" onclick="this.classList.toggle('flipped'); this.nextElementSibling.style.display='block';">
+                        <div class="tarot-card-inner">
+                            <div class="tarot-face tarot-front"><div class="tarot-pattern" style="font-size:18px;"><i class="fas fa-star-and-crescent"></i></div></div>
+                            <div class="tarot-face tarot-back" style="background:linear-gradient(135deg,var(--secondary-bg),rgba(var(--accent-color-rgb),0.07));border:1.5px solid rgba(var(--accent-color-rgb),0.3);">
+                                <div class="tarot-visual ${card.isUpright ? '' : 'reversed'}" style="height:60px;">
+                                    ${card.img ? `<img src="${card.img}" style="height:55px;width:auto;object-fit:contain;border-radius:4px;" onerror="this.style.display='none';this.nextElementSibling.style.display='block';"><i class="fas ${card.icon}" style="display:none;font-size:28px;color:var(--accent-color);"></i>` : `<i class="fas ${card.icon}" style="font-size:28px;color:var(--accent-color);"></i>`}
+                                </div>
+                                <div style="font-size:12px;font-weight:700;">${card.name}</div>
+                                <div class="tarot-position-badge ${card.isUpright ? 'upright' : 'reversed'}" style="font-size:9px;padding:2px 6px;margin-top:3px;">${card.isUpright ? '正位' : '逆位'}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display:none;font-size:10px;color:var(--text-secondary);line-height:1.5;padding:6px;background:var(--primary-bg);border-radius:8px;border:1px solid var(--border-color);">
+                        <b style="color:var(--accent-color);">「${card.keyword}」</b><br>
+                        ${(card.isUpright ? card.upright : card.reversed).slice(0,40)}…
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+        <div style="font-size:11px;color:var(--text-secondary);text-align:center;padding:8px;background:rgba(var(--accent-color-rgb),0.05);border-radius:8px;">
+            <i class="fas fa-sync-alt" style="color:var(--accent-color);margin-right:4px;"></i>每日零时自动更新 · 点击牌背翻开
+        </div>
+    `;
+}
+
 let lenormandSystem = 36;
 let lenormandCount = 1;
 

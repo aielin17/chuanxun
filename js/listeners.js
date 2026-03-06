@@ -631,7 +631,11 @@ document.getElementById('chat-settings').addEventListener('click', () => {
             const avatarSizeSlider = document.getElementById('in-chat-avatar-size-slider-2');
             const avatarSizeValue = document.getElementById('in-chat-avatar-size-value-2');
 
-            if (!settings.inChatAvatarPosition) settings.inChatAvatarPosition = 'center';
+            if (!settings.inChatAvatarPosition) settings.inChatAvatarPosition = 50;
+            // Migrate old string values to numeric
+            if (settings.inChatAvatarPosition === 'top') settings.inChatAvatarPosition = 0;
+            else if (settings.inChatAvatarPosition === 'center') settings.inChatAvatarPosition = 50;
+            else if (settings.inChatAvatarPosition === 'bottom') settings.inChatAvatarPosition = 100;
 
 
             function updateBubblePreview() {
@@ -690,20 +694,19 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                 if (avatarSizeValue) avatarSizeValue.textContent = `${settings.inChatAvatarSize}px`;
                 document.documentElement.style.setProperty('--in-chat-avatar-size', `${settings.inChatAvatarSize}px`);
 
-                const pos = settings.inChatAvatarPosition || 'center';
-                const alignMap = { 'top': 'flex-start', 'center': 'center', 'bottom': 'flex-end' };
-                document.documentElement.style.setProperty('--avatar-align', alignMap[pos] || 'center');
+                const posVal = typeof settings.inChatAvatarPosition === 'number' ? settings.inChatAvatarPosition : 50;
+                // Map 0-100 to CSS: 0=flex-start+0px, 50=center, 100=flex-end
+                // Use align-items flex-start + margin-top offset for precise control
+                const avatarOffsetPx = posVal * 0.6; // 0→0px, 50→30px, 100→60px
+                document.documentElement.style.setProperty('--avatar-offset-px', `${avatarOffsetPx}px`);
+                document.documentElement.style.setProperty('--avatar-align', 'flex-start');
                 document.querySelectorAll('.preview-msg-row').forEach(row => {
-                    row.style.alignItems = alignMap[pos] || 'flex-start';
+                    row.style.alignItems = 'flex-start';
                 });
-                const topBtn = document.getElementById('avatar-pos-top-2');
-                const centerBtn = document.getElementById('avatar-pos-center-2');
-                const bottomBtn = document.getElementById('avatar-pos-bottom-2');
-                [topBtn, centerBtn, bottomBtn].forEach(btn => {
-                    if (!btn) return;
-                    btn.className = btn.dataset.pos === pos ? 'modal-btn modal-btn-primary' : 'modal-btn modal-btn-secondary';
-                    btn.style.flex = '1'; btn.style.fontSize = '12px'; btn.style.padding = '7px 0';
-                });
+                const posSlider = document.getElementById('avatar-pos-slider-2');
+                const posValueEl = document.getElementById('avatar-pos-value-2');
+                if (posSlider) posSlider.value = posVal;
+                if (posValueEl) posValueEl.textContent = posVal;
 
                 // 每次显示头像开关
                 const alwaysPill = document.getElementById('always-avatar-pill');
@@ -748,17 +751,16 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                 avatarSizeSlider.addEventListener('change', throttledSaveData);
             }
 
-            ['avatar-pos-top-2','avatar-pos-center-2','avatar-pos-bottom-2'].forEach(btnId => {
-                const btn = document.getElementById(btnId);
-                if (btn) {
-                    btn.addEventListener('click', () => {
-                        settings.inChatAvatarPosition = btn.dataset.pos;
-                        updateAvatarSettingsUI();
-                        renderMessages(true);
-                        throttledSaveData();
-                    });
-                }
-            });
+            // 头像位置滑块
+            const avatarPosSlider = document.getElementById('avatar-pos-slider-2');
+            if (avatarPosSlider) {
+                avatarPosSlider.addEventListener('input', (e) => {
+                    settings.inChatAvatarPosition = parseInt(e.target.value, 10);
+                    updateAvatarSettingsUI();
+                    renderMessages(true);
+                });
+                avatarPosSlider.addEventListener('change', throttledSaveData);
+            }
 
             // 每条消息都显示头像 toggle
             const alwaysAvatarToggle = document.getElementById('always-avatar-toggle');
@@ -780,6 +782,40 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                     throttledSaveData();
                 });
             }
+
+            // 底部栏收纳模式开关
+            const bottomCollapseToggle = document.getElementById('bottom-collapse-toggle');
+            if (bottomCollapseToggle) {
+                bottomCollapseToggle.addEventListener('click', () => {
+                    const isOn = document.body.classList.toggle('bottom-collapse-mode');
+                    settings.bottomCollapseMode = isOn;
+                    updateBottomCollapseUI();
+                    throttledSaveData();
+                });
+            }
+
+            function updateBottomCollapseUI() {
+                const isOn = !!settings.bottomCollapseMode;
+                const pill = document.getElementById('bottom-collapse-pill');
+                const knob = document.getElementById('bottom-collapse-knob');
+                const status = document.getElementById('bottom-collapse-status');
+                if (pill) pill.style.background = isOn ? 'var(--accent-color)' : 'var(--border-color)';
+                if (knob) knob.style.right = isOn ? '3px' : '23px';
+                if (status) status.textContent = isOn ? '已开启 — 底部栏已收纳' : '已关闭 — 显示所有底部按钮';
+                document.body.classList.toggle('bottom-collapse-mode', isOn);
+                // If disabled, also close panel
+                if (!isOn) {
+                    const panel = document.getElementById('collapsed-extras-panel');
+                    if (panel) panel.style.display = 'none';
+                    const expandBtn = document.getElementById('collapse-expand-btn');
+                    if (expandBtn) expandBtn.classList.remove('open');
+                }
+            }
+            // Init collapse mode from saved settings
+            if (settings.bottomCollapseMode) {
+                document.body.classList.add('bottom-collapse-mode');
+            }
+            updateBottomCollapseUI();
 
             function updateAvatarPreview(shape, cornerRadius) {
                 const previewPartner = document.getElementById('preview-partner-avatar');
@@ -2321,3 +2357,47 @@ playlist.style.top = (rect.top + (player.classList.contains('collapsed') ? 65 : 
             DOMElements.batchBtn.addEventListener('click', toggleBatchMode);
         }
 
+
+// 底部栏收纳：展开/收起面板
+window.toggleCollapsedExtras = function() {
+    const panel = document.getElementById('collapsed-extras-panel');
+    const btn = document.getElementById('collapse-expand-btn');
+    if (!panel) return;
+    const isOpen = panel.style.display !== 'none';
+    panel.style.display = isOpen ? 'none' : 'block';
+    if (btn) btn.classList.toggle('open', !isOpen);
+    // 将坍缩面板中的 combo-btn 事件转发给主 combo-btn
+    const comboCollapsed = document.getElementById('combo-btn-collapsed');
+    const comboPrimary = document.getElementById('combo-btn');
+    if (comboCollapsed && comboPrimary && !comboCollapsed._linked) {
+        comboCollapsed._linked = true;
+        comboCollapsed.addEventListener('click', () => comboPrimary.click());
+    }
+    const batchCollapsed = document.getElementById('batch-btn-collapsed');
+    const batchPrimary = document.getElementById('batch-btn');
+    if (batchCollapsed && batchPrimary && !batchCollapsed._linked) {
+        batchCollapsed._linked = true;
+        batchCollapsed.addEventListener('click', () => batchPrimary.click());
+    }
+};
+
+// 退出收纳模式
+window.exitCollapseMode = function() {
+    // Close the extras panel
+    const panel = document.getElementById('collapsed-extras-panel');
+    if (panel) panel.style.display = 'none';
+    const btn = document.getElementById('collapse-expand-btn');
+    if (btn) btn.classList.remove('open');
+    // Turn off collapse mode
+    document.body.classList.remove('bottom-collapse-mode');
+    if (typeof settings !== 'undefined') settings.bottomCollapseMode = false;
+    // Update settings UI
+    const pill = document.getElementById('bottom-collapse-pill');
+    const knob = document.getElementById('bottom-collapse-knob');
+    const status = document.getElementById('bottom-collapse-status');
+    if (pill) pill.style.background = 'var(--border-color)';
+    if (knob) knob.style.right = '23px';
+    if (status) status.textContent = '已关闭 — 显示所有底部按钮';
+    if (typeof throttledSaveData === 'function') throttledSaveData();
+    if (typeof showNotification === 'function') showNotification('已退出收纳模式', 'success', 2000);
+};
