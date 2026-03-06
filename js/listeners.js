@@ -389,19 +389,19 @@ fileInput.addEventListener('change', function(e) {
                 showModal(document.getElementById('group-chat-modal'));
             });
 
-            window.setReadReceiptStyle = function(style) {
-                settings.readReceiptStyle = style;
-                throttledSaveData();
-                const iconBtn = document.getElementById('rr-style-icon');
-                const textBtn = document.getElementById('rr-style-text');
-                if (iconBtn) { iconBtn.className = style === 'icon' ? 'modal-btn modal-btn-primary' : 'modal-btn modal-btn-secondary'; iconBtn.style.cssText = 'padding:5px 12px;font-size:12px;'; }
-                if (textBtn) { textBtn.className = style === 'text' ? 'modal-btn modal-btn-primary' : 'modal-btn modal-btn-secondary'; textBtn.style.cssText = 'padding:5px 12px;font-size:12px;'; }
-                renderMessages();
-                showNotification('已读回执样式已更新', 'success');
-            };
 
-            const chatSettingsBtn = document.getElementById('chat-settings');
-            if (chatSettingsBtn) chatSettingsBtn.addEventListener('click', () => {
+window.setReadReceiptStyle = function(style) {
+    settings.readReceiptStyle = style;
+    throttledSaveData();
+    const iconBtn = document.getElementById('rr-style-icon');
+    const textBtn = document.getElementById('rr-style-text');
+    if (iconBtn) { iconBtn.className = style === 'icon' ? 'modal-btn modal-btn-primary' : 'modal-btn modal-btn-secondary'; iconBtn.style.cssText = 'padding:5px 12px;font-size:12px;'; }
+    if (textBtn) { textBtn.className = style === 'text' ? 'modal-btn modal-btn-primary' : 'modal-btn modal-btn-secondary'; textBtn.style.cssText = 'padding:5px 12px;font-size:12px;'; }
+    renderMessages();
+    showNotification('已读回执样式已更新', 'success');
+};
+
+document.getElementById('chat-settings').addEventListener('click', () => {
     hideModal(DOMElements.settingsModal.modal);
     
     const toggleSyncMap = {
@@ -691,32 +691,18 @@ fileInput.addEventListener('change', function(e) {
                 document.documentElement.style.setProperty('--in-chat-avatar-size', `${settings.inChatAvatarSize}px`);
 
                 const pos = settings.inChatAvatarPosition || 'center';
-                // Preset positions use align-self; custom uses margin-top offset
-                const alignSelfMap = { 'top': 'flex-start', 'center': 'center', 'bottom': 'flex-end', 'custom': 'flex-start' };
-                document.documentElement.style.setProperty('--avatar-align-self', alignSelfMap[pos] || 'flex-start');
-                // Only apply offset in custom mode
-                const offset = pos === 'custom' ? (settings.inChatAvatarOffset ?? 0) : 0;
-                document.documentElement.style.setProperty('--avatar-offset', offset + 'px');
+                const alignMap = { 'top': 'flex-start', 'center': 'center', 'bottom': 'flex-end' };
+                document.documentElement.style.setProperty('--avatar-align', alignMap[pos] || 'center');
                 document.querySelectorAll('.preview-msg-row').forEach(row => {
-                    row.style.alignItems = 'flex-start';
+                    row.style.alignItems = alignMap[pos] || 'flex-start';
                 });
-                // Show/hide custom offset slider
-                const customRow = document.getElementById('avatar-custom-offset-row');
-                if (customRow) customRow.style.display = pos === 'custom' ? 'block' : 'none';
-                // Update custom slider value display
-                const offSlider = document.getElementById('avatar-offset-slider-2');
-                const offValue = document.getElementById('avatar-offset-value-2');
-                if (offSlider) offSlider.value = settings.inChatAvatarOffset ?? 0;
-                if (offValue) offValue.textContent = (settings.inChatAvatarOffset ?? 0) + 'px';
-
                 const topBtn = document.getElementById('avatar-pos-top-2');
                 const centerBtn = document.getElementById('avatar-pos-center-2');
                 const bottomBtn = document.getElementById('avatar-pos-bottom-2');
-                const customBtn = document.getElementById('avatar-pos-custom-2');
-                [topBtn, centerBtn, bottomBtn, customBtn].forEach(btn => {
+                [topBtn, centerBtn, bottomBtn].forEach(btn => {
                     if (!btn) return;
                     btn.className = btn.dataset.pos === pos ? 'modal-btn modal-btn-primary' : 'modal-btn modal-btn-secondary';
-                    btn.style.flex = '1'; btn.style.fontSize = '11px'; btn.style.padding = '6px 0';
+                    btn.style.flex = '1'; btn.style.fontSize = '12px'; btn.style.padding = '7px 0';
                 });
 
                 // 每次显示头像开关
@@ -762,7 +748,7 @@ fileInput.addEventListener('change', function(e) {
                 avatarSizeSlider.addEventListener('change', throttledSaveData);
             }
 
-            ['avatar-pos-top-2','avatar-pos-center-2','avatar-pos-bottom-2','avatar-pos-custom-2'].forEach(btnId => {
+            ['avatar-pos-top-2','avatar-pos-center-2','avatar-pos-bottom-2'].forEach(btnId => {
                 const btn = document.getElementById(btnId);
                 if (btn) {
                     btn.addEventListener('click', () => {
@@ -773,21 +759,6 @@ fileInput.addEventListener('change', function(e) {
                     });
                 }
             });
-
-            // Custom offset slider
-            const offsetSlider = document.getElementById('avatar-offset-slider-2');
-            const offsetValue = document.getElementById('avatar-offset-value-2');
-            if (offsetSlider) {
-                offsetSlider.addEventListener('input', (e) => {
-                    settings.inChatAvatarOffset = parseInt(e.target.value, 10);
-                    settings.inChatAvatarPosition = 'custom';
-                    if (offsetValue) offsetValue.textContent = settings.inChatAvatarOffset + 'px';
-                    document.documentElement.style.setProperty('--avatar-offset', settings.inChatAvatarOffset + 'px');
-                    updateAvatarSettingsUI();
-                    renderMessages(true);
-                });
-                offsetSlider.addEventListener('change', throttledSaveData);
-            }
 
             // 每条消息都显示头像 toggle
             const alwaysAvatarToggle = document.getElementById('always-avatar-toggle');
@@ -810,154 +781,6 @@ fileInput.addEventListener('change', function(e) {
                 });
             }
 
-            // ── 底部栏收纳模式 toggle ──
-            function applyToolbarCompactMode(on) {
-                const attachBtn = document.getElementById('attachment-btn');
-                const comboBtn = document.getElementById('combo-btn');
-                const batchBtn2 = document.getElementById('batch-btn');
-                const expandBtn = document.getElementById('compact-expand-btn');
-                [attachBtn, comboBtn, batchBtn2].forEach(b => {
-                    if (b) b.style.display = on ? 'none' : '';
-                });
-                if (expandBtn) expandBtn.style.display = on ? '' : 'none';
-                document.body.classList.toggle('toolbar-compact', !!on);
-            }
-
-            function updateToolbarCompactUI() {
-                const on = !!settings.toolbarCompact;
-                const pill = document.getElementById('toolbar-compact-pill');
-                const knob = document.getElementById('toolbar-compact-knob');
-                const status = document.getElementById('toolbar-compact-status');
-                if (pill) pill.style.background = on ? 'var(--accent-color)' : 'var(--border-color)';
-                if (knob) knob.style.right = on ? '3px' : '23px';
-                if (status) status.textContent = on ? '已开启 — 底部只保留常用按钮' : '已关闭 — 开启后只保留常用按钮';
-                applyToolbarCompactMode(on);
-            }
-            // Expose globally so core.js/app.js can re-sync after loadData
-            window._updateToolbarCompactUI = updateToolbarCompactUI;
-            updateToolbarCompactUI();
-
-            const toolbarCompactToggle = document.getElementById('toolbar-compact-toggle');
-            if (toolbarCompactToggle) {
-                toolbarCompactToggle.addEventListener('click', () => {
-                    settings.toolbarCompact = !settings.toolbarCompact;
-                    updateToolbarCompactUI();
-                    throttledSaveData();
-                });
-            }
-
-            // 收纳展开按钮
-            const expandBtn2 = document.getElementById('compact-expand-btn');
-            const expandPanel = document.getElementById('compact-expand-panel');
-            
-            function openExpandPanel() {
-                if (!expandPanel) return;
-                expandPanel.style.display = 'block';
-                expandPanel.style.pointerEvents = 'auto';
-                expandPanel.dataset.open = '1';
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        expandPanel.style.opacity = '1';
-                        expandPanel.style.transform = 'translateY(0) scale(1)';
-                    });
-                });
-            }
-            function closeExpandPanel() {
-                if (!expandPanel) return;
-                expandPanel.dataset.open = '';
-                expandPanel.style.opacity = '0';
-                expandPanel.style.transform = 'translateY(12px) scale(0.97)';
-                expandPanel.style.pointerEvents = 'none';
-                setTimeout(() => {
-                    if (!expandPanel.dataset.open) expandPanel.style.display = 'none';
-                }, 240);
-            }
-
-            if (expandBtn2 && expandPanel) {
-                expandBtn2.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    const isOpen = expandPanel.dataset.open === '1';
-                    if (isOpen) {
-                        closeExpandPanel();
-                    } else {
-                        openExpandPanel();
-                    }
-                });
-                // Click on panel buttons proxies to original buttons
-                expandPanel.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const panelBtn = e.target.closest('.compact-panel-btn');
-                    if (panelBtn) {
-                        const targetId = panelBtn.dataset.target;
-                        closeExpandPanel();
-                        if (targetId === 'combo-btn') {
-                            // Directly toggle the sticker picker
-                            const picker = document.getElementById('user-sticker-picker');
-                            if (picker) {
-                                if (picker.classList.contains('active')) {
-                                    picker.classList.remove('active');
-                                } else {
-                                    const firstTab = picker.querySelector('.combo-tab-btn[data-tab="my-sticker"]');
-                                    if (firstTab) firstTab.click();
-                                    picker.classList.add('active');
-                                }
-                            }
-                        } else if (targetId === 'custom-replies-shortcut') {
-                            // Open custom replies modal
-                            const modal = document.getElementById('custom-replies-modal');
-                            if (modal && typeof showModal === 'function') showModal(modal);
-                        } else if (targetId === 'fortune-shortcut') {
-                            // Open fortune modal
-                            const modal = document.getElementById('fortune-lenormand-modal');
-                            if (modal && typeof showModal === 'function') showModal(modal);
-                            if (typeof showFortune === 'function') showFortune();
-                        } else {
-                            const realBtn = document.getElementById(targetId);
-                            if (realBtn) {
-                                realBtn.style.display = '';
-                                realBtn.click();
-                                setTimeout(() => { realBtn.style.display = 'none'; }, 100);
-                            }
-                        }
-                        return;
-                    }
-                    // Exit compact mode toggle
-                    const exitToggle = e.target.closest('#compact-exit-toggle');
-                    if (exitToggle) {
-                        settings.toolbarCompact = false;
-                        updateToolbarCompactUI();
-                        throttledSaveData();
-                        closeExpandPanel();
-                        const pill = document.getElementById('toolbar-compact-pill');
-                        const knob = document.getElementById('toolbar-compact-knob');
-                        if (pill) pill.style.background = 'var(--border-color)';
-                        if (knob) knob.style.right = '23px';
-                    }
-                });
-            }
-
-            // Close expand panel on outside click or scroll
-            // Use a small debounce flag so opening the panel doesn't immediately close it
-            let _panelJustOpened = false;
-            const _origOpen = openExpandPanel;
-            openExpandPanel = function() {
-                _panelJustOpened = true;
-                _origOpen();
-                setTimeout(() => { _panelJustOpened = false; }, 50);
-            };
-            document.addEventListener('click', (e) => {
-                if (_panelJustOpened) return;
-                if (!expandPanel) return;
-                if (expandBtn2 && expandBtn2.contains(e.target)) return;
-                if (expandPanel.contains(e.target)) return;
-                closeExpandPanel();
-            });
-            document.addEventListener('scroll', closeExpandPanel, { passive: true });
-
-            // Re-sync toolbar compact state after loadData populates settings
-            window._resyncToolbarCompact = updateToolbarCompactUI;
-
             function updateAvatarPreview(shape, cornerRadius) {
                 const previewPartner = document.getElementById('preview-partner-avatar');
                 const previewMy = document.getElementById('preview-my-avatar');
@@ -967,55 +790,23 @@ fileInput.addEventListener('change', function(e) {
                 previewPartner.style.height = sz;
                 previewMy.style.width = sz;
                 previewMy.style.height = sz;
-
+                const partnerImg = DOMElements.partner && DOMElements.partner.avatar ? DOMElements.partner.avatar.querySelector('img') : null;
+                const myImg = DOMElements.me && DOMElements.me.avatar ? DOMElements.me.avatar.querySelector('img') : null;
                 const currentShape = shape || settings.myAvatarShape || 'circle';
-                const cr = cornerRadius !== undefined ? cornerRadius : parseInt(getComputedStyle(document.documentElement).getPropertyValue('--avatar-corner-radius') || '8') || 8;
-
-                function applyShapeToEl(el, shp, crv) {
-                    if (shp === 'circle') { el.style.borderRadius = '50%'; }
-                    else if (shp === 'square') { el.style.borderRadius = (crv || 8) + 'px'; }
-                }
-
-                function applyAvatarSrc(el, src) {
-                    if (src && !src.endsWith('/') && src !== 'about:blank') {
-                        el.innerHTML = `<img src="${src}" style="width:100%;height:100%;object-fit:cover;">`;
-                    } else {
-                        el.innerHTML = `<i class="fas fa-user" style="font-size:14px;color:var(--text-secondary);"></i>`;
+                
+                function applyToPreviewEl(el, img, shp, cr) {
+                    if (img && img.src) {
+                        el.innerHTML = `<img src="${img.src}" style="width:100%;height:100%;object-fit:cover;">`;
+                    }
+                    if (shp === 'circle') {
+                        el.style.borderRadius = '50%';
+                    } else if (shp === 'square') {
+                        el.style.borderRadius = (cr || 8) + 'px';
                     }
                 }
-
-                // Read avatars from actual DOM first (most up-to-date)
-                const partnerDomImg = DOMElements.partner?.avatar?.querySelector('img');
-                const myDomImg = DOMElements.me?.avatar?.querySelector('img');
-                const partnerSrc = (partnerDomImg?.src && !partnerDomImg.src.endsWith('/')) ? partnerDomImg.src : null;
-                const mySrc = (myDomImg?.src && !myDomImg.src.endsWith('/')) ? myDomImg.src : null;
-
-                applyAvatarSrc(previewPartner, partnerSrc);
-                applyAvatarSrc(previewMy, mySrc);
-                applyShapeToEl(previewPartner, currentShape, cr);
-                applyShapeToEl(previewMy, currentShape, cr);
-
-                // If DOM has no src yet (avatars not loaded into DOM), fall back to storage
-                if (!partnerSrc && typeof localforage !== 'undefined') {
-                    localforage.getItem(getStorageKey('partnerAvatar')).then(src => {
-                        if (src) { applyAvatarSrc(previewPartner, src); applyShapeToEl(previewPartner, currentShape, cr); }
-                    }).catch(() => {});
-                }
-                if (!mySrc && typeof localforage !== 'undefined') {
-                    localforage.getItem(getStorageKey('myAvatar')).then(src => {
-                        if (src) { applyAvatarSrc(previewMy, src); applyShapeToEl(previewMy, currentShape, cr); }
-                    }).catch(() => {});
-                }
-
-                // Reflect vertical alignment in preview
-                const pos = settings.inChatAvatarPosition || 'center';
-                const alignMap = { 'top': 'flex-start', 'center': 'center', 'bottom': 'flex-end', 'custom': 'flex-start' };
-                previewPartner.style.alignSelf = alignMap[pos] || 'center';
-                previewMy.style.alignSelf = alignMap[pos] || 'center';
-                const offset = (pos === 'custom') ? (settings.inChatAvatarOffset ?? 0) + 'px' : '';
-                previewPartner.style.marginTop = offset;
-                previewMy.style.marginTop = offset;
-
+                const cr = cornerRadius !== undefined ? cornerRadius : parseInt(getComputedStyle(document.documentElement).getPropertyValue('--avatar-corner-radius') || '8') || 8;
+                applyToPreviewEl(previewPartner, partnerImg, currentShape, cr);
+                applyToPreviewEl(previewMy, myImg, currentShape, cr);
                 if (typeof updateBubblePreview === 'function') updateBubblePreview();
             }
 
@@ -1333,12 +1124,11 @@ autoSendSlider.addEventListener('change', () => {
         galleryBanner.addEventListener('mouseup', () => { galleryBanner.style.transform = 'scale(1)'; });
         galleryBanner.addEventListener('mouseleave', () => { galleryBanner.style.transform = 'scale(1)'; });
     }
-            const sendEnvBtn = document.getElementById('send-envelope');
-            if (sendEnvBtn) sendEnvBtn.addEventListener('click', handleSendEnvelope);
-            const cancelEnvBtn = document.getElementById('cancel-envelope');
-            if (cancelEnvBtn) cancelEnvBtn.addEventListener('click', () => {
-                hideModal(document.getElementById('envelope-modal'));
-            });
+document.getElementById('send-envelope').addEventListener('click', handleSendEnvelope);
+
+document.getElementById('cancel-envelope').addEventListener('click', () => {
+    hideModal(document.getElementById('envelope-modal'));
+});
             const shareFortuneBtnEl = document.getElementById('share-fortune');
             if (shareFortuneBtnEl) {
                 shareFortuneBtnEl.addEventListener('click', () => {

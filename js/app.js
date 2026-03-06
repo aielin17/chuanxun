@@ -51,8 +51,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         updateLoader('正在读取记忆存档...', '40%');
         await safeAwait(loadData());
-        // Re-sync toolbar compact UI now that settings are loaded
-        if (typeof window._updateToolbarCompactUI === 'function') window._updateToolbarCompactUI();
 
         updateLoader('正在渲染我们的世界...', '70%');
         
@@ -134,73 +132,78 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }, 3000);
 
-        // 贴纸上传监听（在初始化完成后绑定）
-        const stickerInput = document.getElementById('sticker-file-input');
-        if (stickerInput) {
-            stickerInput.addEventListener('change', async (e) => {
-                const files = Array.from(e.target.files);
-                if (!files.length) return;
-                const oversized = files.filter(f => f.size > 2 * 1024 * 1024);
-                if (oversized.length > 0) {
-                    showNotification(oversized.length + ' 张图片超过 2MB 限制，已跳过', 'warning');
-                }
-                const validFiles = files.filter(f => f.size <= 2 * 1024 * 1024);
-                if (!validFiles.length) return;
-                showNotification('正在批量处理 ' + validFiles.length + ' 张图片...', 'info');
-                let successCount = 0;
-                let failCount = 0;
-                for (const file of validFiles) {
-                    try {
-                        const base64 = await optimizeImage(file, 300, 0.8);
-                        stickerLibrary.push(base64);
-                        successCount++;
-                    } catch (err) {
-                        console.error(err);
-                        failCount++;
-                    }
-                }
-                throttledSaveData();
-                renderReplyLibrary();
-                if (failCount > 0) {
-                    showNotification('上传完成：' + successCount + ' 张成功，' + failCount + ' 张失败', 'warning');
-                } else {
-                    showNotification('上传成功，共 ' + successCount + ' 张', 'success');
-                }
-                e.target.value = '';
-            });
-        }
-
-        const myStickerQuickUpload = document.getElementById('my-sticker-quick-upload');
-        if (myStickerQuickUpload) {
-            myStickerQuickUpload.addEventListener('change', async (e) => {
-                const files = Array.from(e.target.files);
-                if (!files.length) return;
-                const oversized = files.filter(f => f.size > 2 * 1024 * 1024);
-                if (oversized.length > 0) showNotification(oversized.length + ' 张图片超过 2MB，已跳过', 'warning');
-                const validFiles = files.filter(f => f.size <= 2 * 1024 * 1024);
-                if (!validFiles.length) return;
-                showNotification('正在处理 ' + validFiles.length + ' 张...', 'info');
-                let ok = 0, fail = 0;
-                for (const file of validFiles) {
-                    try {
-                        const base64 = await optimizeImage(file, 300, 0.8);
-                        myStickerLibrary.push(base64);
-                        ok++;
-                    } catch(err) { fail++; }
-                }
-                throttledSaveData();
-                if (typeof renderComboContent === 'function') renderComboContent('my-sticker');
-                showNotification(fail > 0 ? `上传完成：${ok} 成功 ${fail} 失败` : `✓ 已添加 ${ok} 张到我的表情库`, fail > 0 ? 'warning' : 'success');
-                e.target.value = '';
-            });
-        }
-
     } catch (err) {
         console.error('严重初始化错误:', err);
         updateLoader('加载遇到问题，已强制进入...', '100%');
         setTimeout(hideWelcomeScreen, 3500);
     }
 });
+const stickerInput = document.getElementById('sticker-file-input');
+            if (stickerInput) {
+                stickerInput.addEventListener('change', async (e) => {
+                    const files = Array.from(e.target.files);
+                    if (!files.length) return;
+
+                    const oversized = files.filter(f => f.size > 2 * 1024 * 1024);
+                    if (oversized.length > 0) {
+                        showNotification(oversized.length + ' 张图片超过 2MB 限制，已跳过', 'warning');
+                    }
+
+                    const validFiles = files.filter(f => f.size <= 2 * 1024 * 1024);
+                    if (!validFiles.length) return;
+
+                    showNotification('正在批量处理 ' + validFiles.length + ' 张图片...', 'info');
+
+                    let successCount = 0;
+                    let failCount = 0;
+
+                    for (const file of validFiles) {
+                        try {
+                            const base64 = await optimizeImage(file, 300, 0.8);
+                            stickerLibrary.push(base64);
+                            successCount++;
+                        } catch (err) {
+                            console.error(err);
+                            failCount++;
+                        }
+                    }
+
+                    throttledSaveData();
+                    renderReplyLibrary();
+
+                    if (failCount > 0) {
+                        showNotification('上传完成：' + successCount + ' 张成功，' + failCount + ' 张失败', 'warning');
+                    } else {
+                        showNotification('上传成功，共 ' + successCount + ' 张', 'success');
+                    }
+
+                    e.target.value = '';
+                });
+            }
+const myStickerQuickUpload = document.getElementById('my-sticker-quick-upload');
+if (myStickerQuickUpload) {
+    myStickerQuickUpload.addEventListener('change', async (e) => {
+        const files = Array.from(e.target.files);
+        if (!files.length) return;
+        const oversized = files.filter(f => f.size > 2 * 1024 * 1024);
+        if (oversized.length > 0) showNotification(oversized.length + ' 张图片超过 2MB，已跳过', 'warning');
+        const validFiles = files.filter(f => f.size <= 2 * 1024 * 1024);
+        if (!validFiles.length) return;
+        showNotification('正在处理 ' + validFiles.length + ' 张...', 'info');
+        let ok = 0, fail = 0;
+        for (const file of validFiles) {
+            try {
+                const base64 = await optimizeImage(file, 300, 0.8);
+                myStickerLibrary.push(base64);
+                ok++;
+            } catch(err) { fail++; }
+        }
+        throttledSaveData();
+        if (typeof renderComboContent === 'function') renderComboContent('my-sticker');
+        showNotification(fail > 0 ? `上传完成：${ok} 成功 ${fail} 失败` : `✓ 已添加 ${ok} 张到我的表情库`, fail > 0 ? 'warning' : 'success');
+        e.target.value = '';
+    });
+}
 
 window.addEventListener('load', function() {
     setTimeout(function() {
