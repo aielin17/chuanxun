@@ -1825,15 +1825,26 @@ function setupAvatarFrameSettings() {
         const avatarContainer = type === 'my' ? DOMElements.me.avatarContainer : DOMElements.partner.avatarContainer;
         const avatarElement = type === 'my' ? DOMElements.me.avatar : DOMElements.partner.avatar;
         const updatePreview = () => {
-            const img = avatarElement.querySelector('img');
-            const avatarContent = img ? `<img src="${img.src}" alt="preview">` : avatarElement.innerHTML;
+            const bgLayer = preview.querySelector('.preview-bg-layer');
+            const avatarImg = avatarElement ? avatarElement.querySelector('img') : null;
+            if (bgLayer) {
+                if (avatarImg && avatarImg.src && !avatarImg.src.endsWith('#') && avatarImg.src !== window.location.href) {
+                    bgLayer.innerHTML = `<img src="${avatarImg.src}" alt="avatar">`;
+                } else {
+                    bgLayer.innerHTML = `<i class="fas fa-user"></i>`;
+                }
+            }
+            let oldFrame = preview.querySelector('.preview-frame');
+            if (oldFrame) oldFrame.remove();
             const frameSettings = settings[settingsKey];
-            let frameHtml = '';
             if (frameSettings?.src) {
                 const { size = 100, offsetX = 0, offsetY = 0 } = frameSettings;
-                frameHtml = `<img src="${frameSettings.src}" class="preview-frame" style="width:${size}%;height:${size}%;transform:translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px));">`;
+                const frameImg = document.createElement('img');
+                frameImg.src = frameSettings.src;
+                frameImg.className = 'preview-frame';
+                frameImg.style.cssText = `width:${size}%;height:${size}%;transform:translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px));`;
+                preview.appendChild(frameImg);
             }
-            preview.innerHTML = `<div class="preview-bg-layer">${avatarContent}</div>${frameHtml}`;
         };
         const updateControls = () => {
             const frame = settings[settingsKey];
