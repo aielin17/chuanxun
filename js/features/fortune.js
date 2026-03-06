@@ -2,7 +2,7 @@ function renderStatsContent() {
             const statsContent = DOMElements.statsModal.content;
 
             const partnerMessages = messages.filter(msg =>
-                msg.sender === 'partner' &&
+                msg.sender !== 'user' && msg.sender !== null &&
                 msg.text &&
                 msg.type !== 'system'
             );
@@ -77,6 +77,10 @@ function renderStatsContent() {
                         <div class="overview-item">
                             <div class="overview-value">${myMessages.length}</div>
                             <div class="overview-label">我发送的</div>
+                        </div>
+                        <div class="overview-item">
+                            <div class="overview-value">${partnerMessages.length}</div>
+                            <div class="overview-label">对方发送的</div>
                         </div>
                         <div class="overview-item">
                             <div class="overview-value">${formatDate(firstMsg.timestamp)}</div>
@@ -283,9 +287,7 @@ async function renderDailyFortune(todayKey) {
     } catch(e) {}
 
     if (!dailyData) {
-        // Absolutely random draw from ALL 78 cards, no repeat
         const deck = [...ALL_78_TAROT_CARDS];
-        // True Fisher-Yates shuffle
         for (let i = deck.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [deck[i], deck[j]] = [deck[j], deck[i]];
@@ -784,3 +786,76 @@ document.addEventListener('click', function(e) {
     }
 });
 
+
+/**
+ * renderFavorites - 渲染收藏夹列表
+ * 显示所有已收藏的消息
+ */
+function renderFavorites() {
+    const list = document.getElementById('favorites-list');
+    if (!list) return;
+
+    const favoritedMessages = (typeof messages !== 'undefined' ? messages : [])
+        .filter(m => m.favorited && m.type !== 'system');
+
+    if (favoritedMessages.length === 0) {
+        list.innerHTML = `
+            <div class="stats-empty-state">
+                <div class="stats-empty-icon"><i class="fas fa-star"></i></div>
+                <h3>收藏夹空空如也</h3>
+                <p>点击消息旁的 ☆ 星标即可收藏</p>
+            </div>`;
+        return;
+    }
+
+    list.innerHTML = favoritedMessages.map(msg => {
+        const isUser = msg.sender === 'user';
+        const senderName = isUser
+            ? ((typeof settings !== 'undefined' && settings.myName) || '我')
+            : ((typeof settings !== 'undefined' && settings.partnerName) || msg.sender || '对方');
+        const ts = msg.timestamp ? new Date(msg.timestamp).toLocaleString('zh-CN', {
+            month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit'
+        }) : '';
+        const content = msg.text
+            ? msg.text.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            : (msg.image ? '<i class="fas fa-image" style="color:var(--accent-color)"></i> 图片消息' : '');
+        return `
+            <div class="fav-item" style="
+                display:flex;flex-direction:column;gap:4px;
+                padding:12px 14px;border-radius:12px;
+                background:var(--primary-bg);
+                border:1px solid var(--border-color);
+                margin-bottom:10px;
+                position:relative;
+            ">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                    <span style="font-size:12px;font-weight:600;color:var(--accent-color);">${senderName}</span>
+                    <span style="font-size:11px;color:var(--text-secondary);">${ts}</span>
+                </div>
+                <div style="font-size:13px;color:var(--text-primary);line-height:1.5;word-break:break-word;">${content}</div>
+                <button class="fav-remove-btn" data-id="${msg.id}" style="
+                    position:absolute;top:8px;right:10px;
+                    background:none;border:none;cursor:pointer;
+                    color:var(--text-secondary);font-size:14px;padding:2px 4px;
+                    opacity:0.6;
+                " title="取消收藏"><i class="fas fa-star" style="color:var(--accent-color);"></i></button>
+            </div>`;
+    }).join('');
+
+    // Bind unfavorite buttons
+    list.querySelectorAll('.fav-remove-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const id = Number(btn.dataset.id);
+            const msg = (typeof messages !== 'undefined' ? messages : []).find(m => m.id === id);
+            if (msg) {
+                msg.favorited = false;
+                if (typeof throttledSaveData === 'function') throttledSaveData();
+                if (typeof showNotification === 'function') showNotification('已取消收藏', 'success', 1500);
+                renderFavorites();
+            }
+        });
+    });
+}
+window.renderFavorites = renderFavorites;

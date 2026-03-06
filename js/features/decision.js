@@ -211,7 +211,66 @@ function doPick() {
     }
     
     flash();
-}function initComboMenu() {
+}
+
+/**
+ * handleCoinToss - 抛硬币入口
+ * 显示抛硬币覆盖层并开始动画
+ */
+function handleCoinToss() {
+    const overlay = DOMElements.coinTossOverlay;
+    if (!overlay) return;
+    overlay.classList.remove('finished');
+    overlay.classList.add('visible');
+    const resultText = DOMElements.coinResultText;
+    if (resultText) resultText.textContent = '';
+    const sendBtn = DOMElements.sendCoinResult;
+    if (sendBtn) sendBtn.style.display = 'none';
+    const retryBtn = document.getElementById('retry-coin-toss');
+    if (retryBtn) retryBtn.style.display = 'none';
+    startCoinFlipAnimation();
+}
+window.handleCoinToss = handleCoinToss;
+
+/**
+ * startCoinFlipAnimation - 执行硬币翻转动画并显示结果
+ */
+function startCoinFlipAnimation() {
+    const coin = DOMElements.animatedCoin;
+    const resultText = DOMElements.coinResultText;
+    const overlay = DOMElements.coinTossOverlay;
+    if (!coin || !overlay) return;
+
+    // Reset
+    overlay.classList.remove('finished');
+    if (resultText) resultText.textContent = '';
+    const sendBtn = DOMElements.sendCoinResult;
+    if (sendBtn) sendBtn.style.display = 'none';
+    const retryBtn = document.getElementById('retry-coin-toss');
+    if (retryBtn) retryBtn.style.display = 'none';
+
+    // Random outcome
+    const isHeads = Math.random() < 0.5;
+    const result = isHeads ? '正面 ☀️' : '反面 🌙';
+    lastCoinResult = result;
+
+    // Animate: add flip class, then show result
+    coin.classList.remove('flip-heads', 'flip-tails', 'flipping');
+    void coin.offsetWidth; // force reflow
+    coin.classList.add('flipping', isHeads ? 'flip-heads' : 'flip-tails');
+
+    setTimeout(() => {
+        coin.classList.remove('flipping', 'flip-heads', 'flip-tails');
+        if (resultText) resultText.textContent = result;
+        overlay.classList.add('finished');
+        if (sendBtn) sendBtn.style.display = '';
+        if (retryBtn) retryBtn.style.display = '';
+        if (typeof playSound === 'function') playSound('favorite');
+    }, 1200);
+}
+window.startCoinFlipAnimation = startCoinFlipAnimation;
+
+function initComboMenu() {
     const comboBtn = document.getElementById('combo-btn');
     const picker = document.getElementById('user-sticker-picker');
     const contentArea = document.getElementById('combo-content-area');
