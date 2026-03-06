@@ -259,13 +259,11 @@ function renderWeeklyFortune(data, majorCards) {
                 <div class="tarot-face tarot-front">
                     <div class="tarot-pattern"><i class="fas fa-star-and-crescent"></i></div>
                 </div>
-                <div class="tarot-face tarot-back" style="background: linear-gradient(135deg, var(--secondary-bg), rgba(var(--accent-color-rgb), 0.05)); border: 2px solid rgba(var(--accent-color-rgb), 0.3);">
-                    <div class="tarot-visual ${isUpright ? '' : 'reversed'}" style="height:100px;">
-                        <i class="fas ${card.icon} tarot-icon-vector" style="font-size:52px; color: var(--accent-color);"></i>
-                    </div>
-                    <div>
-                        <div class="tarot-card-name" style="font-size:20px; font-weight: 700;">${card.name}</div>
-                    </div>
+                <div class="tarot-face tarot-back" style="padding:0;overflow:hidden;border:2px solid rgba(var(--accent-color-rgb),0.3);">
+                    ${card.img
+                        ? `<img src="${card.img}" style="width:100%;height:100%;object-fit:cover;${isUpright ? '' : 'transform:rotate(180deg);'}" onerror="this.outerHTML='<div style=\'display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;background:var(--secondary-bg);gap:10px;\'><i class=\'fas ${card.icon} tarot-icon-vector\' style=\'font-size:52px;color:var(--accent-color);\'></i><div style=\'font-size:20px;font-weight:700;\'>${card.name}</div></div>'">`
+                        : `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;background:var(--secondary-bg);gap:10px;"><i class="fas ${card.icon} tarot-icon-vector" style="font-size:52px;color:var(--accent-color);${isUpright ? '' : 'transform:rotate(180deg);'}"></i><div style="font-size:20px;font-weight:700;">${card.name}</div></div>`
+                    }
                 </div>
             </div>
         </div>
@@ -323,14 +321,14 @@ async function renderDailyFortune(todayKey) {
                     <div class="tarot-container-3d tarot-responsive" style="cursor:pointer;margin-bottom:8px;" onclick="this.classList.toggle('flipped');">
                         <div class="tarot-card-inner">
                             <div class="tarot-face tarot-front"><div class="tarot-pattern" style="font-size:18px;"><i class="fas fa-star-and-crescent"></i></div></div>
-                            <div class="tarot-face tarot-back" style="padding:0;overflow:hidden;border:1.5px solid rgba(var(--accent-color-rgb),0.3);">
-                                ${card.img ? `<img src="${card.img}" style="width:100%;height:100%;object-fit:cover;${card.isUpright ? '' : 'transform:rotate(180deg);'}" onerror="this.style.display='none';this.parentElement.style.background='var(--secondary-bg)';this.parentElement.innerHTML+='<i class=\"fas '+card.icon+'\"+" style=\"font-size:28px;color:var(--accent-color);\">\">';" >` : `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;background:var(--secondary-bg);"><i class="fas ${card.icon}" style="font-size:28px;color:var(--accent-color);${card.isUpright ? '' : 'transform:rotate(180deg);'}"></i></div>`}
+                            <div class="tarot-face tarot-back" style="background:linear-gradient(135deg,var(--secondary-bg),rgba(var(--accent-color-rgb),0.07));border:1.5px solid rgba(var(--accent-color-rgb),0.3);">
+                                <div class="tarot-visual ${card.isUpright ? '' : 'reversed'}" style="height:60px;">
+                                    ${card.img ? `<img src="${card.img}" style="height:55px;width:auto;object-fit:contain;border-radius:4px;" onerror="this.style.display='none';this.nextElementSibling.style.display='block';"><i class="fas ${card.icon}" style="display:none;font-size:28px;color:var(--accent-color);"></i>` : `<i class="fas ${card.icon}" style="font-size:28px;color:var(--accent-color);"></i>`}
+                                </div>
+                                <div style="font-size:12px;font-weight:700;">${card.name}</div>
+
                             </div>
                         </div>
-                    </div>
-                    <div style="font-size:11px;color:var(--text-secondary);margin-top:6px;text-align:center;line-height:1.5;">
-                        <div style="font-weight:700;color:var(--accent-color);font-size:12px;">${card.isUpright ? '正位' : '逆位'} · 「${card.keyword}」</div>
-                        <div style="margin-top:3px;font-size:10px;opacity:0.8;">${(card.isUpright ? card.upright : card.reversed).split('、').slice(0,3).join('、')}</div>
                     </div>
 
                 </div>

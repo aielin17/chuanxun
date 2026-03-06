@@ -670,8 +670,8 @@ function _renderAtmosphereList(list, items) {
         div.innerHTML = `
             <span class="custom-reply-text">${item.replace('|','<br><small style="opacity:.65">')}</span>
             <div class="custom-reply-actions">
-                <button class="reply-action-mini edit-btn" title="编辑" style="background:none;border:none;box-shadow:none;">${ICONS.edit}</button>
-                <button class="reply-action-mini delete-btn" title="删除" style="background:none;border:none;box-shadow:none;">${ICONS.trash}</button>
+                <button class="reply-action-mini edit-btn" title="编辑" style="border:none;background:none;">${ICONS.edit}</button>
+                <button class="reply-action-mini delete-btn" title="删除" style="border:none;background:none;">${ICONS.trash}</button>
             </div>
         `;
         div.querySelector('.delete-btn').onclick = () => deleteItem(realIdx);

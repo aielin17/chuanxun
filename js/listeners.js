@@ -407,6 +407,7 @@ document.getElementById('chat-settings').addEventListener('click', () => {
     const toggleSyncMap = {
         '#reply-toggle': { prop: 'replyEnabled', name: '引用回复' },
         '#sound-toggle': { prop: 'soundEnabled', name: '音效' },
+        '#emoji-mix-toggle': { prop: 'emojiMixEnabled', name: 'Emoji混合' },
         '#read-receipts-toggle': { prop: 'readReceiptsEnabled', name: '已读回执' },
         '#typing-indicator-toggle': { prop: 'typingIndicatorEnabled', name: '正在输入' },
         '#read-no-reply-toggle': { prop: 'allowReadNoReply', name: '已读不回' }
@@ -693,6 +694,7 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                 const pos = settings.inChatAvatarPosition || 'center';
                 const alignMap = { 'top': 'flex-start', 'center': 'center', 'bottom': 'flex-end' };
                 document.documentElement.style.setProperty('--avatar-align', alignMap[pos] || 'center');
+                document.documentElement.style.setProperty('--avatar-offset-y', (settings.inChatAvatarOffsetY || 0) + 'px');
                 document.querySelectorAll('.preview-msg-row').forEach(row => {
                     row.style.alignItems = alignMap[pos] || 'flex-start';
                 });
@@ -759,6 +761,22 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                     });
                 }
             });
+
+            // 头像垂直偏移滑块
+            const avatarOffsetSlider = document.getElementById('avatar-offset-y-slider-2');
+            const avatarOffsetValue = document.getElementById('avatar-offset-y-value-2');
+            if (avatarOffsetSlider) {
+                avatarOffsetSlider.value = settings.inChatAvatarOffsetY || 0;
+                if (avatarOffsetValue) avatarOffsetValue.textContent = (settings.inChatAvatarOffsetY || 0) + 'px';
+                document.documentElement.style.setProperty('--avatar-offset-y', (settings.inChatAvatarOffsetY || 0) + 'px');
+                avatarOffsetSlider.addEventListener('input', (e) => {
+                    const v = parseInt(e.target.value);
+                    settings.inChatAvatarOffsetY = v;
+                    if (avatarOffsetValue) avatarOffsetValue.textContent = v + 'px';
+                    document.documentElement.style.setProperty('--avatar-offset-y', v + 'px');
+                });
+                avatarOffsetSlider.addEventListener('change', throttledSaveData);
+            }
 
             // 每条消息都显示头像 toggle
             const alwaysAvatarToggle = document.getElementById('always-avatar-toggle');
@@ -906,6 +924,9 @@ document.getElementById('chat-settings').addEventListener('click', () => {
                 },
                 '#sound-toggle': {
                     prop: 'soundEnabled', name: '音效'
+                },
+                '#emoji-mix-toggle': {
+                    prop: 'emojiMixEnabled', name: 'Emoji混合'
                 },
                 '#read-receipts-toggle': {
                     prop: 'readReceiptsEnabled', name: '已读回执'
@@ -2409,21 +2430,14 @@ document.addEventListener('click', function(e) {
     if (!indicator) return;
     const replyId = indicator.dataset.replyId;
     if (!replyId) return;
-    
     const targetEl = document.querySelector(`.message-wrapper[data-id="${replyId}"]`);
     if (!targetEl) {
         if (typeof showNotification === 'function') showNotification('该消息已不在当前视图中', 'info', 2000);
         return;
     }
-    
     targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    
-    // Flash highlight effect
-    targetEl.style.transition = 'background 0.2s';
-    targetEl.style.background = 'rgba(var(--accent-color-rgb, 180,140,100), 0.18)';
-    setTimeout(() => {
-        targetEl.style.background = '';
-    }, 1200);
+    targetEl.classList.add('reply-jump-flash');
+    setTimeout(() => targetEl.classList.remove('reply-jump-flash'), 1200);
 }, false);
 
 /* ════════════════════════════════════════
@@ -2431,102 +2445,84 @@ document.addEventListener('click', function(e) {
    ════════════════════════════════════════ */
 (function() {
     const KEEPALIVE_KEY = 'keepaliveAudioEnabled';
-    let _keepaliveAudio = null;
-    let _keepaliveEnabled = false;
+    let _ka = null;
+    let _kaEnabled = false;
 
-    function _createSilentAudio() {
-        // Create an 8-hour silent audio using Web Audio API + MediaStream
-        // This keeps the audio context alive and prevents browser from suspending the tab
+    function _startKeepalive() {
+        if (_ka) return; // already running
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             const dest = ctx.createMediaStreamDestination();
-            // Oscillator at near-zero gain — completely inaudible but keeps stream alive
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
-            gain.gain.value = 0.00001;
+            gain.gain.value = 0.00001; // virtually silent
             osc.connect(gain);
             gain.connect(dest);
             osc.start();
-
             const audio = new Audio();
             audio.srcObject = dest.stream;
             audio.loop = true;
             audio.volume = 0.001;
             audio.play().then(() => {
-                const statusEl = document.getElementById('keepalive-audio-status');
-                if (statusEl) statusEl.style.display = '';
-            }).catch(err => {
-                console.warn('[Keepalive] 播放失败，尝试用 data:audio', err);
-                _fallbackSilentAudio();
-            });
-            _keepaliveAudio = { audio, ctx, osc };
-            return true;
-        } catch(e) {
-            console.warn('[Keepalive] AudioContext 不可用:', e);
-            return _fallbackSilentAudio();
-        }
+                _updateStatus(true);
+            }).catch(() => _fallback());
+            _ka = { audio, ctx, osc };
+        } catch(e) { _fallback(); }
     }
 
-    function _fallbackSilentAudio() {
-        // Fallback: 1-second near-silent WAV loop
+    function _fallback() {
+        // Minimal silent WAV (44-byte header + empty data)
+        const wav = 'UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
         try {
-            // Minimal valid WAV: 44-byte header + 1 sample of silence
-            const wav = 'UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
             const audio = new Audio('data:audio/wav;base64,' + wav);
             audio.loop = true;
             audio.volume = 0.001;
-            audio.play().catch(() => {});
-            _keepaliveAudio = { audio };
-            const statusEl = document.getElementById('keepalive-audio-status');
-            if (statusEl) statusEl.style.display = '';
-            return true;
-        } catch(e) { return false; }
+            audio.play().then(() => _updateStatus(true)).catch(() => {});
+            _ka = { audio };
+        } catch(e) {}
     }
 
     function _stopKeepalive() {
-        if (_keepaliveAudio) {
-            try {
-                if (_keepaliveAudio.audio) {
-                    _keepaliveAudio.audio.pause();
-                    _keepaliveAudio.audio.srcObject = null;
-                }
-                if (_keepaliveAudio.osc) _keepaliveAudio.osc.stop();
-                if (_keepaliveAudio.ctx) _keepaliveAudio.ctx.close();
-            } catch(e) {}
-            _keepaliveAudio = null;
-        }
-        const statusEl = document.getElementById('keepalive-audio-status');
-        if (statusEl) statusEl.style.display = 'none';
+        if (!_ka) return;
+        try {
+            if (_ka.audio) { _ka.audio.pause(); _ka.audio.srcObject = null; }
+            if (_ka.osc) _ka.osc.stop();
+            if (_ka.ctx) _ka.ctx.close();
+        } catch(e) {}
+        _ka = null;
+        _updateStatus(false);
     }
 
-    function _applyKeepaliveState(on) {
-        _keepaliveEnabled = on;
+    function _updateStatus(on) {
+        const pill = document.getElementById('keepalive-pill');
+        const knob = document.getElementById('keepalive-knob');
+        const status = document.getElementById('keepalive-status-text');
         const toggle = document.getElementById('keepalive-audio-toggle');
-        const sw = document.getElementById('keepalive-audio-switch');
+        if (pill) pill.style.background = on ? 'var(--accent-color)' : 'var(--border-color)';
+        if (knob) { knob.style.right = on ? '3px' : '23px'; knob.style.left = 'auto'; }
         if (toggle) toggle.classList.toggle('active', on);
-        if (sw) sw.classList.toggle('active', on);
-        if (on) {
-            _createSilentAudio();
-        } else {
-            _stopKeepalive();
-        }
-        localStorage.setItem(KEEPALIVE_KEY, on ? '1' : '0');
+        if (status) status.textContent = on ? '⏳ 正在播放 — 切出后台将持续保活' : '已关闭';
     }
 
-    window.toggleKeepaliveAudio = function() {
-        _applyKeepaliveState(!_keepaliveEnabled);
+    function _apply(on) {
+        _kaEnabled = on;
+        localStorage.setItem(KEEPALIVE_KEY, on ? '1' : '0');
+        if (on) _startKeepalive(); else _stopKeepalive();
         if (typeof showNotification === 'function') {
-            showNotification(
-                _keepaliveEnabled ? '挂机音频已开启，切出后台将不会被打断 🎧' : '挂机音频已关闭',
-                'success', 2500
-            );
+            showNotification(on ? '挂机音频已开启 🎧 切出后台不会被打断' : '挂机音频已关闭', 'success', 2500);
         }
-    };
+    }
 
-    // Restore state on load
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#keepalive-audio-toggle')) return;
+        _apply(!_kaEnabled);
+    });
+
     document.addEventListener('DOMContentLoaded', function() {
         if (localStorage.getItem(KEEPALIVE_KEY) === '1') {
-            setTimeout(() => _applyKeepaliveState(true), 1500);
+            setTimeout(() => { _kaEnabled = true; _startKeepalive(); }, 1500);
+        } else {
+            setTimeout(() => _updateStatus(false), 500);
         }
     });
 })();

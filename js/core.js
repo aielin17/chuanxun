@@ -1337,9 +1337,9 @@ if (partnerPersonas && partnerPersonas.length > 0 && Math.random() < 0.3) {
                     const replyPool = customReplies;
                     const replyText = replyPool[Math.floor(Math.random() * replyPool.length)];
 
-                    // Occasionally append a random emoji
+                    // Occasionally append a random emoji (only if emojiMixEnabled setting is on)
                     let finalText = replyText;
-                    if (customEmojis && customEmojis.length > 0 && Math.random() < 0.3) {
+                    if (settings.emojiMixEnabled && customEmojis && customEmojis.length > 0 && Math.random() < 0.3) {
                         const emoji = customEmojis[Math.floor(Math.random() * customEmojis.length)];
                         finalText = Math.random() < 0.5
                             ? emoji + ' ' + replyText

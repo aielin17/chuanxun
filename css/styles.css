@@ -866,6 +866,7 @@
             flex-shrink: 0;
             background-color: var(--border-color);
             transition: all 0.3s ease;
+            transform: translateY(var(--avatar-offset-y, 0px));
         }
         .message-avatar img {
             width: 100%;
@@ -875,6 +876,13 @@
         }
         .message-avatar.hidden {
             visibility: hidden;
+        }
+        .message-wrapper.reply-jump-flash .message {
+            animation: replyFlash 1.2s ease;
+        }
+        @keyframes replyFlash {
+            0%,100% { background: var(--message-bg, var(--secondary-bg)); }
+            20%,60% { background: rgba(var(--accent-color-rgb,180,140,100), 0.22); }
         }
         body.always-show-avatar .message-avatar.hidden {
             visibility: visible;
@@ -1048,18 +1056,6 @@
             border-top: 1px solid var(--border-color);
             align-items: flex-end;
             transition: border-color 0.5s ease;
-        }
-        .input-left-col {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            flex-shrink: 0;
-        }
-        .input-left-col .input-btn {
-            width: 36px !important;
-            height: 36px !important;
-            font-size: 15px;
         }
         .message-input {
             flex: 1;
@@ -9656,9 +9652,9 @@
         }
         .collapsed-extras-inner {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 8px;
-            padding: 8px 12px 7px;
+            padding: 8px 12px 10px;
             border-top: 1px solid var(--border-color);
             background: var(--secondary-bg);
             animation: collapseSlideIn 0.22s cubic-bezier(0.4,0,0.2,1);
@@ -9670,6 +9666,12 @@
         .collapsed-extras-row {
             display: flex;
             align-items: center;
+            gap: 6px;
+            flex: 1;
+        }
+        .collapsed-extras-grid {
+            display: grid !important;
+            grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
             gap: 6px;
             flex: 1;
         }
