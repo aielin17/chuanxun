@@ -211,9 +211,7 @@ function doPick() {
     }
     
     flash();
-}
-
-function initComboMenu() {
+}function initComboMenu() {
     const comboBtn = document.getElementById('combo-btn');
     const picker = document.getElementById('user-sticker-picker');
     const contentArea = document.getElementById('combo-content-area');
@@ -270,8 +268,6 @@ function initComboMenu() {
             renderUserPokeMenu();
         }
     }
-    // Expose globally so app.js can call renderComboContent('my-sticker') after uploads
-    window.renderComboContent = switchTab;
 
     function makeStickerItem(src, onClick) {
         const item = document.createElement('div');
@@ -404,45 +400,4 @@ function initComboMenu() {
 
         contentArea.appendChild(wrapper);
     }
-}
-
-// ─── 硬币抛掷 ───────────────────────────────────────────────────────────────
-
-function handleCoinToss() {
-    const overlay = document.getElementById('coin-toss-overlay');
-    if (!overlay) return;
-    overlay.classList.add('visible');
-    overlay.classList.remove('finished');
-    const actionArea = document.getElementById('coin-action-area');
-    if (actionArea) actionArea.style.display = 'none';
-    startCoinFlipAnimation();
-}
-
-function startCoinFlipAnimation() {
-    const coin = document.getElementById('animated-coin');
-    const resultText = document.getElementById('coin-result-text');
-    const actionArea = document.getElementById('coin-action-area');
-    if (!coin) return;
-
-    // Reset
-    coin.classList.remove('flip-heads', 'flip-tails');
-    if (resultText) resultText.textContent = '';
-    if (actionArea) actionArea.style.display = 'none';
-
-    const overlay = document.getElementById('coin-toss-overlay');
-    if (overlay) { overlay.classList.add('visible'); overlay.classList.remove('finished'); }
-
-    // Force reflow so animation restarts
-    void coin.offsetWidth;
-
-    const isHeads = Math.random() < 0.5;
-    coin.classList.add(isHeads ? 'flip-heads' : 'flip-tails');
-
-    setTimeout(() => {
-        const result = isHeads ? '是 ✦ YES' : '否 ✦ NO';
-        lastCoinResult = isHeads ? '是 ✦ YES' : '否 ✦ NO';
-        if (resultText) resultText.textContent = result;
-        if (actionArea) actionArea.style.display = '';
-        if (overlay) overlay.classList.add('finished');
-    }, 1400);
 }
