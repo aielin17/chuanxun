@@ -18,6 +18,7 @@
     <meta name="apple-mobile-web-app-title" content="ʚ𝑳𝑶𝑽𝑬ɞ">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <link rel="stylesheet" href="css/styles.css">
 
@@ -1141,6 +1142,17 @@
                     </div>
                 </div>
                 <div class="cs-panel" id="cs-panel-display">
+                    <p class="cs-group-label">截图工具</p>
+                    <div class="cs-card" style="margin-bottom:14px;">
+                        <div class="setting-pill-row" onclick="openScreenshotModal()" style="cursor:pointer;">
+                            <span class="setting-pill-icon"><i class="fas fa-camera"></i></span>
+                            <span class="setting-pill-label">
+                                长截屏
+                                <span style="font-size:11px;color:var(--text-secondary);font-weight:400;">自定义选取消息并导出图片</span>
+                            </span>
+                            <i class="fas fa-chevron-right" style="color:var(--text-secondary);font-size:12px;margin-right:2px;"></i>
+                        </div>
+                    </div>
                     <p class="cs-group-label">界面模式</p>
                     <div class="cs-card cs-immersive-wrap">
                         <div class="setting-pill-row" id="immersive-toggle" onclick="toggleImmersiveMode()">
@@ -2128,6 +2140,8 @@
     <script src="js/features/daily-greeting.js"></script>
     <script src="js/features/notifications.js"></script>
     <script src="js/features/group-chat.js"></script>
+
+    <script src="js/features/screenshot.js"></script>
 
     <script src="js/listeners.js"></script>
 
