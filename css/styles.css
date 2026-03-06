@@ -850,7 +850,7 @@
             opacity: 0;
             position: relative;
             gap: 10px;
-            align-items: flex-start;
+            align-items: var(--avatar-align, flex-end);
             flex-shrink: 0;
         }
         .message-avatar {
@@ -860,8 +860,6 @@
             flex-shrink: 0;
             background-color: var(--border-color);
             transition: all 0.3s ease;
-            align-self: var(--avatar-align-self, flex-start);
-            margin-top: var(--avatar-offset, 0px);
         }
         .message-avatar img {
             width: 100%;
