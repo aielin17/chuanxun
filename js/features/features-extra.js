@@ -331,12 +331,26 @@
         }
         function nm(m){ return m.sender==='user'?((typeof settings!=='undefined'&&settings.myName)||'我'):((typeof settings!=='undefined'&&settings.partnerName)||'对方'); }
 
+        // Get real avatars from DOM
+        var _myAvSrc = (function(){
+            var el = document.querySelector('#my-avatar img,[id*="my-avatar"] img');
+            return el ? el.src : null;
+        })();
+        var _partnerAvSrc = (function(){
+            var el = document.querySelector('#partner-avatar img,[id*="partner-avatar"] img,.partner-avatar img');
+            return el ? el.src : null;
+        })();
+        function _avHtml(isMe) {
+            var src = isMe ? _myAvSrc : _partnerAvSrc;
+            if (src) return '<img src="'+src+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+            return '<i class="fas fa-'+(isMe?'user':'user-circle')+'" style="font-size:16px;color:rgba(255,255,255,.8);"></i>';
+        }
         var html = '<div style="font-size:12px;color:var(--text-secondary);padding:0 2px 8px;">共 <b style="color:var(--accent-color)">'+res.length+'</b> 条</div>';
         html += res.slice(0,200).map(function(m){
             var isMe = m.sender==='user';
             var preview = m.text?(m.text.length>100?m.text.slice(0,100)+'…':m.text):(m.image?'[图片]':'');
             return '<div class="search-result-item" onclick="window._scrollToMsg&&window._scrollToMsg('+m.id+')">'+
-                '<div class="sri-avatar '+(isMe?'sri-me':'sri-partner')+'"><i class="fas fa-'+(isMe?'user':'user-circle')+'"></i></div>'+
+                '<div class="sri-avatar '+(isMe?'sri-me':'sri-partner')+'">'+_avHtml(isMe)+'</div>'+
                 '<div class="sri-body">'+
                   '<div class="sri-meta"><span class="sri-name">'+esc(nm(m))+'</span><span class="sri-time">'+fmt(m.timestamp)+'</span></div>'+
                   '<div class="sri-text">'+hi(preview,q)+'</div>'+
