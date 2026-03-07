@@ -994,7 +994,7 @@ function manageAutoSendTimer() {
 
                 const isImageOnly = !msg.text && !!msg.image;
                 let content = msg.text ? `<div>${msg.text.replace(/\n/g, '<br>')}</div>`: '';
-                if (msg.image) content += `<img src="${msg.image}" class="message-image${isImageOnly ? ' message-image-only' : ''}" alt="图片" style="max-width:100px; border-radius: 12px;${!isImageOnly ? ' margin-top: 6px;' : ''} cursor: pointer;" onclick="viewImage('${msg.image}')">`;
+                if (msg.image) content += `<img src="${msg.image}" class="message-image${isImageOnly ? ' message-image-only' : ''}" alt="图片" style="max-width:${isImageOnly ? '100px' : '100px'}; border-radius: 12px;${!isImageOnly ? ' margin-top: 6px;' : ''} cursor: pointer;" onclick="viewImage('${msg.image}')">`;
                 messageHTML += content;
 
                 const messageDiv = document.createElement('div');

@@ -225,19 +225,16 @@ function applyCustomBubbleCss(cssCode) {
         document.head.appendChild(styleTag);
     }
     
-    // Always append override so image-only bubbles stay transparent regardless of user CSS
+    // Ensure image-only bubbles stay transparent even when custom CSS applies
     styleTag.textContent = cssCode + `
-/* Auto-override: image-only messages must never show a bubble */
+.message.message-image-bubble-none,
 .message-image-bubble-none {
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
     padding: 0 !important;
     border-radius: 0 !important;
-}
-.message-image-bubble-none::before,
-.message-image-bubble-none::after { display: none !important; }
-`;
+}`;
 }
 
 function applyGlobalThemeCss(cssCode) {
