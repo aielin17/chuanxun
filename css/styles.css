@@ -9626,20 +9626,25 @@
             font-size: 11px;
             color: var(--text-secondary);
             margin-top: 2px;
-            white-space: nowrap;
+            white-space: normal;
             overflow: hidden;
             text-overflow: ellipsis;
+            word-break: break-word;
         }
         .dm-row-action {
             display: flex;
             gap: 6px;
             flex-shrink: 0;
             margin-left: auto;
+            flex-wrap: wrap;
+            justify-content: flex-end;
         }
-        @media (max-width: 400px) {
+        @media (max-width: 420px) {
             .dm-row-info { min-width: calc(100% - 50px); }
             .dm-row-action { margin-left: 44px; width: 100%; }
-            .dm-btn { flex: 1; justify-content: center; }
+            .dm-btn { flex: 1; justify-content: center; min-width: 60px; }
+            .dm-row { align-items: flex-start; }
+            #data-modal .modal-content { max-height: 100dvh; border-radius: 20px 20px 0 0; }
         }
         .dm-btn {
             padding: 5px 11px;

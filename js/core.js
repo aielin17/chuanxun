@@ -1380,12 +1380,35 @@ if (partnerPersonas && partnerPersonas.length > 0 && Math.random() < 0.3) {
                 const delayRange = settings.replyDelayMax - settings.replyDelayMin;
                 delay += settings.replyDelayMin + Math.random() * delayRange;
                 setTimeout(() => {
-                    const replyPool = customReplies;
+                    // Bug fix 1: Filter out disabled individual items AND items from disabled groups
+                    let disabledItems = new Set();
+                    try {
+                        const raw = localStorage.getItem('disabledReplyItems');
+                        if (raw) disabledItems = new Set(JSON.parse(raw));
+                    } catch(e) {}
+                    const disabledGroups = (window.customReplyGroups || [])
+                        .filter(g => g.disabled)
+                        .map(g => g.id);
+                    const disabledGroupItems = new Set();
+                    if (disabledGroups.length > 0) {
+                        customReplies.forEach((reply, idx) => {
+                            const itemGroup = (window.customReplyGroups || []).find(g =>
+                                g.items && g.items.includes(idx)
+                            );
+                            if (itemGroup && disabledGroups.includes(itemGroup.id)) {
+                                disabledGroupItems.add(reply);
+                            }
+                        });
+                    }
+                    const replyPool = customReplies.filter(r => !disabledItems.has(r) && !disabledGroupItems.has(r));
                     const replyText = replyPool[Math.floor(Math.random() * replyPool.length)];
+
+                    // Bug fix 2: 30% chance partner sends a sticker image instead of (or after) text
+                    const shouldSendSticker = stickerLibrary && stickerLibrary.length > 0 && Math.random() < 0.3;
 
                     let finalText = replyText;
                     let separateEmoji = null;
-                    if (customEmojis && customEmojis.length > 0 && Math.random() < 0.3) {
+                    if (!shouldSendSticker && customEmojis && customEmojis.length > 0 && Math.random() < 0.3) {
                         const emoji = customEmojis[Math.floor(Math.random() * customEmojis.length)];
                         if (settings.emojiMixEnabled !== false) {
                             finalText = Math.random() < 0.5
@@ -1409,6 +1432,34 @@ if (partnerPersonas && partnerPersonas.length > 0 && Math.random() < 0.3) {
                             : null,
                         type: 'normal'
                     });
+                    // Bug fix 4: Send background push notification
+                    if (typeof window._sendPartnerNotification === 'function') {
+                        window._sendPartnerNotification(settings.partnerName || '对方', finalText);
+                    }
+                    // Bug fix 5: Play sound for incoming message
+                    playSound('message');
+
+                    // Bug fix 2 (continued): send the sticker as a follow-up image message
+                    if (shouldSendSticker) {
+                        const randomSticker = stickerLibrary[Math.floor(Math.random() * stickerLibrary.length)];
+                        setTimeout(() => {
+                            addMessage({
+                                id: Date.now() + i + 2000,
+                                sender: settings.partnerName || '对方',
+                                text: '',
+                                timestamp: new Date(),
+                                image: randomSticker,
+                                status: 'received',
+                                favorited: false,
+                                note: null,
+                                type: 'normal'
+                            });
+                            playSound('message');
+                            if (typeof window._sendPartnerNotification === 'function') {
+                                window._sendPartnerNotification(settings.partnerName || '对方', '[表情]');
+                            }
+                        }, 400 + Math.random() * 600);
+                    }
 
                     if (separateEmoji) {
                         setTimeout(() => {

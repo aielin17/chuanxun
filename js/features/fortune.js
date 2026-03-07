@@ -268,12 +268,16 @@ function renderWeeklyFortune(data, majorCards) {
                 <div class="tarot-face tarot-front">
                     <div class="tarot-pattern"><i class="fas fa-star-and-crescent"></i></div>
                 </div>
-                <div class="tarot-face tarot-back" style="background: linear-gradient(135deg, var(--secondary-bg), rgba(var(--accent-color-rgb), 0.05)); border: 2px solid rgba(var(--accent-color-rgb), 0.3);">
-                    <div class="tarot-visual ${isUpright ? '' : 'reversed'}" style="height:100px;">
-                        <i class="fas ${card.icon} tarot-icon-vector" style="font-size:52px; color: var(--accent-color);"></i>
+                <div class="tarot-face tarot-back" style="background: linear-gradient(135deg, var(--secondary-bg), rgba(var(--accent-color-rgb), 0.05)); border: 2px solid rgba(var(--accent-color-rgb), 0.3); padding: 14px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow-y: auto;">
+                    <div class="tarot-visual ${isUpright ? '' : 'reversed'}" style="height:80px; flex-shrink:0;">
+                        <i class="fas ${card.icon} tarot-icon-vector" style="font-size:42px; color: var(--accent-color);"></i>
                     </div>
-                    <div>
-                        <div class="tarot-card-name" style="font-size:20px; font-weight: 700;">${card.name}</div>
+                    <div style="text-align:center; width:100%;">
+                        <div class="tarot-card-name" style="font-size:18px; font-weight: 700; margin-bottom:3px;">${card.name}</div>
+                        <div style="font-size:10px; color:var(--text-secondary); margin-bottom:6px;">${isUpright ? '正位' : '逆位'}</div>
+                        <div style="font-size:12px; color: var(--accent-color); font-weight:600; margin-bottom:6px;">「${card.keyword}」</div>
+                        <div style="margin-bottom:8px;">${starsHtml}</div>
+                        <div style="font-size:11px; color:var(--text-secondary); line-height:1.6; text-align:left;">${card.meaning}</div>
                     </div>
                 </div>
             </div>
@@ -829,7 +833,7 @@ function renderFavorites() {
         }) : '';
         const content = msg.text
             ? msg.text.replace(/</g, '&lt;').replace(/>/g, '&gt;')
-            : (msg.image ? '<i class="fas fa-image" style="color:var(--accent-color)"></i> 图片消息' : '');
+            : (msg.image ? `<img src="${msg.image}" style="max-width:100%;max-height:180px;border-radius:8px;display:block;margin-top:4px;cursor:pointer;" onclick="if(typeof viewImage==='function')viewImage('${msg.image.replace(/'/g,'\\\'')}')" loading="lazy">` : '');
         return `
             <div class="fav-item" style="
                 display:flex;flex-direction:column;gap:4px;
