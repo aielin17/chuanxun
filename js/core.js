@@ -994,7 +994,7 @@ function manageAutoSendTimer() {
 
                 const isImageOnly = !msg.text && !!msg.image;
                 let content = msg.text ? `<div>${msg.text.replace(/\n/g, '<br>')}</div>`: '';
-                if (msg.image) content += `<img src="${msg.image}" class="message-image${isImageOnly ? ' message-image-only' : ''}" alt="图片" style="max-width:${isImageOnly ? '150px' : '180px'}; border-radius: 12px;${!isImageOnly ? ' margin-top: 6px;' : ''} cursor: pointer;" onclick="viewImage('${msg.image}')">`;
+                if (msg.image) content += `<img src="${msg.image}" class="message-image${isImageOnly ? ' message-image-only' : ''}" alt="图片" style="max-width:100px; border-radius: 12px;${!isImageOnly ? ' margin-top: 6px;' : ''} cursor: pointer;" onclick="viewImage('${msg.image}')">`;
                 messageHTML += content;
 
                 const messageDiv = document.createElement('div');
@@ -1282,7 +1282,7 @@ if (!isBatchMode && type === 'normal') {
                     const label = msg.text
                         ? `<span class="batch-preview-text">${msg.text}</span>`
                         : `<span class="batch-preview-text" style="color:var(--text-secondary);font-style:italic;">图片</span>`;
-                    return `<div class="batch-preview-item" data-index="${index}">${preview}${label}<button class="batch-preview-remove"><i class="fas fa-times"></i></button></div>`;
+                    return `<div class="batch-preview-item" data-index="${index}">${preview}${label}<button class="batch-preview-edit" title="编辑"><i class="fas fa-pencil-alt"></i></button><button class="batch-preview-remove"><i class="fas fa-times"></i></button></div>`;
                 }).join('');
             } else {
                 listHTML = '<div style="text-align: center; color: var(--text-secondary); font-size: 14px; padding: 10px;">つ♡⊂</div>';
@@ -1457,9 +1457,9 @@ if (partnerPersonas && partnerPersonas.length > 0 && Math.random() < 0.3) {
                         .map(g => g.id);
                     const disabledGroupItems = new Set();
                     if (disabledGroups.length > 0) {
-                        customReplies.forEach((reply, idx) => {
+                        customReplies.forEach((reply) => {
                             const itemGroup = (window.customReplyGroups || []).find(g =>
-                                g.items && g.items.includes(idx)
+                                g.items && g.items.includes(reply)
                             );
                             if (itemGroup && disabledGroups.includes(itemGroup.id)) {
                                 disabledGroupItems.add(reply);

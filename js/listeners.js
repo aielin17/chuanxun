@@ -118,6 +118,14 @@ if (target.classList.contains('delete-btn')) {
                     const index = removeBtn.closest('.batch-preview-item').dataset.index;
                     batchMessages.splice(index, 1); updateBatchPreview();
                 }
+                const editBtn = e.target.closest('.batch-preview-edit');
+                if (editBtn) {
+                    const item = editBtn.closest('.batch-preview-item');
+                    const index = parseInt(item.dataset.index);
+                    const newText = prompt('编辑消息内容:', batchMessages[index].text || '');
+                    if (newText !== null) { batchMessages[index].text = newText.trim(); updateBatchPreview(); }
+                    return;
+                }
                 const sendBtn = e.target.closest('.batch-send-btn');
                 if (sendBtn && !sendBtn.disabled) sendBatchMessages();
                 if (e.target.matches('.batch-cancel-btn')) {
