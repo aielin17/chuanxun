@@ -165,9 +165,10 @@
     }
 
     function _syncUI() {
-        var en = _get();
-        var sw = document.getElementById('header-opacity-switch');
-        if (sw) sw.classList.toggle('active', en);
+        var en  = _get();
+        // The CSS pattern is `.setting-pill-row.active` — toggle on the ROW element
+        var row = document.getElementById('header-opacity-toggle');
+        if (row) row.classList.toggle('active', en);
         var spans = document.querySelectorAll('#header-opacity-toggle .setting-pill-label span');
         if (spans.length) spans[0].textContent = en ? '已开启，始终清晰' : '关闭后悬停才清晰';
     }
