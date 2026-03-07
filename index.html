@@ -1177,9 +1177,21 @@
                     <p class="cs-group-label" style="margin-top:16px;">挂机保活音频</p>
                     <div class="cs-card">
                         <div class="setting-pill-row" id="keepalive-audio-toggle" onclick="window._toggleKeepaliveAudio && window._toggleKeepaliveAudio()">
-                            <span class="setting-pill-icon"><i class="fas fa-broadcast-tower"></i></span>
+                            <span class="setting-pill-icon" style="position:relative;">
+                                <i class="fas fa-broadcast-tower"></i>
+                                <span id="keepalive-dot" class="keepalive-dot"></span>
+                            </span>
                             <span class="setting-pill-label">后台保活 <span style="font-size:11px;color:var(--text-secondary);font-weight:400;" id="keepalive-audio-desc">静音循环音频，防止页面被系统挂起</span></span>
-                            <div class="setting-pill-switch" id="keepalive-audio-switch"><div class="setting-pill-knob" id="keepalive-audio-knob"></div></div>
+                            <div class="setting-pill-switch" id="keepalive-audio-switch"><div class="setting-pill-knob"></div></div>
+                        </div>
+                        <div id="keepalive-bar-row" style="display:none;align-items:center;gap:3px;padding:8px 14px 10px;border-top:1px solid var(--border-color);">
+                            <span style="font-size:11px;color:var(--text-secondary);margin-right:4px;">音频状态</span>
+                            <div class="keepalive-wave-bar" style="animation-delay:0s;"></div>
+                            <div class="keepalive-wave-bar" style="animation-delay:0.1s;"></div>
+                            <div class="keepalive-wave-bar" style="animation-delay:0.2s;"></div>
+                            <div class="keepalive-wave-bar" style="animation-delay:0.15s;"></div>
+                            <div class="keepalive-wave-bar" style="animation-delay:0.05s;"></div>
+                            <span style="font-size:11px;color:var(--accent-color);margin-left:6px;font-weight:600;">LIVE</span>
                         </div>
                     </div>
                 </div>
@@ -1201,10 +1213,10 @@
                             <span class="setting-pill-label">顶部栏常驻清晰 <span style="font-size:11px;color:var(--text-secondary);font-weight:400;">关闭后顶部栏悬停才清晰</span></span>
                             <div class="setting-pill-switch" id="header-opacity-switch"><div class="setting-pill-knob" id="header-opacity-knob"></div></div>
                         </div>
-                        <div class="setting-pill-row" id="poke-symbol-toggle" onclick="window._togglePokeSymbol && window._togglePokeSymbol()" style="border-top:1px solid var(--border-color);">
+                        <div class="setting-pill-row" id="poke-symbol-toggle" onclick="window._openPokeSymSettings && window._openPokeSymSettings()" style="border-top:1px solid var(--border-color);">
                             <span class="setting-pill-icon"><i class="fas fa-asterisk"></i></span>
-                            <span class="setting-pill-label">戳一戳装饰符号 <span style="font-size:11px;color:var(--text-secondary);font-weight:400;" id="poke-symbol-desc">两侧显示 ✦ 符号</span></span>
-                            <div class="setting-pill-switch" id="poke-symbol-switch"><div class="setting-pill-knob" id="poke-symbol-knob"></div></div>
+                            <span class="setting-pill-label">戳一戳装饰符号 <span style="font-size:11px;color:var(--text-secondary);font-weight:400;" id="poke-symbol-desc">点击设置符号样式</span></span>
+                            <i class="fas fa-chevron-right" style="color:var(--text-secondary);font-size:12px;flex-shrink:0;"></i>
                         </div>
                     </div>
                 </div>

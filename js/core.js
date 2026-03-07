@@ -1170,27 +1170,47 @@ actionsHTML += `<button class="meta-action-btn delete-btn" title="删除"><i cla
 if (!isBatchMode && type === 'normal') {
     const delayRange = settings.replyDelayMax - settings.replyDelayMin;
     const randomDelay = settings.replyDelayMin + Math.random() * delayRange;
-    
+
+    // Show typing indicator immediately (after short 400ms "read" pause)
     setTimeout(() => {
+        // Mark as read first
         let changed = false;
         messages.forEach(msg => {
             if (msg.sender === 'user' && msg.status !== 'read') {
-                msg.status = 'read'; 
+                msg.status = 'read';
                 changed = true;
             }
         });
-        if (changed) {
-            renderMessages(false); 
-            throttledSaveData();
+        if (changed) { renderMessages(false); throttledSaveData(); }
+
+        // Show typing indicator right away
+        if (settings.typingIndicatorEnabled) {
+            const tiWrapper = document.getElementById('typing-indicator-wrapper');
+            const tiLabel = document.getElementById('typing-indicator-label');
+            const tiAvatar = document.getElementById('typing-indicator-avatar');
+            if (tiLabel) tiLabel.textContent = (settings.partnerName || '对方') + ' 正在输入';
+            if (tiWrapper) { positionTypingIndicator(); tiWrapper.style.display = 'block'; }
+            if (tiAvatar) {
+                const partnerImg = DOMElements.partner.avatar.querySelector('img');
+                tiAvatar.innerHTML = partnerImg ? `<img src="${partnerImg.src}">` : '<i class="fas fa-user"></i>';
+            }
+            if (DOMElements.chatContainer) DOMElements.chatContainer.scrollTop = DOMElements.chatContainer.scrollHeight;
         }
+    }, 400);
 
-        const shouldIgnore = settings.allowReadNoReply && (Math.random() < 0.5);
-
-        if (!shouldIgnore) {
-            simulateReply(); 
-        }
-
-    }, randomDelay);
+    // Actually send reply after full delay
+    const shouldIgnore = settings.allowReadNoReply && (Math.random() < 0.5);
+    if (!shouldIgnore) {
+        setTimeout(() => {
+            simulateReply();
+        }, randomDelay);
+    } else {
+        // If ignoring, hide typing indicator after a bit
+        setTimeout(() => {
+            const _tiW = document.getElementById('typing-indicator-wrapper');
+            if (_tiW) { const _tiInner = _tiW.querySelector('.typing-indicator'); if (_tiInner) { _tiInner.classList.add('hiding'); setTimeout(() => { _tiW.style.display = 'none'; if (_tiInner) _tiInner.classList.remove('hiding'); }, 240); } else { _tiW.style.display = 'none'; } }
+        }, randomDelay * 0.4);
+    }
 }
 };
 
@@ -1311,7 +1331,7 @@ if (!isBatchMode && type === 'normal') {
                 renderMessages(false); throttledSaveData();
             }
 
-            showTypingIndicator();
+            // Don't call showTypingIndicator() a second time — already shown by sendMessage
 if (partnerPersonas && partnerPersonas.length > 0 && Math.random() < 0.3) {
                 const currentPool = [
                     ...partnerPersonas
