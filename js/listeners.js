@@ -161,7 +161,7 @@ if (target.classList.contains('delete-btn')) {
             DOMElements.pokeModal.save.addEventListener('click', () => {
                 let pokeText = DOMElements.pokeModal.input.value.trim() || `${settings.myName} 拍了拍 ${settings.partnerName}`;
                 addMessage({
-                    id: Date.now(), text: `✦ ${pokeText} ✦`, timestamp: new Date(), type: 'system'
+                    id: Date.now(), text: _formatPokeText(pokeText), timestamp: new Date(), type: 'system'
                 });
                 hideModal(DOMElements.pokeModal.modal);
                 DOMElements.pokeModal.input.value = '';

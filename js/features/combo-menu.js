@@ -142,7 +142,7 @@ function showPokeTab() {
         btn.onclick = () => {
             addMessage({
                 id: Date.now(), 
-                text: `✦ ${settings.myName} ${pokeText} ✦`, 
+                text: _formatPokeText(`${settings.myName} ${pokeText}`), 
                 timestamp: new Date(), 
                 type: 'system'
             });

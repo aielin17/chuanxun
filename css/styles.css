@@ -4032,28 +4032,36 @@
 
         @keyframes flip-coin-heads {
             0% {
-                transform: rotateY(0) scale(1);
+                transform: rotateY(0deg) scale(1);
                 animation-timing-function: ease-in;
             }
-            40% {
-                transform: rotateY(1080deg) scale(1.4);
+            35% {
+                transform: rotateY(900deg) scale(1.35);
                 animation-timing-function: ease-out;
             }
+            75% {
+                transform: rotateY(1800deg) scale(1.1);
+            }
             100% {
+                /* 2160 = 6×360 → ends at 0°, front face showing (正面) */
                 transform: rotateY(2160deg) scale(1);
             }
         }
 
         @keyframes flip-coin-tails {
             0% {
-                transform: rotateY(0) scale(1);
+                transform: rotateY(0deg) scale(1);
                 animation-timing-function: ease-in;
             }
-            40% {
-                transform: rotateY(1080deg) scale(1.4);
+            35% {
+                transform: rotateY(900deg) scale(1.35);
                 animation-timing-function: ease-out;
             }
+            75% {
+                transform: rotateY(1980deg) scale(1.1);
+            }
             100% {
+                /* 2340 = 6.5×360 → ends at 180°, back face showing (反面) */
                 transform: rotateY(2340deg) scale(1);
             }
         }
@@ -5894,18 +5902,36 @@
 
         @media (max-width: 480px) {
             .settings-grid {
-                gap: 12px;
+                gap: 10px;
             }
             .settings-card {
-                padding: 20px 10px;
+                padding: 14px 8px;
+                gap: 8px;
+                border-radius: 14px;
             }
             .settings-card i {
-                width: 50px;
-                height: 50px;
-                font-size: 22px;
+                width: 40px;
+                height: 40px;
+                font-size: 17px;
+                margin-bottom: 2px;
             }
             .settings-card span {
-                font-size: 13px;
+                font-size: 12px;
+                letter-spacing: 0.2px;
+            }
+        }
+        @media (max-width: 360px) {
+            .settings-card {
+                padding: 12px 6px;
+                gap: 6px;
+            }
+            .settings-card i {
+                width: 36px;
+                height: 36px;
+                font-size: 15px;
+            }
+            .settings-card span {
+                font-size: 11px;
             }
         }
 
@@ -9806,4 +9832,61 @@
             height: 100% !important;
             width: 100% !important;
             margin: 0 !important;
+        }
+
+        /* ── Stats tab nav bar ── */
+        .stats-nav-btn {
+            flex: 1;
+            padding: 7px 6px;
+            border: none;
+            border-radius: 9px;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: var(--font-family);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            white-space: nowrap;
+        }
+        .stats-nav-btn.active {
+            background: var(--primary-bg);
+            color: var(--accent-color);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+        .stats-nav-btn:hover:not(.active) {
+            background: rgba(var(--accent-color-rgb), 0.07);
+            color: var(--text-primary);
+        }
+
+        /* ── Search result items ── */
+        .search-result-item:hover {
+            border-color: rgba(var(--accent-color-rgb), 0.35) !important;
+            background: var(--secondary-bg) !important;
+        }
+        .stats-search-box {
+            background: var(--secondary-bg);
+            border-radius: 12px;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+        }
+        .stats-search-box input[type="text"]:focus,
+        .stats-search-box input[type="date"]:focus {
+            border-color: var(--accent-color) !important;
+        }
+
+        /* ── Header opacity always-clear mode ── */
+        .header[data-always-clear] {
+            opacity: 1 !important;
+            transition: none !important;
+        }
+
+        /* ── Keepalive audio toggle state desc ── */
+        #keepalive-audio-switch.active .setting-pill-knob {
+            transform: translateX(20px);
+            background: #fff;
         }
