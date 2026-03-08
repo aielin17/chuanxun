@@ -225,9 +225,26 @@ function applyCustomBubbleCss(cssCode) {
         document.head.appendChild(styleTag);
     }
     
-    // User CSS + image-only bubble protection
-    // Note: use !important in your CSS for colors that need to override dark/light theme rules
-    styleTag.textContent = cssCode + `
+    // Prefix every rule with "html" so specificity rises from [0,1,0] to [0,1,1],
+    // beating the [0,2,1] dark-mode per-theme overrides that used to block user colors.
+    // We do a simple regex prefix: wrap each selector block.
+    let boosted = cssCode;
+    try {
+        // Add "html " before each top-level selector to increase specificity by 1 type
+        boosted = cssCode.replace(/(^|[}])\s*(\.[a-zA-Z][\w\s,.-]*\{)/gm, (match, brace, rule) => {
+            const prefixed = rule.trim().replace(/([^,{]+)/g, s => {
+                const trimmed = s.trim();
+                if (!trimmed || trimmed === '{') return s;
+                return ' html ' + trimmed;
+            });
+            return (brace || '') + '\n' + prefixed;
+        });
+    } catch(e) {
+        boosted = cssCode; // fallback: use as-is
+    }
+
+    // Ensure image-only bubbles stay transparent even when custom CSS applies
+    styleTag.textContent = boosted + `
 html .message.message-image-bubble-none,
 html .message-image-bubble-none {
     background: transparent !important;
