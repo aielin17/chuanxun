@@ -108,8 +108,9 @@ function applyAvatarShapeToDOM(type, shape) {
             '--text-primary': '主要文字',
             '--text-secondary': '次要文字 / 占位符',
             '--border-color': '边框 / 分割线',
-            '--accent-color': '主强调色（按钮 / 图标）',
+            '--accent-color': '主强调色（图标 / 高亮）',
             '--accent-color-dark': '强调色深色变体',
+            '--send-btn-bg': '发送按钮背景色',
             '--message-sent-bg': '我方气泡背景',
             '--message-sent-text': '我方气泡文字',
             '--message-received-bg': '对方气泡背景',
@@ -380,12 +381,12 @@ function initThemeEditor() {
                     <div style="width:32px;height:32px;border-radius:50%;background:var(--accent-color);flex-shrink:0;display:flex;align-items:center;justify-content:center;">
                         <i class="fas fa-user" style="font-size:12px;color:#fff;"></i>
                     </div>
-                    <div class="message message-received" style="max-width:180px;font-size:var(--font-size);">你是我朝夕相伴触手可及的虚拟</div>
+                    <div class="message message-received" style="max-width:180px;font-size:var(--font-size);color:var(--message-received-text,var(--text-primary));">你是我朝夕相伴触手可及的虚拟</div>
                 </div>
                 <div style="display:flex;align-items:flex-end;gap:8px;justify-content:flex-end;">
-                    <div class="message message-sent" style="max-width:180px;font-size:var(--font-size);">你是我未曾拥有无法捕捉的亲昵</div>
-                    <div style="width:32px;height:32px;border-radius:50%;background:var(--border-color);flex-shrink:0;display:flex;align-items:center;justify-content:center;">
-                        <i class="fas fa-user" style="font-size:12px;color:var(--text-secondary);"></i>
+                    <div class="message message-sent" style="max-width:180px;font-size:var(--font-size);background:var(--message-sent-bg,var(--accent-color));color:var(--message-sent-text,#fff);">你是我未曾拥有无法捕捉的亲昵</div>
+                    <div style="width:32px;height:32px;border-radius:50%;background:var(--send-btn-bg,var(--accent-color));flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+                        <i class="fas fa-paper-plane" style="font-size:11px;color:var(--send-btn-icon-color,#fff);"></i>
                     </div>
                 </div>`;
             grid.appendChild(previewBox);
