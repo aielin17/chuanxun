@@ -225,10 +225,11 @@ function applyCustomBubbleCss(cssCode) {
         document.head.appendChild(styleTag);
     }
     
-    // Ensure image-only bubbles stay transparent even when custom CSS applies
+    // User CSS + image-only bubble protection
+    // Note: use !important in your CSS for colors that need to override dark/light theme rules
     styleTag.textContent = cssCode + `
-.message.message-image-bubble-none,
-.message-image-bubble-none {
+html .message.message-image-bubble-none,
+html .message-image-bubble-none {
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
