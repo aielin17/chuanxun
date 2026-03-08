@@ -225,26 +225,48 @@ function applyCustomBubbleCss(cssCode) {
         document.head.appendChild(styleTag);
     }
     
-    // Prefix every rule with "html" so specificity rises from [0,1,0] to [0,1,1],
-    // beating the [0,2,1] dark-mode per-theme overrides that used to block user colors.
-    // We do a simple regex prefix: wrap each selector block.
+    // Boost specificity to beat all theme + dark-mode overrides.
+    // Strategy: prefix every selector with "html[data-theme] " which gives [0,2,X]
+    // matching the highest theme override specificity. For cases where data-theme
+    // might not be set yet, also output a plain "html " prefixed version.
+    // Additionally, !important is appended to color and background declarations
+    // so user custom colors always win regardless of cascade order.
     let boosted = cssCode;
     try {
-        // Add "html " before each top-level selector to increase specificity by 1 type
-        boosted = cssCode.replace(/(^|[}])\s*(\.[a-zA-Z][\w\s,.-]*\{)/gm, (match, brace, rule) => {
-            const prefixed = rule.trim().replace(/([^,{]+)/g, s => {
-                const trimmed = s.trim();
-                if (!trimmed || trimmed === '{') return s;
-                return ' html ' + trimmed;
-            });
-            return (brace || '') + '\n' + prefixed;
+        // Split into individual rules by finding selector { ... } blocks
+        // We use a two-pass approach: first prefix selectors, then force color/bg properties
+        boosted = cssCode.replace(/((?:^|(?<=\}))[\s\S]*?\{[\s\S]*?\})/g, (ruleBlock) => {
+            // Extract selector and body
+            const braceIdx = ruleBlock.indexOf('{');
+            if (braceIdx === -1) return ruleBlock;
+            const selector = ruleBlock.slice(0, braceIdx).trim();
+            const body = ruleBlock.slice(braceIdx);
+            if (!selector) return ruleBlock;
+            
+            // Prefix each comma-separated selector
+            const prefixedSelector = selector.split(',').map(s => {
+                const t = s.trim();
+                if (!t) return t;
+                // Skip @-rules, :root, html selectors - don't double-prefix
+                if (t.startsWith('@') || t === ':root' || t === 'html' || t.startsWith('html ') || t.startsWith(':root ')) return t;
+                // Use html[data-theme] prefix for maximum specificity
+                return `html[data-theme] ${t}, html ${t}`;
+            }).join(', ');
+            
+            // Force !important on color and background properties so custom values always win
+            const boostedBody = body.replace(/((?:color|background(?:-color)?|border(?:-color)?)\s*:[^;!}]+?)(?=;|\})/g, '$1 !important');
+            
+            return prefixedSelector + ' ' + boostedBody;
         });
     } catch(e) {
-        boosted = cssCode; // fallback: use as-is
+        // Fallback: wrap entire block in a high-specificity scope
+        boosted = `html[data-theme] :is(${cssCode.replace(/\{[\s\S]*?\}/g, '')}) { }`;
+        boosted = cssCode; // safe fallback: use as-is
     }
 
     // Ensure image-only bubbles stay transparent even when custom CSS applies
     styleTag.textContent = boosted + `
+html[data-theme] .message.message-image-bubble-none,
 html .message.message-image-bubble-none,
 html .message-image-bubble-none {
     background: transparent !important;
