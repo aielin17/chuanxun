@@ -1194,21 +1194,10 @@ if (!isBatchMode && type === 'normal') {
     const delayRange = settings.replyDelayMax - settings.replyDelayMin;
     const randomDelay = settings.replyDelayMin + Math.random() * delayRange;
 
-    // Show typing indicator immediately (no delay)
-    if (settings.typingIndicatorEnabled) {
-        const tiWrapper = document.getElementById('typing-indicator-wrapper');
-        const tiLabel = document.getElementById('typing-indicator-label');
-        const tiAvatar = document.getElementById('typing-indicator-avatar');
-        if (tiLabel) tiLabel.textContent = (settings.partnerName || '对方') + ' 正在输入';
-        if (tiWrapper) { positionTypingIndicator(); tiWrapper.style.display = 'block'; }
-        if (tiAvatar) {
-            const partnerImg = DOMElements.partner.avatar.querySelector('img');
-            tiAvatar.innerHTML = partnerImg ? `<img src="${partnerImg.src}">` : '<i class="fas fa-user"></i>';
-        }
-        if (DOMElements.chatContainer) DOMElements.chatContainer.scrollTop = DOMElements.chatContainer.scrollHeight;
-    }
+    // Determine read-no-reply FIRST, before showing any typing indicator
+    const shouldIgnore = settings.allowReadNoReply && (Math.random() < 0.5);
 
-    // Mark messages as read
+    // Mark messages as read after short delay (always happens — that's the "read" part)
     setTimeout(() => {
         let changed = false;
         messages.forEach(msg => {
@@ -1224,19 +1213,26 @@ if (!isBatchMode && type === 'normal') {
     if (window._pendingReplyTimer) clearTimeout(window._pendingReplyTimer);
     window._pendingReplyTimer = null;
 
-    const shouldIgnore = settings.allowReadNoReply && (Math.random() < 0.5);
     if (!shouldIgnore) {
+        // Only show typing indicator when we're actually going to reply
+        if (settings.typingIndicatorEnabled) {
+            const tiWrapper = document.getElementById('typing-indicator-wrapper');
+            const tiLabel = document.getElementById('typing-indicator-label');
+            const tiAvatar = document.getElementById('typing-indicator-avatar');
+            if (tiLabel) tiLabel.textContent = (settings.partnerName || '对方') + ' 正在输入';
+            if (tiWrapper) { positionTypingIndicator(); tiWrapper.style.display = 'block'; }
+            if (tiAvatar) {
+                const partnerImg = DOMElements.partner.avatar.querySelector('img');
+                tiAvatar.innerHTML = partnerImg ? `<img src="${partnerImg.src}">` : '<i class="fas fa-user"></i>';
+            }
+            if (DOMElements.chatContainer) DOMElements.chatContainer.scrollTop = DOMElements.chatContainer.scrollHeight;
+        }
         window._pendingReplyTimer = setTimeout(() => {
             window._pendingReplyTimer = null;
             simulateReply();
         }, randomDelay);
-    } else {
-        window._pendingReplyTimer = setTimeout(() => {
-            window._pendingReplyTimer = null;
-            const _tiW = document.getElementById('typing-indicator-wrapper');
-            if (_tiW) { const _tiInner = _tiW.querySelector('.typing-indicator'); if (_tiInner) { _tiInner.classList.add('hiding'); setTimeout(() => { _tiW.style.display = 'none'; if (_tiInner) _tiInner.classList.remove('hiding'); }, 240); } else { _tiW.style.display = 'none'; } }
-        }, randomDelay * 0.4);
     }
+    // If shouldIgnore: no typing indicator, no reply — messages stay "read" with no response
 }
 };
 
@@ -1446,26 +1442,22 @@ if (partnerPersonas && partnerPersonas.length > 0 && Math.random() < 0.3) {
                 const delayRange = settings.replyDelayMax - settings.replyDelayMin;
                 delay += settings.replyDelayMin + Math.random() * delayRange;
                 setTimeout(() => {
-                    // Bug fix 1: Filter out disabled individual items AND items from disabled groups
+                    // Filter disabled individual items AND items from disabled groups
                     let disabledItems = new Set();
                     try {
                         const raw = localStorage.getItem('disabledReplyItems');
                         if (raw) disabledItems = new Set(JSON.parse(raw));
                     } catch(e) {}
-                    const disabledGroups = (window.customReplyGroups || [])
-                        .filter(g => g.disabled)
-                        .map(g => g.id);
+
+                    // Build disabled-group items by iterating disabled groups directly (more reliable)
                     const disabledGroupItems = new Set();
-                    if (disabledGroups.length > 0) {
-                        customReplies.forEach((reply) => {
-                            const itemGroup = (window.customReplyGroups || []).find(g =>
-                                g.items && g.items.includes(reply)
-                            );
-                            if (itemGroup && disabledGroups.includes(itemGroup.id)) {
-                                disabledGroupItems.add(reply);
-                            }
-                        });
-                    }
+                    const _groups = window.customReplyGroups || [];
+                    _groups.forEach(g => {
+                        if (g.disabled && Array.isArray(g.items)) {
+                            g.items.forEach(item => disabledGroupItems.add(item));
+                        }
+                    });
+
                     const replyPool = customReplies.filter(r => !disabledItems.has(r) && !disabledGroupItems.has(r));
                     const replyText = replyPool[Math.floor(Math.random() * replyPool.length)];
 
