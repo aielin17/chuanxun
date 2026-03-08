@@ -108,11 +108,10 @@ function applyAvatarShapeToDOM(type, shape) {
             '--text-primary': '主要文字',
             '--text-secondary': '次要文字 / 占位符',
             '--border-color': '边框 / 分割线',
-            '--accent-color': '主强调色（按钮底色 / 图标）',
+            '--accent-color': '主强调色（按钮 / 图标）',
             '--accent-color-dark': '强调色深色变体',
             '--message-sent-bg': '我方气泡背景',
-            '--message-sent-text': '我方气泡文字色（⚠️ 切换预设时自动适配）',
-            '--send-btn-text-color': '发送按钮文字色（独立控制，不影响气泡）',
+            '--message-sent-text': '我方气泡文字',
             '--message-received-bg': '对方气泡背景',
             '--message-received-text': '对方气泡文字',
             '--favorite-color': '收藏星标颜色',
@@ -183,6 +182,14 @@ function initThemeEditor() {
             for (const variable of Object.keys(themeExtraMappings)) {
                 const val = root.style.getPropertyValue(variable);
                 if (val) customColors[variable] = val.trim();
+            }
+            // Persist --accent-color-rgb alongside --accent-color so rgba() expressions work
+            if (customColors['--accent-color']) {
+                const hex = customColors['--accent-color'].replace('#','');
+                if (/^[0-9a-fA-F]{6}$/.test(hex)) {
+                    customColors['--accent-color-rgb'] =
+                        `${parseInt(hex.slice(0,2),16)},${parseInt(hex.slice(2,4),16)},${parseInt(hex.slice(4,6),16)}`;
+                }
             }
             settings.customThemeColors = customColors;
             throttledSaveData && throttledSaveData();
@@ -261,6 +268,31 @@ function initThemeEditor() {
         };
     }
 }
+        /**
+         * Resolve a CSS custom-property value that may itself be a var() reference.
+         * e.g.  "--message-sent-bg: var(--accent-color)"  →  "#c5a47e"
+         */
+        function resolveColorVar(rawVal, rootStyle) {
+            if (!rawVal) return '';
+            let val = rawVal.trim();
+            if (val.startsWith('var(')) {
+                const inner = val.match(/^var\(\s*(--[\w-]+)/);
+                if (inner) {
+                    const resolved = rootStyle.getPropertyValue(inner[1]).trim();
+                    if (resolved && !resolved.startsWith('var(')) val = resolved;
+                    else return '';
+                }
+            }
+            if (val.startsWith('rgb')) {
+                const m = val.match(/\d+/g);
+                if (m && m.length >= 3) {
+                    return '#' + m.slice(0, 3).map(n => parseInt(n).toString(16).padStart(2, '0')).join('');
+                }
+            }
+            if (/^#[0-9a-fA-F]{3,8}$/.test(val)) return val;
+            return '';
+        }
+
         function populateThemeEditor(currentColors = null) {
             const grid = document.getElementById('theme-editor-grid');
             grid.innerHTML = '';
@@ -272,24 +304,28 @@ function initThemeEditor() {
             grid.appendChild(colorHeading);
 
             for (const [variable, label] of Object.entries(themeColorMappings)) {
-                const rawVal = currentColors ? currentColors[variable] : rootStyle.getPropertyValue(variable).trim();
-                let colorValue = rawVal;
-                if (!colorValue || colorValue.includes('var(')) {
-                    colorValue = '#888888';
-                } else if (colorValue.startsWith('rgb')) {
-                    try {
-                        const m = colorValue.match(/\d+/g);
-                        if (m && m.length >= 3) {
-                            colorValue = '#' + [m[0],m[1],m[2]].map(n => parseInt(n).toString(16).padStart(2,'0')).join('');
-                        }
-                    } catch(e) { colorValue = '#888888'; }
-                }
+                // currentColors (from saved schemes) take priority; otherwise read from computed style
+                const rawVal = currentColors
+                    ? (currentColors[variable] || rootStyle.getPropertyValue(variable).trim())
+                    : rootStyle.getPropertyValue(variable).trim();
+
+                // Resolve var() references and convert to hex
+                let colorValue = resolveColorVar(rawVal, rootStyle) || '#888888';
+
                 const item = document.createElement('div');
                 item.className = 'color-picker-item';
                 item.innerHTML = `<label for="color-${variable.replace(/--/g,'')}">${label}</label><input type="color" id="color-${variable.replace(/--/g,'')}" data-variable="${variable}" value="${colorValue}">`;
                 grid.appendChild(item);
                 item.querySelector('input[type="color"]').addEventListener('input', (e) => {
                     document.documentElement.style.setProperty(e.target.dataset.variable, e.target.value);
+                    // Keep --accent-color-rgb in sync whenever --accent-color changes
+                    if (e.target.dataset.variable === '--accent-color') {
+                        const hex = e.target.value.replace('#', '');
+                        const r = parseInt(hex.slice(0,2),16);
+                        const g = parseInt(hex.slice(2,4),16);
+                        const b = parseInt(hex.slice(4,6),16);
+                        document.documentElement.style.setProperty('--accent-color-rgb', `${r},${g},${b}`);
+                    }
                 });
             }
 
@@ -526,6 +562,12 @@ function populateThemeSelector() {
             settings.customBubbleCss = scheme.customBubbleCss || '';
             settings.inChatAvatarEnabled = scheme.inChatAvatarEnabled;
             settings.inChatAvatarSize = scheme.inChatAvatarSize;
+
+            // CRITICAL: persist custom colors into settings.customThemeColors so
+            // updateUI() re-applies them after its applyTheme(null,true) reset.
+            settings.customThemeColors = (scheme.customColors && Object.keys(scheme.customColors).length > 0)
+                ? Object.assign({}, scheme.customColors)
+                : {};
             
             const root = document.documentElement;
             if (scheme.customColors && Object.keys(scheme.customColors).length > 0) {
