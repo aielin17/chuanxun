@@ -9541,19 +9541,33 @@
            DATA MODAL — Full Redesign
            ═══════════════════════════════════════════════════════ */
         #data-modal {
-            align-items: flex-end;
-            padding: 0;
+            align-items: flex-end !important;
+            padding: 0 !important;
         }
         #data-modal .modal-content {
             padding: 0 !important;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            max-height: 93dvh;
-            border-radius: 28px 28px 0 0;
-            width: 100%;
-            max-width: 520px;
-            margin: 0 auto;
+            overflow: hidden !important;
+            display: flex !important;
+            flex-direction: column !important;
+            max-height: 93dvh !important;
+            height: auto !important;
+            border-radius: 28px 28px 0 0 !important;
+            width: 100% !important;
+            max-width: 520px !important;
+            margin: 0 auto !important;
+            /* Kill the slide-in animation that expects a centered modal */
+            transform: none !important;
+            animation: dmSheetIn 0.38s cubic-bezier(0.32,0.72,0,1) both !important;
+        }
+        /* When showModal sets opacity:1 transform:none via JS, we keep our layout intact */
+        #data-modal[style*="flex"] .modal-content,
+        #data-modal[style*="block"] .modal-content {
+            opacity: 1 !important;
+            transform: translateY(0) !important;
+        }
+        @keyframes dmSheetIn {
+            from { transform: translateY(60px); opacity: 0; }
+            to   { transform: translateY(0);    opacity: 1; }
         }
 
         /* ── Hero Header ── */
@@ -9561,6 +9575,7 @@
             position: relative;
             overflow: hidden;
             flex-shrink: 0;
+            flex-grow: 0;
             padding: 28px 24px 22px;
             background: linear-gradient(135deg,
                 rgba(var(--accent-color-rgb), 0.18) 0%,
@@ -9665,14 +9680,18 @@
 
         /* ── Scrollable body ── */
         .dm-body {
-            flex: 1;
-            overflow-y: auto;
+            flex: 1 1 0 !important;
+            min-height: 0 !important;
+            overflow-y: auto !important;
+            overflow-x: hidden;
             overscroll-behavior: contain;
             padding: 18px 18px 10px;
             display: flex;
             flex-direction: column;
             gap: 6px;
+            -webkit-overflow-scrolling: touch;
         }
+        .dm-body::-webkit-scrollbar { width: 0; }
 
         /* ── Section label ── */
         .dm-section-label {
@@ -9839,7 +9858,8 @@
 
         /* ── Footer ── */
         .dm-footer {
-            flex-shrink: 0;
+            flex-shrink: 0 !important;
+            flex-grow: 0 !important;
             display: grid;
             grid-template-columns: 1fr 2fr;
             gap: 8px;
