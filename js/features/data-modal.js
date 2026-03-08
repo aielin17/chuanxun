@@ -1,221 +1,571 @@
 /**
- * data-modal.js — 数据管理界面 v4
- * 全面重制：分区清晰、操作安全、全部重置凸显
+ * data-modal.js — 数据管理界面 v5
+ * 全新视觉语言：杂志排版 · 强对比 · 大字号分区
  */
 (function () {
     'use strict';
 
     function injectCSS() {
-        if (document.getElementById('dm4-style')) return;
+        if (document.getElementById('dm5-style')) return;
         const s = document.createElement('style');
-        s.id = 'dm4-style';
+        s.id = 'dm5-style';
         s.textContent = `
+/* ── Reset inherited modal styles ── */
 #data-modal { align-items: flex-end !important; padding: 0 !important; }
 #data-modal .modal-content {
-    padding: 0 !important; width: 100% !important; max-width: 540px !important;
-    max-height: 94dvh !important; border-radius: 28px 28px 0 0 !important;
-    overflow: hidden !important; display: flex !important; flex-direction: column !important;
-    box-shadow: 0 -12px 48px rgba(0,0,0,.22) !important; margin: 0 auto !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 560px !important;
+    max-height: 96dvh !important;
+    border-radius: 0 !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    box-shadow: none !important;
+    margin: 0 auto !important;
+    background: var(--primary-bg) !important;
 }
-@media (min-width:600px){
-    #data-modal{align-items:center!important;padding:24px!important;}
-    #data-modal .modal-content{border-radius:26px!important;max-height:88dvh!important;}
+@media (min-width: 600px) {
+    #data-modal { align-items: center !important; padding: 20px !important; }
+    #data-modal .modal-content {
+        border-radius: 20px !important;
+        max-height: 90dvh !important;
+    }
 }
-.dm4-handle{width:38px;height:4px;background:var(--border-color);border-radius:99px;margin:11px auto 0;flex-shrink:0;opacity:.45;}
-.dm4-header{flex-shrink:0;padding:14px 18px 12px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border-color);}
-.dm4-hicon{width:44px;height:44px;border-radius:14px;flex-shrink:0;background:linear-gradient(145deg,rgba(var(--accent-color-rgb,224,105,138),.22),rgba(var(--accent-color-rgb,224,105,138),.07));display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--accent-color);box-shadow:0 4px 12px rgba(var(--accent-color-rgb,224,105,138),.18);}
-.dm4-hinfo{flex:1;min-width:0;}
-.dm4-htitle{font-size:16px;font-weight:800;color:var(--text-primary);letter-spacing:-.3px;line-height:1.25;}
-.dm4-hsub{font-size:11px;color:var(--text-secondary);margin-top:2px;opacity:.65;}
-.dm4-xbtn{width:30px;height:30px;border-radius:50%;border:none;background:var(--secondary-bg);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;flex-shrink:0;transition:background .16s,color .16s;}
-.dm4-xbtn:hover{background:rgba(var(--accent-color-rgb,224,105,138),.1);color:var(--accent-color);}
-.dm4-body{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:12px 14px 8px;}
-.dm4-body::-webkit-scrollbar{width:0;}
-.dm4-banner{border-radius:18px;padding:15px 16px 13px;margin-bottom:12px;background:linear-gradient(135deg,rgba(var(--accent-color-rgb,224,105,138),.11) 0%,rgba(var(--accent-color-rgb,224,105,138),.03) 100%);border:1.5px solid rgba(var(--accent-color-rgb,224,105,138),.16);position:relative;overflow:hidden;}
-.dm4-banner::after{content:'';position:absolute;top:-24px;right:-24px;width:88px;height:88px;border-radius:50%;pointer-events:none;background:radial-gradient(circle,rgba(var(--accent-color-rgb,224,105,138),.13) 0%,transparent 70%);}
-.dm4-btop{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px;}
-.dm4-blbl{font-size:10px;font-weight:800;letter-spacing:1.1px;text-transform:uppercase;color:var(--accent-color);display:flex;align-items:center;gap:5px;}
-.dm4-bsz{font-size:11.5px;font-weight:700;color:var(--text-secondary);}
-.dm4-track{height:4px;background:rgba(var(--accent-color-rgb,224,105,138),.13);border-radius:99px;overflow:hidden;margin-bottom:10px;}
-.dm4-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent-color),rgba(var(--accent-color-rgb,224,105,138),.5));transition:width .9s cubic-bezier(.4,0,.2,1);}
-.dm4-chips{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
-.dm4-chip{background:var(--primary-bg);border:1.5px solid var(--border-color);border-radius:12px;padding:8px 6px 7px;text-align:center;}
-.dm4-cn{font-size:13px;font-weight:800;color:var(--text-primary);font-variant-numeric:tabular-nums;line-height:1.2;}
-.dm4-cl{font-size:9.5px;color:var(--text-secondary);margin-top:2px;opacity:.7;}
-.dm4-sec{display:flex;align-items:center;gap:5px;font-size:9.5px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-secondary);opacity:.48;margin:14px 3px 6px;}
-.dm4-sec.danger{color:#FF3B30;opacity:.6;}
-.dm4-card{background:var(--secondary-bg);border:1.5px solid var(--border-color);border-radius:18px;overflow:hidden;margin-bottom:3px;}
-.dm4-row{display:flex;align-items:center;gap:11px;padding:12px 15px;min-height:60px;border-bottom:1px solid var(--border-color);box-sizing:border-box;width:100%;}
-.dm4-row:last-child{border-bottom:none;}
-.dm4-row.tap{cursor:pointer;transition:background .14s;-webkit-tap-highlight-color:transparent;}
-.dm4-row.tap:hover{background:rgba(var(--accent-color-rgb,224,105,138),.04);}
-.dm4-row.tap:active{background:rgba(var(--accent-color-rgb,224,105,138),.09);}
-.dm4-ic{width:36px;height:36px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;}
-.dm4-pink{background:rgba(var(--accent-color-rgb,224,105,138),.13);color:var(--accent-color);}
-.dm4-blue{background:rgba(74,144,226,.12);color:#4A90E2;}
-.dm4-green{background:rgba(52,199,89,.12);color:#34C759;}
-.dm4-amber{background:rgba(255,159,10,.12);color:#FF9F0A;}
-.dm4-purple{background:rgba(175,82,222,.12);color:#AF52DE;}
-.dm4-teal{background:rgba(90,200,250,.12);color:#5AC8FA;}
-.dm4-red{background:rgba(255,59,48,.1);color:#FF3B30;}
-.dm4-txt{flex:1;min-width:0;}
-.dm4-rt{font-size:13.5px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;}
-.dm4-rd{font-size:11px;color:var(--text-secondary);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.35;opacity:.78;}
-.dm4-right{display:flex;align-items:center;gap:5px;flex-shrink:0;flex-wrap:nowrap;}
-.dm4-btn{display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 11px;border-radius:99px;font-size:12px;font-weight:600;border:1.5px solid var(--border-color);background:var(--primary-bg);color:var(--text-primary);cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .16s;font-family:var(--font-family,inherit);-webkit-tap-highlight-color:transparent;user-select:none;}
-.dm4-btn:hover{border-color:var(--accent-color);color:var(--accent-color);background:rgba(var(--accent-color-rgb,224,105,138),.07);}
-.dm4-btn:active{transform:scale(.93);}
-.dm4-btn.solid{background:var(--accent-color);border-color:transparent;color:#fff;}
-.dm4-btn.solid:hover{opacity:.83;border-color:transparent;color:#fff;}
-.dm4-tog{position:relative;display:inline-flex;align-items:center;width:48px;height:27px;flex-shrink:0;cursor:pointer;}
-.dm4-tog input{opacity:0;width:0;height:0;position:absolute;}
-.dm4-ttrack{position:absolute;inset:0;background:rgba(120,120,128,.2);border-radius:99px;transition:background .26s;}
-.dm4-ttrack::after{content:'';position:absolute;width:21px;height:21px;border-radius:50%;background:#fff;top:3px;left:3px;transition:transform .26s cubic-bezier(.34,1.3,.64,1);box-shadow:0 2px 5px rgba(0,0,0,.2);}
-.dm4-tog input:checked+.dm4-ttrack{background:var(--accent-color);}
-.dm4-tog input:checked+.dm4-ttrack::after{transform:translateX(21px);}
 
-/* ── Reset zone ── */
-.dm4-rzone{border-radius:18px;overflow:hidden;margin-bottom:3px;border:1.5px solid rgba(255,59,48,.22);background:rgba(255,59,48,.025);}
-.dm4-rzone .dm4-row{background:transparent;border-bottom:1px solid rgba(255,59,48,.1);}
-.dm4-rbtns{display:flex;gap:8px;padding:0 14px 13px;}
-.dm4-rbtn-msg{flex:1;height:44px;border-radius:13px;border:1.5px solid var(--border-color);background:var(--primary-bg);color:var(--text-secondary);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .16s;font-family:var(--font-family,inherit);-webkit-tap-highlight-color:transparent;}
-.dm4-rbtn-msg:hover{border-color:rgba(255,159,10,.5);color:#FF9F0A;background:rgba(255,159,10,.05);}
-.dm4-rbtn-msg:active{transform:scale(.97);}
-.dm4-rbtn-all{flex:1;height:44px;border-radius:13px;border:1.5px solid rgba(255,59,48,.35);background:rgba(255,59,48,.07);color:#FF3B30;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .16s;font-family:var(--font-family,inherit);-webkit-tap-highlight-color:transparent;}
-.dm4-rbtn-all:hover{background:rgba(255,59,48,.13);border-color:#FF3B30;}
-.dm4-rbtn-all:active{transform:scale(.97);}
+/* ── SHELL ── */
+.dm5-shell {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--primary-bg);
+    font-family: var(--font-family, 'Noto Serif SC', serif);
+    color: var(--text-primary);
+}
 
-.dm4-footer{flex-shrink:0;padding:10px 14px;padding-bottom:max(12px,env(safe-area-inset-bottom,12px));border-top:1px solid var(--border-color);background:var(--secondary-bg);}
-.dm4-backbtn{width:100%;height:44px;border-radius:13px;border:1.5px solid var(--border-color);background:var(--primary-bg);color:var(--text-primary);font-size:13.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .16s;font-family:var(--font-family,inherit);}
-.dm4-backbtn:hover{background:rgba(var(--accent-color-rgb,224,105,138),.05);border-color:rgba(var(--accent-color-rgb,224,105,138),.3);}
-.dm4-gap{height:8px;}
+/* ── TOP STRIPE ── */
+.dm5-stripe {
+    flex-shrink: 0;
+    background: var(--accent-color);
+    padding: 18px 20px 16px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+}
+.dm5-stripe::before {
+    content: '';
+    position: absolute;
+    right: -30px; top: -30px;
+    width: 130px; height: 130px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.08);
+}
+.dm5-stripe::after {
+    content: '';
+    position: absolute;
+    right: 30px; bottom: -50px;
+    width: 90px; height: 90px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.05);
+}
+.dm5-stripe-left { flex: 1; z-index: 1; }
+.dm5-stripe-eyebrow {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.65);
+    margin-bottom: 5px;
+    display: flex; align-items: center; gap: 6px;
+}
+.dm5-stripe-eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 20px; height: 1.5px;
+    background: rgba(255,255,255,.5);
+}
+.dm5-stripe-title {
+    font-size: 28px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: -1.2px;
+    line-height: 1;
+}
+.dm5-stripe-sub {
+    font-size: 11px;
+    color: rgba(255,255,255,.6);
+    margin-top: 6px;
+    font-weight: 400;
+}
+.dm5-stripe-close {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,.3);
+    background: rgba(255,255,255,.1);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    cursor: pointer;
+    z-index: 1;
+    flex-shrink: 0;
+    margin-top: 2px;
+    transition: background .2s;
+    -webkit-tap-highlight-color: transparent;
+}
+.dm5-stripe-close:hover { background: rgba(255,255,255,.25); }
+
+/* ── STORAGE BAR (below stripe) ── */
+.dm5-stobar {
+    flex-shrink: 0;
+    padding: 10px 20px;
+    background: var(--secondary-bg);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.dm5-stobar-track {
+    flex: 1;
+    height: 3px;
+    background: var(--border-color);
+    border-radius: 99px;
+    overflow: hidden;
+}
+.dm5-stobar-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: var(--accent-color);
+    transition: width .9s cubic-bezier(.4,0,.2,1);
+}
+.dm5-stobar-nums {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.dm5-chips-row {
+    flex-shrink: 0;
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+    padding: 0 14px 12px;
+    gap: 8px;
+    background: var(--secondary-bg);
+    border-bottom: 1px solid var(--border-color);
+}
+.dm5-chip {
+    text-align: center;
+    padding: 7px 4px 6px;
+    border-radius: 10px;
+    background: var(--primary-bg);
+    border: 1px solid var(--border-color);
+}
+.dm5-chip-n {
+    font-size: 12px; font-weight: 800;
+    color: var(--text-primary); line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+}
+.dm5-chip-l {
+    font-size: 9px; color: var(--text-secondary);
+    margin-top: 2px; opacity: .7;
+}
+
+/* ── SCROLLABLE BODY ── */
+.dm5-body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+}
+.dm5-body::-webkit-scrollbar { width: 0; }
+
+/* ── CHAPTER DIVIDER ── */
+.dm5-chapter {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px 8px;
+    gap: 10px;
+}
+.dm5-chapter-num {
+    font-size: 9px; font-weight: 900;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--accent-color);
+    background: rgba(var(--accent-color-rgb,224,105,138),.1);
+    padding: 3px 8px; border-radius: 5px;
+    flex-shrink: 0;
+}
+.dm5-chapter-title {
+    font-size: 11px; font-weight: 700;
+    color: var(--text-secondary);
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    flex: 1;
+}
+.dm5-chapter-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border-color);
+}
+
+/* ── ITEM ROW ── */
+.dm5-item {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 12px 20px;
+    transition: background .13s;
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+}
+.dm5-item::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 20px; right: 20px;
+    height: 1px;
+    background: var(--border-color);
+    opacity: .5;
+}
+.dm5-item:last-of-type::after { display: none; }
+.dm5-item.tap { cursor: pointer; }
+.dm5-item.tap:hover  { background: rgba(var(--accent-color-rgb,224,105,138),.04); }
+.dm5-item.tap:active { background: rgba(var(--accent-color-rgb,224,105,138),.09); }
+
+/* icon box */
+.dm5-ic {
+    width: 38px; height: 38px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+.dm5-ac   { background: rgba(var(--accent-color-rgb,224,105,138),.12); color: var(--accent-color); }
+.dm5-bl   { background: rgba(74,144,226,.12); color: #4A90E2; }
+.dm5-gr   { background: rgba(52,199,89,.12);  color: #34C759; }
+.dm5-am   { background: rgba(255,159,10,.12); color: #FF9F0A; }
+.dm5-pu   { background: rgba(175,82,222,.12); color: #AF52DE; }
+.dm5-te   { background: rgba(90,200,250,.12); color: #5AC8FA; }
+.dm5-re   { background: rgba(255,59,48,.11);  color: #FF3B30; }
+
+/* text */
+.dm5-meta { flex: 1; min-width: 0; }
+.dm5-name {
+    font-size: 14px; font-weight: 600;
+    color: var(--text-primary); line-height: 1.3;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.dm5-desc {
+    font-size: 11px; color: var(--text-secondary);
+    margin-top: 2px; line-height: 1.35; opacity: .75;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* right */
+.dm5-right {
+    display: flex; align-items: center; gap: 5px;
+    flex-shrink: 0; flex-wrap: nowrap;
+}
+
+/* buttons */
+.dm5-btn {
+    height: 32px; padding: 0 12px;
+    border-radius: 8px;
+    font-size: 12px; font-weight: 600;
+    border: 1.5px solid var(--border-color);
+    background: var(--secondary-bg);
+    color: var(--text-primary);
+    cursor: pointer; white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 4px;
+    transition: all .15s; font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
+}
+.dm5-btn:hover { border-color: var(--accent-color); color: var(--accent-color); }
+.dm5-btn:active { transform: scale(.93); }
+.dm5-btn.fill {
+    background: var(--accent-color); border-color: transparent; color: #fff;
+}
+.dm5-btn.fill:hover { opacity: .83; color: #fff; border-color: transparent; }
+
+/* toggle */
+.dm5-tog {
+    position: relative; display: inline-flex; align-items: center;
+    width: 46px; height: 26px; flex-shrink: 0; cursor: pointer;
+}
+.dm5-tog input { opacity:0; width:0; height:0; position:absolute; }
+.dm5-tog-bg {
+    position: absolute; inset: 0;
+    background: rgba(120,120,128,.22); border-radius: 99px; transition: background .25s;
+}
+.dm5-tog-bg::after {
+    content: ''; position: absolute;
+    width: 20px; height: 20px; border-radius: 50%; background: #fff;
+    top: 3px; left: 3px;
+    transition: transform .25s cubic-bezier(.34,1.3,.64,1);
+    box-shadow: 0 2px 5px rgba(0,0,0,.2);
+}
+.dm5-tog input:checked + .dm5-tog-bg { background: var(--accent-color); }
+.dm5-tog input:checked + .dm5-tog-bg::after { transform: translateX(20px); }
+
+/* ── DANGER ZONE ── */
+.dm5-danger-zone {
+    margin: 8px 14px 14px;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1.5px solid rgba(255,59,48,.25);
+    background: rgba(255,59,48,.03);
+}
+.dm5-danger-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 13px 16px 11px;
+    border-bottom: 1px solid rgba(255,59,48,.15);
+}
+.dm5-danger-label {
+    font-size: 10px; font-weight: 900;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: #FF3B30; flex: 1;
+}
+.dm5-danger-warn {
+    font-size: 10px; color: rgba(255,59,48,.65); font-style: italic;
+}
+.dm5-danger-body {
+    padding: 13px 16px;
+}
+.dm5-danger-desc {
+    font-size: 12px; color: var(--text-secondary);
+    line-height: 1.55; margin-bottom: 13px; opacity: .85;
+}
+.dm5-danger-btns {
+    display: flex; gap: 8px;
+}
+.dm5-dbtn-soft {
+    flex: 1; height: 42px; border-radius: 10px;
+    border: 1.5px solid var(--border-color);
+    background: var(--secondary-bg);
+    color: var(--text-secondary);
+    font-size: 13px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: all .15s; font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+}
+.dm5-dbtn-soft:hover { border-color: rgba(255,159,10,.5); color: #FF9F0A; }
+.dm5-dbtn-soft:active { transform: scale(.97); }
+.dm5-dbtn-hard {
+    flex: 1.2; height: 42px; border-radius: 10px;
+    border: none;
+    background: #FF3B30;
+    color: #fff;
+    font-size: 13px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: all .15s; font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+    box-shadow: 0 4px 16px rgba(255,59,48,.3);
+}
+.dm5-dbtn-hard:hover { background: #e02a20; box-shadow: 0 6px 20px rgba(255,59,48,.4); }
+.dm5-dbtn-hard:active { transform: scale(.97); box-shadow: none; }
+
+/* ── FOOTER ── */
+.dm5-footer {
+    flex-shrink: 0;
+    padding: 10px 14px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
+    border-top: 1px solid var(--border-color);
+    background: var(--secondary-bg);
+}
+.dm5-back {
+    width: 100%; height: 44px; border-radius: 12px;
+    border: 1.5px solid var(--border-color);
+    background: transparent; color: var(--text-secondary);
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    transition: all .15s; font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+}
+.dm5-back:hover { color: var(--text-primary); border-color: var(--text-secondary); }
+.dm5-back:active { transform: scale(.98); }
         `;
         document.head.appendChild(s);
     }
 
     function buildHTML() {
         return `
-<div class="dm4-handle"></div>
-<div class="dm4-header">
-  <div class="dm4-hicon"><i class="fas fa-database"></i></div>
-  <div class="dm4-hinfo">
-    <div class="dm4-htitle">数据管理</div>
-    <div class="dm4-hsub">备份 · 恢复 · 通知 · 重置</div>
-  </div>
-  <button class="dm4-xbtn" id="close-data" aria-label="关闭"><i class="fas fa-times"></i></button>
-</div>
+<div class="dm5-shell">
 
-<div class="dm4-body">
-
-  <div class="dm4-banner">
-    <div class="dm4-btop">
-      <span class="dm4-blbl"><i class="fas fa-hdd"></i> 本地存储</span>
-      <span class="dm4-bsz" id="dm4-sz">计算中…</span>
+  <!-- ①  彩色顶部标题带 -->
+  <div class="dm5-stripe">
+    <div class="dm5-stripe-left">
+      <div class="dm5-stripe-eyebrow">DATA CENTER</div>
+      <div class="dm5-stripe-title">数据管理</div>
+      <div class="dm5-stripe-sub">备份 · 恢复 · 通知 · 清理</div>
     </div>
-    <div class="dm4-track"><div class="dm4-fill" id="dm4-bar" style="width:0%"></div></div>
-    <div class="dm4-chips">
-      <div class="dm4-chip"><div class="dm4-cn" id="dm4-s-msg">—</div><div class="dm4-cl">聊天记录</div></div>
-      <div class="dm4-chip"><div class="dm4-cn" id="dm4-s-cfg">—</div><div class="dm4-cl">设置数据</div></div>
-      <div class="dm4-chip"><div class="dm4-cn" id="dm4-s-med">—</div><div class="dm4-cl">图片/媒体</div></div>
-    </div>
+    <button class="dm5-stripe-close" id="close-data" aria-label="关闭">
+      <i class="fas fa-times"></i>
+    </button>
   </div>
 
-  <div class="dm4-sec"><i class="fas fa-bell"></i> 消息通知</div>
-  <div class="dm4-card">
-    <div class="dm4-row">
-      <div class="dm4-ic dm4-amber"><i class="fas fa-bell"></i></div>
-      <div class="dm4-txt">
-        <div class="dm4-rt">后台消息推送</div>
-        <div class="dm4-rd" id="notif-status-text">挂在后台时收到新消息自动弹出提醒</div>
-      </div>
-      <div class="dm4-right">
-        <label class="dm4-tog"><input type="checkbox" id="notif-permission-toggle" onchange="handleNotifToggle(this)"><span class="dm4-ttrack"></span></label>
-      </div>
+  <!-- ②  存储进度条 -->
+  <div class="dm5-stobar">
+    <span style="font-size:10px;font-weight:700;color:var(--text-secondary);white-space:nowrap;letter-spacing:.5px;text-transform:uppercase;">存储</span>
+    <div class="dm5-stobar-track">
+      <div class="dm5-stobar-fill" id="dm5-bar" style="width:0%"></div>
     </div>
+    <span class="dm5-stobar-nums" id="dm5-sz">—</span>
+  </div>
+  <!-- 存储三格 -->
+  <div class="dm5-chips-row">
+    <div class="dm5-chip"><div class="dm5-chip-n" id="dm5-s-msg">—</div><div class="dm5-chip-l">聊天记录</div></div>
+    <div class="dm5-chip"><div class="dm5-chip-n" id="dm5-s-cfg">—</div><div class="dm5-chip-l">设置数据</div></div>
+    <div class="dm5-chip"><div class="dm5-chip-n" id="dm5-s-med">—</div><div class="dm5-chip-l">图片媒体</div></div>
   </div>
 
-  <div class="dm4-sec"><i class="fas fa-archive"></i> 备份与恢复</div>
-  <div class="dm4-card">
-    <div class="dm4-row">
-      <div class="dm4-ic dm4-blue"><i class="fas fa-layer-group"></i></div>
-      <div class="dm4-txt">
-        <div class="dm4-rt">全量备份</div>
-        <div class="dm4-rd">外观、设置、字卡、心情、信封等</div>
+  <!-- ③  可滚动区域 -->
+  <div class="dm5-body">
+
+    <!-- SECTION A: 通知 -->
+    <div class="dm5-chapter">
+      <span class="dm5-chapter-num">01</span>
+      <span class="dm5-chapter-title">消息通知</span>
+      <div class="dm5-chapter-line"></div>
+    </div>
+
+    <div class="dm5-item">
+      <div class="dm5-ic dm5-am"><i class="fas fa-bell"></i></div>
+      <div class="dm5-meta">
+        <div class="dm5-name">后台消息推送</div>
+        <div class="dm5-desc" id="notif-status-text">后台挂起时，收到新消息自动弹出提醒</div>
       </div>
-      <div class="dm4-right">
-        <button class="dm4-btn solid" id="export-all-settings"><i class="fas fa-download"></i> 导出</button>
-        <button class="dm4-btn" id="import-all-settings"><i class="fas fa-upload"></i> 导入</button>
+      <div class="dm5-right">
+        <label class="dm5-tog">
+          <input type="checkbox" id="notif-permission-toggle" onchange="handleNotifToggle(this)">
+          <span class="dm5-tog-bg"></span>
+        </label>
       </div>
     </div>
-    <div class="dm4-row">
-      <div class="dm4-ic dm4-green"><i class="fas fa-comments"></i></div>
-      <div class="dm4-txt">
-        <div class="dm4-rt">聊天记录</div>
-        <div class="dm4-rd">仅导出 / 导入消息内容</div>
+
+    <!-- SECTION B: 备份 -->
+    <div class="dm5-chapter">
+      <span class="dm5-chapter-num">02</span>
+      <span class="dm5-chapter-title">备份与恢复</span>
+      <div class="dm5-chapter-line"></div>
+    </div>
+
+    <div class="dm5-item">
+      <div class="dm5-ic dm5-bl"><i class="fas fa-layer-group"></i></div>
+      <div class="dm5-meta">
+        <div class="dm5-name">全量备份</div>
+        <div class="dm5-desc">外观、设置、字卡、心情、信封全部打包</div>
       </div>
-      <div class="dm4-right">
-        <button class="dm4-btn solid" id="export-chat-btn"><i class="fas fa-download"></i> 导出</button>
-        <button class="dm4-btn" id="import-chat-btn"><i class="fas fa-upload"></i> 导入</button>
+      <div class="dm5-right">
+        <button class="dm5-btn fill" id="export-all-settings"><i class="fas fa-download"></i> 导出</button>
+        <button class="dm5-btn" id="import-all-settings"><i class="fas fa-upload"></i> 导入</button>
       </div>
     </div>
+
+    <div class="dm5-item">
+      <div class="dm5-ic dm5-gr"><i class="fas fa-comments"></i></div>
+      <div class="dm5-meta">
+        <div class="dm5-name">聊天记录</div>
+        <div class="dm5-desc">仅导出 / 导入消息内容</div>
+      </div>
+      <div class="dm5-right">
+        <button class="dm5-btn fill" id="export-chat-btn"><i class="fas fa-download"></i> 导出</button>
+        <button class="dm5-btn" id="import-chat-btn"><i class="fas fa-upload"></i> 导入</button>
+      </div>
+    </div>
+
+    <!-- SECTION C: 视频通话 -->
+    <div class="dm5-chapter">
+      <span class="dm5-chapter-num">03</span>
+      <span class="dm5-chapter-title">视频通话</span>
+      <div class="dm5-chapter-line"></div>
+    </div>
+
+    <div class="dm5-item">
+      <div class="dm5-ic dm5-te"><i class="fas fa-video"></i></div>
+      <div class="dm5-meta">
+        <div class="dm5-name">模拟视频通话</div>
+        <div class="dm5-desc">开启后可发起通话，对方也会随机来电</div>
+      </div>
+      <div class="dm5-right">
+        <label class="dm5-tog">
+          <input type="checkbox" id="call-enabled-toggle">
+          <span class="dm5-tog-bg"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- SECTION D: 关于 -->
+    <div class="dm5-chapter">
+      <span class="dm5-chapter-num">04</span>
+      <span class="dm5-chapter-title">关于</span>
+      <div class="dm5-chapter-line"></div>
+    </div>
+
+    <div class="dm5-item tap" id="replay-tutorial-btn-row">
+      <div class="dm5-ic dm5-ac"><i class="fas fa-compass"></i></div>
+      <div class="dm5-meta">
+        <div class="dm5-name">重放新手引导</div>
+        <div class="dm5-desc">重新播放功能介绍教程</div>
+      </div>
+      <div class="dm5-right">
+        <button class="dm5-btn" id="replay-tutorial-btn"><i class="fas fa-play"></i> 播放</button>
+      </div>
+    </div>
+
+    <div class="dm5-item tap" id="open-credits-row">
+      <div class="dm5-ic dm5-pu"><i class="fas fa-scroll"></i></div>
+      <div class="dm5-meta">
+        <div class="dm5-name">声明与致谢</div>
+        <div class="dm5-desc">开源声明、致谢名单</div>
+      </div>
+      <div class="dm5-right">
+        <button class="dm5-btn" id="open-credits-btn"><i class="fas fa-arrow-right"></i> 查看</button>
+      </div>
+    </div>
+
+    <!-- SECTION E: 危险区 -->
+    <div class="dm5-chapter">
+      <span class="dm5-chapter-num" style="background:rgba(255,59,48,.12);color:#FF3B30;">05</span>
+      <span class="dm5-chapter-title" style="color:#FF3B30;">危险操作</span>
+      <div class="dm5-chapter-line" style="background:rgba(255,59,48,.2);"></div>
+    </div>
+
+    <div class="dm5-danger-zone">
+      <div class="dm5-danger-head">
+        <i class="fas fa-exclamation-triangle" style="color:#FF3B30;font-size:13px;"></i>
+        <span class="dm5-danger-label">清除数据</span>
+        <span class="dm5-danger-warn">操作不可撤销</span>
+      </div>
+      <div class="dm5-danger-body">
+        <div class="dm5-danger-desc">
+          「仅清除消息」只删除当前会话的聊天记录，设置与字卡保留。<br>
+          「清空全部」将彻底抹除所有本地数据，页面刷新后重新开始。
+        </div>
+        <div class="dm5-danger-btns">
+          <button class="dm5-dbtn-soft" id="dm5-clear-msgs">
+            <i class="fas fa-comment-slash"></i> 仅清除消息
+          </button>
+          <button class="dm5-dbtn-hard" id="dm5-clear-all">
+            <i class="fas fa-trash-alt"></i> 清空全部
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:10px;"></div>
+  </div><!-- /dm5-body -->
+
+  <!-- ④ footer -->
+  <div class="dm5-footer">
+    <button class="dm5-back" id="back-data"
+      onclick="(function(){hideModal(document.getElementById('data-modal'));showModal(document.getElementById('settings-modal'))})()">
+      <i class="fas fa-arrow-left"></i> 返回设置
+    </button>
   </div>
 
-  <div class="dm4-sec"><i class="fas fa-video"></i> 视频通话</div>
-  <div class="dm4-card">
-    <div class="dm4-row">
-      <div class="dm4-ic dm4-teal"><i class="fas fa-video"></i></div>
-      <div class="dm4-txt">
-        <div class="dm4-rt">模拟视频通话</div>
-        <div class="dm4-rd">开启后可发起通话，对方也会随机来电</div>
-      </div>
-      <div class="dm4-right">
-        <label class="dm4-tog"><input type="checkbox" id="call-enabled-toggle"><span class="dm4-ttrack"></span></label>
-      </div>
-    </div>
-  </div>
-
-  <div class="dm4-sec"><i class="fas fa-info-circle"></i> 关于</div>
-  <div class="dm4-card">
-    <div class="dm4-row tap" id="replay-tutorial-btn-row">
-      <div class="dm4-ic dm4-pink"><i class="fas fa-compass"></i></div>
-      <div class="dm4-txt"><div class="dm4-rt">重放新手引导</div><div class="dm4-rd">重新播放功能介绍教程</div></div>
-      <div class="dm4-right"><button class="dm4-btn" id="replay-tutorial-btn"><i class="fas fa-play"></i> 播放</button></div>
-    </div>
-    <div class="dm4-row tap" id="open-credits-row">
-      <div class="dm4-ic dm4-purple"><i class="fas fa-scroll"></i></div>
-      <div class="dm4-txt"><div class="dm4-rt">声明与致谢</div><div class="dm4-rd">开源声明、致谢名单</div></div>
-      <div class="dm4-right"><button class="dm4-btn" id="open-credits-btn"><i class="fas fa-arrow-right"></i> 查看</button></div>
-    </div>
-  </div>
-
-  <div class="dm4-sec danger"><i class="fas fa-exclamation-triangle"></i> 危险操作 · 全部重置</div>
-  <div class="dm4-rzone">
-    <div class="dm4-row">
-      <div class="dm4-ic dm4-red"><i class="fas fa-bomb"></i></div>
-      <div class="dm4-txt">
-        <div class="dm4-rt" style="color:#FF3B30;">全部重置</div>
-        <div class="dm4-rd">彻底清空所有本地数据，操作后自动刷新，不可撤销</div>
-      </div>
-    </div>
-    <div class="dm4-rbtns">
-      <button class="dm4-rbtn-msg" id="dm4-clear-msgs">
-        <i class="fas fa-comment-slash"></i> 仅清除消息
-      </button>
-      <button class="dm4-rbtn-all" id="dm4-clear-all">
-        <i class="fas fa-trash-alt"></i> 全部重置
-      </button>
-    </div>
-  </div>
-
-  <div class="dm4-gap"></div>
-</div>
-
-<div class="dm4-footer">
-  <button class="dm4-backbtn" id="back-data"
-    onclick="(function(){hideModal(document.getElementById('data-modal'));showModal(document.getElementById('settings-modal'))})()">
-    <i class="fas fa-arrow-left"></i> 返回设置
-  </button>
-</div>
+</div><!-- /dm5-shell -->
         `;
     }
 
@@ -239,16 +589,17 @@
             }
             const pct = Math.min(100, total / (5 * 1024 * 1024) * 100).toFixed(1);
             const g = id => document.getElementById(id);
-            const sz  = g('dm4-sz');    if (sz)  sz.textContent  = fmt(total) + ' / ~5 MB';
-            const bar = g('dm4-bar');   if (bar) {
+            const sz  = g('dm5-sz');    if (sz)  sz.textContent = fmt(total) + ' / ~5 MB';
+            const bar = g('dm5-bar');   if (bar) {
                 bar.style.width = pct + '%';
-                if (parseFloat(pct) > 80)      bar.style.background = 'linear-gradient(90deg,#ff4757,#ff6b8a)';
-                else if (parseFloat(pct) > 50) bar.style.background = 'linear-gradient(90deg,#ffa502,rgba(255,165,2,.5))';
+                if      (parseFloat(pct) > 80) bar.style.background = '#FF3B30';
+                else if (parseFloat(pct) > 50) bar.style.background = '#FF9F0A';
+                else                           bar.style.background = 'var(--accent-color)';
             }
-            const sm = g('dm4-s-msg'); if (sm) sm.textContent = fmt(msgs);
-            const sc = g('dm4-s-cfg'); if (sc) sc.textContent = fmt(cfg);
-            const se = g('dm4-s-med'); if (se) se.textContent = fmt(media);
-        } catch (e) { /* silent */ }
+            const sm = g('dm5-s-msg'); if (sm) sm.textContent = fmt(msgs);
+            const sc = g('dm5-s-cfg'); if (sc) sc.textContent = fmt(cfg);
+            const se = g('dm5-s-med'); if (se) se.textContent = fmt(media);
+        } catch (e) {}
     }
 
     function syncToggles() {
@@ -262,42 +613,36 @@
         if (c) c.checked = localStorage.getItem('callFeatureEnabled') !== 'false';
     }
 
-    function wireResetButtons() {
-        const clearMsgs = document.getElementById('dm4-clear-msgs');
-        const clearAll  = document.getElementById('dm4-clear-all');
-
-        if (clearMsgs && !clearMsgs._dm4Bound) {
-            clearMsgs._dm4Bound = true;
+    function wireButtons() {
+        const clearMsgs = document.getElementById('dm5-clear-msgs');
+        if (clearMsgs && !clearMsgs._dm5) {
+            clearMsgs._dm5 = true;
             clearMsgs.addEventListener('click', () => {
-                if (confirm('确定要清除当前会话的所有消息吗？此操作无法恢复！')) {
-                    if (typeof messages !== 'undefined') { messages.length = 0; }
-                    if (typeof throttledSaveData === 'function') throttledSaveData();
-                    if (typeof renderMessages === 'function') renderMessages();
-                    if (typeof showNotification === 'function') showNotification('当前会话消息已清除', 'success');
-                }
+                if (!confirm('确定要清除当前会话的所有消息吗？此操作无法恢复！')) return;
+                if (typeof messages !== 'undefined') messages.length = 0;
+                if (typeof throttledSaveData === 'function') throttledSaveData();
+                if (typeof renderMessages === 'function') renderMessages();
+                if (typeof showNotification === 'function') showNotification('当前会话消息已清除', 'success');
             });
         }
-
-        if (clearAll && !clearAll._dm4Bound) {
-            clearAll._dm4Bound = true;
+        const clearAll = document.getElementById('dm5-clear-all');
+        if (clearAll && !clearAll._dm5) {
+            clearAll._dm5 = true;
             clearAll.addEventListener('click', () => {
-                if (!confirm('⚠️【高危操作】确定要全部重置吗？\n\n所有数据（消息、设置、字卡、头像等）将永久清除，不可恢复！')) return;
-                if (!confirm('最后确认：真的要清除所有数据并刷新页面吗？')) return;
-
+                if (!confirm('⚠️【高危操作】确定要清空全部数据吗？\n\n所有消息、设置、字卡、头像等将被永久删除，不可恢复！')) return;
+                if (!confirm('最后确认：清空后页面将自动刷新，无法撤销，继续吗？')) return;
                 window._skipBackup = true;
-                if (window.localforage) {
-                    localforage.clear().then(() => {
-                        localStorage.clear();
-                        if (typeof showNotification === 'function')
-                            showNotification('所有数据已重置，即将刷新…', 'info', 2000);
-                        setTimeout(() => {
-                            window.location.href = window.location.pathname + '?reset=' + Date.now();
-                        }, 2000);
-                    }).catch(() => { localStorage.clear(); window.location.reload(); });
-                } else {
+                const doReset = () => {
                     localStorage.clear();
-                    window.location.reload();
-                }
+                    if (typeof showNotification === 'function')
+                        showNotification('所有数据已清空，即将刷新…', 'info', 2000);
+                    setTimeout(() => {
+                        window.location.href = window.location.pathname + '?reset=' + Date.now();
+                    }, 2000);
+                };
+                if (window.localforage) {
+                    localforage.clear().then(doReset).catch(doReset);
+                } else { doReset(); }
             });
         }
     }
@@ -314,13 +659,13 @@
         const modal = document.getElementById('data-modal');
         if (!modal) return;
         const mc = modal.querySelector('.modal-content');
-        if (!mc || mc.dataset.dm4Built) return;
-        mc.dataset.dm4Built = '1';
+        if (!mc || mc.dataset.dm5Built) return;
+        mc.dataset.dm5Built = '1';
         mc.innerHTML = buildHTML();
         applyLayout(mc);
         syncToggles();
         updateStats();
-        wireResetButtons();
+        wireButtons();
     }
 
     function watch() {
@@ -332,7 +677,7 @@
                 rebuild();
                 syncToggles();
                 updateStats();
-                wireResetButtons();
+                wireButtons();
                 setTimeout(() => applyLayout(modal.querySelector('.modal-content')), 40);
             }
         }).observe(modal, { attributes: true, attributeFilter: ['style'] });
