@@ -4,49 +4,80 @@
  */
 
 function updateStorageUsageBar() {
-    var fill = document.getElementById('storage-usage-fill');
-    var text = document.getElementById('storage-usage-text');
-    if (!fill || !text) return;
+    // 兼容新版 data-modal 的元素 ID（dm-storage-bar / dm-storage-total / dm-stat-*）
+    var bar      = document.getElementById('dm-storage-bar')    || document.getElementById('storage-usage-fill');
+    var label    = document.getElementById('dm-storage-total')  || document.getElementById('storage-usage-text');
+    var statMsgs = document.getElementById('dm-stat-msgs');
+    var statCfg  = document.getElementById('dm-stat-settings');
+    var statMed  = document.getElementById('dm-stat-media');
+
+    function fmt(b) {
+        if (b < 1024) return b + ' B';
+        if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+        return (b / 1048576).toFixed(2) + ' MB';
+    }
+
+    function applyStats(total, msgs, cfg, media) {
+        var pct = Math.min(total / (5 * 1024 * 1024) * 100, 100);
+        if (bar) {
+            bar.style.width = pct.toFixed(1) + '%';
+            if (pct > 80)
+                bar.style.background = 'linear-gradient(90deg,#FF3B30,#CC0000)';
+            else if (pct > 50)
+                bar.style.background = 'linear-gradient(90deg,#FF9F0A,#E07000)';
+            else
+                bar.style.background = 'linear-gradient(90deg,var(--accent-color),rgba(var(--accent-color-rgb),0.6))';
+        }
+        if (label)    label.textContent    = fmt(total) + ' / ~5 MB';
+        if (statMsgs) statMsgs.textContent = fmt(msgs);
+        if (statCfg)  statCfg.textContent  = fmt(cfg);
+        if (statMed)  statMed.textContent  = fmt(media);
+    }
+
+    function fromLocalStorage() {
+        var total = 0, msgs = 0, cfg = 0, media = 0;
+        for (var i = 0; i < localStorage.length; i++) {
+            var k = localStorage.key(i) || '';
+            var v = localStorage.getItem(k) || '';
+            var bytes = (k.length + v.length) * 2;
+            total += bytes;
+            if (k.includes('messages') || k.includes('session')) msgs += bytes;
+            else if (v.startsWith('data:image') || v.startsWith('data:video')) media += bytes;
+            else cfg += bytes;
+        }
+        applyStats(total, msgs, cfg, media);
+    }
 
     try {
-        var total = 0;
-        if (window.localforage && window.APP_PREFIX) {
+        if (window.localforage) {
             localforage.keys().then(function(keys) {
                 var promises = keys.map(function(k) {
                     return localforage.getItem(k).then(function(v) {
-                        if (v === null || v === undefined) return 0;
+                        if (v === null || v === undefined) return { bytes: 0, type: 'cfg' };
                         var str = typeof v === 'string' ? v : JSON.stringify(v);
-                        return k.length + str.length;
+                        var bytes = (k.length + str.length) * 2;
+                        var type = (k.includes('messages') || k.includes('session')) ? 'msgs'
+                                 : (str.startsWith('data:image') || str.startsWith('data:video')) ? 'media'
+                                 : 'cfg';
+                        return { bytes: bytes, type: type };
                     });
                 });
-                Promise.all(promises).then(function(sizes) {
-                    var total = sizes.reduce(function(a,b){return a+b;}, 0);
-                    var usedKB = (total * 2 / 1024).toFixed(1);
-                    var maxKB = 10240;
-                    var pct = Math.min(total * 2 / 1024 / maxKB * 100, 100).toFixed(1);
-                    fill.style.width = pct + '%';
-                    if (parseFloat(pct) > 80) fill.style.background = 'linear-gradient(90deg,#ff4757,#ff6b8a)';
-                    else if (parseFloat(pct) > 50) fill.style.background = 'linear-gradient(90deg,#ffa502,rgba(255,165,2,0.6))';
-                    else fill.style.background = 'linear-gradient(90deg,var(--accent-color),rgba(var(--accent-color-rgb),0.6))';
-                    text.textContent = usedKB + ' KB / ~10 MB (' + pct + '%)';
+                Promise.all(promises).then(function(items) {
+                    var total = 0, msgs = 0, cfg = 0, media = 0;
+                    items.forEach(function(it) {
+                        total += it.bytes;
+                        if (it.type === 'msgs') msgs += it.bytes;
+                        else if (it.type === 'media') media += it.bytes;
+                        else cfg += it.bytes;
+                    });
+                    applyStats(total, msgs, cfg, media);
                 });
-            }).catch(function() {
-                var ls = 0;
-                for (var i = 0; i < localStorage.length; i++) {
-                    var k = localStorage.key(i) || '';
-                    var v = localStorage.getItem(k) || '';
-                    ls += k.length + v.length;
-                }
-                var kb = (ls * 2 / 1024).toFixed(1);
-                fill.style.width = Math.min(ls * 2 / 1024 / 5120 * 100, 100).toFixed(1) + '%';
-                text.textContent = kb + ' KB (localStorage)';
-            });
+            }).catch(fromLocalStorage);
         } else {
-            text.textContent = '暂无数据';
-            fill.style.width = '0%';
+            fromLocalStorage();
         }
     } catch(e) {
-        if (text) text.textContent = '无法读取';
+        fromLocalStorage();
     }
 }
 
