@@ -9580,7 +9580,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 18px 20px 14px;
+            padding: 14px 18px 12px;
             flex-shrink: 0;
             border-bottom: 1px solid var(--border-color);
             background: var(--secondary-bg);
@@ -9630,10 +9630,10 @@
             overflow-y: auto !important;
             overflow-x: hidden;
             overscroll-behavior: contain;
-            padding: 16px 16px 24px;
+            padding: 12px 14px max(32px, calc(env(safe-area-inset-bottom, 0px) + 20px));
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 10px;
             -webkit-overflow-scrolling: touch;
         }
         .dm-body::-webkit-scrollbar { width: 0; }
@@ -9641,9 +9641,9 @@
         /* ── 存储概览卡片 ── */
         .dm-storage-card {
             background: var(--secondary-bg);
-            border-radius: 20px;
+            border-radius: 18px;
             border: 1px solid var(--border-color);
-            padding: 16px 18px;
+            padding: 14px 16px;
             position: relative;
             overflow: hidden;
         }
@@ -9660,7 +9660,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 14px;
+            margin-bottom: 10px;
         }
         .dm-storage-title {
             font-size: 12px;
@@ -9678,18 +9678,18 @@
         .dm-stats-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            margin-bottom: 14px;
+            gap: 6px;
+            margin-bottom: 10px;
         }
         .dm-stat-block {
             background: var(--primary-bg);
-            border-radius: 14px;
-            padding: 12px 8px;
+            border-radius: 12px;
+            padding: 9px 6px;
             text-align: center;
         }
         .dm-stat-block-icon {
-            font-size: 16px;
-            margin-bottom: 6px;
+            font-size: 14px;
+            margin-bottom: 4px;
             opacity: 0.7;
         }
         .dm-stat-pill-val {
@@ -9723,12 +9723,13 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            font-size: 11px;
+            font-size: 10.5px;
             font-weight: 700;
-            letter-spacing: 0.9px;
+            letter-spacing: 0.8px;
             text-transform: uppercase;
             color: var(--text-secondary);
-            padding: 0 2px;
+            padding: 2px 2px 0;
+            margin-top: 2px;
         }
         .dm-section-label i { font-size: 10px; opacity: 0.65; }
         .dm-section-label.danger-label { color: #e05050; opacity: 0.85; }
@@ -9737,18 +9738,18 @@
         .dm-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            gap: 8px;
         }
 
         /* ── 功能格子卡片 ── */
         .dm-tile {
             background: var(--secondary-bg);
             border: 1px solid var(--border-color);
-            border-radius: 18px;
-            padding: 16px 14px 14px;
+            border-radius: 16px;
+            padding: 14px 13px 13px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
             cursor: pointer;
             transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1);
             position: relative;
@@ -9772,10 +9773,10 @@
         }
 
         .dm-tile-icon {
-            width: 44px; height: 44px;
-            border-radius: 14px;
+            width: 40px; height: 40px;
+            border-radius: 12px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 18px;
+            font-size: 16px;
             flex-shrink: 0;
         }
         .dm-tile-icon.blue   { background: linear-gradient(135deg,#4A90E2,#3576C8); color:#fff; }
@@ -9817,8 +9818,8 @@
         .dm-row-item {
             display: flex;
             align-items: center;
-            gap: 14px;
-            padding: 15px 18px;
+            gap: 12px;
+            padding: 13px 16px;
             border-bottom: 1px solid var(--border-color);
             transition: background 0.15s;
         }
@@ -9826,10 +9827,10 @@
         .dm-row-item:active { background: rgba(var(--accent-color-rgb), 0.04); }
 
         .dm-row-icon {
-            width: 40px; height: 40px;
-            border-radius: 12px;
+            width: 36px; height: 36px;
+            border-radius: 11px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 15px;
+            font-size: 14px;
             flex-shrink: 0;
         }
         .dm-row-icon.amber  { background: linear-gradient(135deg,#FFB74D,#F08C00); color:#fff; }
@@ -9839,15 +9840,15 @@
 
         .dm-row-info { flex: 1; min-width: 0; }
         .dm-row-title {
-            font-size: 14px;
+            font-size: 13.5px;
             font-weight: 600;
             color: var(--text-primary);
             font-family: var(--font-family);
         }
         .dm-row-desc {
-            font-size: 11.5px;
+            font-size: 11px;
             color: var(--text-secondary);
-            margin-top: 2px;
+            margin-top: 1px;
         }
 
         /* ── Toggle 开关 ── */

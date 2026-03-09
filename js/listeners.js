@@ -409,7 +409,8 @@ window.setReadReceiptStyle = function(style) {
     showNotification('已读回执样式已更新', 'success');
 };
 
-document.getElementById('chat-settings').addEventListener('click', () => {
+const _chatSettingsEl = document.getElementById('chat-settings');
+if (_chatSettingsEl) _chatSettingsEl.addEventListener('click', () => {
     hideModal(DOMElements.settingsModal.modal);
     
     const toggleSyncMap = {
@@ -448,12 +449,14 @@ document.getElementById('chat-settings').addEventListener('click', () => {
     showModal(DOMElements.chatModal.modal);
     setupAvatarFrameSettings();
 });
-            document.getElementById('advanced-settings').addEventListener('click', () => {
+            const _advancedEl = document.getElementById('advanced-settings');
+            if (_advancedEl) _advancedEl.addEventListener('click', () => {
                 hideModal(DOMElements.settingsModal.modal);
                 showModal(DOMElements.advancedModal.modal);
             });
 
-            document.getElementById('data-settings').addEventListener('click', () => {
+            const _dataSettingsEl = document.getElementById('data-settings');
+            if (_dataSettingsEl) _dataSettingsEl.addEventListener('click', () => {
                 hideModal(DOMElements.settingsModal.modal);
                 showModal(DOMElements.dataModal.modal);
                 (async function calcDmStorage() {
@@ -1072,7 +1075,8 @@ document.getElementById('chat-settings').addEventListener('click', () => {
             });
 
 
-            document.getElementById('appearance-settings').addEventListener('click', () => {
+            const _appearanceEl = document.getElementById('appearance-settings');
+            if (_appearanceEl) _appearanceEl.addEventListener('click', () => {
                 hideModal(DOMElements.settingsModal.modal);
                 window.hideAppearancePanel && window.hideAppearancePanel();
                 renderBackgroundGallery();
@@ -1200,7 +1204,8 @@ autoSendSlider.addEventListener('change', () => {
                 });
             }
 
-            document.getElementById('close-lenormand').addEventListener('click', () => {
+            const _closeLenormandEl = document.getElementById('close-lenormand');
+            if (_closeLenormandEl) _closeLenormandEl.addEventListener('click', () => {
                 hideModal(document.getElementById('fortune-lenormand-modal'));
             });
     const envelopeEntryBtn = document.getElementById('envelope-function');
@@ -1229,9 +1234,11 @@ autoSendSlider.addEventListener('change', () => {
         galleryBanner.addEventListener('mouseup', () => { galleryBanner.style.transform = 'scale(1)'; });
         galleryBanner.addEventListener('mouseleave', () => { galleryBanner.style.transform = 'scale(1)'; });
     }
-document.getElementById('send-envelope').addEventListener('click', handleSendEnvelope);
+const _sendEnvEl = document.getElementById('send-envelope');
+if (_sendEnvEl) _sendEnvEl.addEventListener('click', handleSendEnvelope);
 
-document.getElementById('cancel-envelope').addEventListener('click', () => {
+const _cancelEnvEl = document.getElementById('cancel-envelope');
+if (_cancelEnvEl) _cancelEnvEl.addEventListener('click', () => {
     hideModal(document.getElementById('envelope-modal'));
 });
             const closeFortune = document.getElementById('close-fortune');
@@ -1242,7 +1249,8 @@ document.getElementById('cancel-envelope').addEventListener('click', () => {
             }
 
 
-            document.getElementById('batch-favorite-function').addEventListener('click', () => {
+            const _batchFavEl = document.getElementById('batch-favorite-function');
+            if (_batchFavEl) _batchFavEl.addEventListener('click', () => {
                 hideModal(DOMElements.favoritesModal.modal);
                 toggleBatchFavoriteMode();
             });
@@ -1256,7 +1264,8 @@ document.getElementById('cancel-envelope').addEventListener('click', () => {
             });
 
 
-            document.getElementById('stats-function').addEventListener('click', () => {
+            const _statsFuncEl = document.getElementById('stats-function');
+            if (_statsFuncEl) _statsFuncEl.addEventListener('click', () => {
                 hideModal(DOMElements.advancedModal.modal);
                 renderStatsContent();
                 showModal(DOMElements.statsModal.modal);
@@ -1322,8 +1331,8 @@ document.getElementById('cancel-envelope').addEventListener('click', () => {
 
         function initDataManagementListeners() {
 
-            const _clearStorage = document.getElementById('clear-storage');
-            if (_clearStorage) _clearStorage.addEventListener('click', clearAllAppData);
+            const _clearStorageEl = document.getElementById('clear-storage');
+            if (_clearStorageEl) _clearStorageEl.addEventListener('click', clearAllAppData);
             const creditsBtn = document.getElementById('open-credits-btn');
             if (creditsBtn) {
                 creditsBtn.addEventListener('click', () => {
@@ -2066,9 +2075,12 @@ playlist.style.top = (rect.top + (player.classList.contains('collapsed') ? 65 : 
     }
 
     playBtn.addEventListener('click', togglePlay);
-    document.getElementById('next-btn').addEventListener('click', nextSong);
-    document.getElementById('prev-btn').addEventListener('click', prevSong);
-    document.getElementById('minimize-btn').addEventListener('click', (e) => {
+    const _next_btnEl = document.getElementById('next-btn');
+    if (_next_btnEl) _next_btnEl.addEventListener('click', nextSong);
+    const _prev_btnEl = document.getElementById('prev-btn');
+    if (_prev_btnEl) _prev_btnEl.addEventListener('click', prevSong);
+    const _minimize_btnEl = document.getElementById('minimize-btn');
+    if (_minimize_btnEl) _minimize_btnEl.addEventListener('click', (e) => {
         e.stopPropagation();
         player.classList.add('collapsed');
         playlist.classList.remove('active');
@@ -2087,7 +2099,8 @@ playlist.style.top = (rect.top + (player.classList.contains('collapsed') ? 65 : 
     });
     audio.addEventListener('ended', nextSong);
 
-    document.getElementById('mode-btn').addEventListener('click', () => {
+    const _mode_btnEl = document.getElementById('mode-btn');
+    if (_mode_btnEl) _mode_btnEl.addEventListener('click', () => {
         if (playMode === 'sequence') { playMode = 'single'; }
         else if (playMode === 'single') { playMode = 'shuffle'; }
         else { playMode = 'sequence'; }
