@@ -343,6 +343,10 @@ const loadData = async () => {
             manageAutoSendTimer(); 
             checkEnvelopeStatus(); 
             updateUI();
+            // Re-apply bubble CSS last so its specificity boost wins over updateUI's setProperty calls
+            if (settings.customBubbleCss) {
+                try { applyCustomBubbleCss(settings.customBubbleCss); } catch(e) {}
+            }
         }, 100);
 
     } catch (e) {
@@ -1194,7 +1198,8 @@ if (!isBatchMode && type === 'normal') {
     // Determine read-no-reply FIRST, before showing any typing indicator
     const shouldIgnore = settings.allowReadNoReply && (Math.random() < 0.5);
 
-    // Mark messages as read after short delay (always happens — that's the "read" part)
+    // Mark messages as read after a more human-like delay (1.5 ~ 4 seconds)
+    const readDelay = 1500 + Math.random() * 2500;
     setTimeout(() => {
         let changed = false;
         messages.forEach(msg => {
@@ -1204,7 +1209,7 @@ if (!isBatchMode && type === 'normal') {
             }
         });
         if (changed) { renderMessages(false); throttledSaveData(); }
-    }, 400);
+    }, readDelay);
 
     // Cancel any pending reply timer and reset it (so rapid messages don't stack replies)
     if (window._pendingReplyTimer) clearTimeout(window._pendingReplyTimer);

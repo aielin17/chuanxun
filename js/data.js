@@ -104,6 +104,11 @@
         +   '<div class="dm-section-label danger-label"><i class="fas fa-triangle-exclamation"></i> 危险操作</div>'
         +   '<div class="dm-row-card">'
         +     '<div class="dm-row-item">'
+        +       '<div class="dm-row-icon" style="background:rgba(255,150,0,0.12);color:#ff9600"><i class="fas fa-comment-slash"></i></div>'
+        +       '<div class="dm-row-info"><div class="dm-row-title">仅清除聊天记录</div><div class="dm-row-desc">保留所有设置，仅删除当前会话消息</div></div>'
+        +       '<button class="dm-danger-btn" id="clear-chat-only" style="background:rgba(255,150,0,0.1);color:#ff9600;border-color:rgba(255,150,0,0.3);"><i class="fas fa-comment-slash"></i> 清除</button>'
+        +     '</div>'
+        +     '<div class="dm-row-item">'
         +       '<div class="dm-row-icon red"><i class="fas fa-trash-alt"></i></div>'
         +       '<div class="dm-row-info"><div class="dm-row-title">重置全部数据</div><div class="dm-row-desc">清空所有本地数据，不可撤销</div></div>'
         +       '<button class="dm-danger-btn" id="clear-storage"><i class="fas fa-rotate-right"></i> 重置</button>'
@@ -345,6 +350,18 @@
                 inp.click();
             });
         }
+
+        /* clear-chat-only */
+        var clearChatBtn = mc.querySelector('#clear-chat-only');
+        if (clearChatBtn) clearChatBtn.addEventListener('click', function () {
+            if (!confirm('确定要清除当前会话的所有消息吗？\n\n所有设置、头像、字卡等数据将保留，仅聊天记录会被删除。\n\n此操作无法恢复！')) return;
+            if (typeof messages !== 'undefined') {
+                window.messages = [];
+                if (typeof throttledSaveData === 'function') throttledSaveData();
+                if (typeof renderMessages === 'function') renderMessages();
+            }
+            if (typeof showNotification === 'function') showNotification('聊天记录已清除', 'success');
+        });
 
         /* clear-storage */
         var clearBtn = mc.querySelector('#clear-storage');

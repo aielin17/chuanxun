@@ -177,13 +177,69 @@ function applyCustomBubbleCss(cssCode) {
     const styleId = 'user-custom-bubble-style';
     let styleTag = document.getElementById(styleId);
     if (!cssCode || !cssCode.trim()) { if (styleTag) styleTag.remove(); return; }
-    if (!styleTag) { styleTag = document.createElement('style'); styleTag.id = styleId; document.head.appendChild(styleTag); }
-    styleTag.textContent = cssCode + `
+    if (!styleTag) { styleTag = document.createElement('style'); styleTag.id = styleId; }
+    // Always move to absolute end of <head>
+    document.head.appendChild(styleTag);
+
+    // ── AUTO BOOST SPECIFICITY ──────────────────────────────────────────────
+    // The main CSS sets .message-sent { color: var(--message-sent-text) }
+    // var(--message-sent-text) resolves to #ffffff from :root.
+    // User writes ".message-sent { color: black }" - same specificity, so cascade
+    // order matters... BUT updateUI() also calls setProperty on html element (inline style)
+    // which has infinite priority for CSS custom properties.
+    //
+    // THE ONLY RELIABLE FIX: rewrite every user rule to add "html body" prefix,
+    // boosting specificity to (0,2,1) vs main stylesheet's (0,1,0).
+    // This guarantees user rules always win without requiring !important.
+    // ─────────────────────────────────────────────────────────────────────────
+    function boostSpecificity(css) {
+        // Parse rule blocks and boost each selector
+        return css.replace(/([^{}@][^{}]*)\{([^{}]*)\}/g, (match, rawSel, body) => {
+            const selectors = rawSel.split(',').map(s => s.trim()).filter(Boolean);
+            const boosted = selectors.map(sel => {
+                // Don't double-boost already-boosted or @keyframes/media selectors
+                if (sel.startsWith('html') || sel.startsWith('@') || sel.startsWith('from') || sel.startsWith('to') || /^\d/.test(sel)) return sel;
+                return `html body ${sel}`;
+            });
+            return `${boosted.join(', ')} {${body}}`;
+        });
+    }
+
+    const boostedCss = boostSpecificity(cssCode);
+
+    styleTag.textContent = boostedCss + `
+/* image bubble reset — must stay !important */
 html[data-theme] .message.message-image-bubble-none,
-html .message.message-image-bubble-none {
+html body .message.message-image-bubble-none {
     background: transparent !important; border: none !important;
     box-shadow: none !important; padding: 0 !important; border-radius: 0 !important;
 }`;
+
+    // ── ALSO sync the CSS variables so everything (timestamps, reply quotes, etc.)
+    // inherits the same text color the user intended ──────────────────────────
+    try {
+        // Match color declarations in .message-sent and .message-received blocks
+        const sentMatch  = cssCode.match(/\.message-sent\s*\{([^}]*)\}/);
+        const recvMatch  = cssCode.match(/\.message-received\s*\{([^}]*)\}/);
+        if (sentMatch) {
+            const colorLine = sentMatch[1].match(/\bcolor\s*:\s*([^;}\n]+)/);
+            if (colorLine) {
+                const v = colorLine[1].trim().replace(/!important/g,'').trim();
+                if (v && !v.startsWith('var(')) {
+                    document.documentElement.style.setProperty('--message-sent-text', v);
+                }
+            }
+        }
+        if (recvMatch) {
+            const colorLine = recvMatch[1].match(/\bcolor\s*:\s*([^;}\n]+)/);
+            if (colorLine) {
+                const v = colorLine[1].trim().replace(/!important/g,'').trim();
+                if (v && !v.startsWith('var(')) {
+                    document.documentElement.style.setProperty('--message-received-text', v);
+                }
+            }
+        }
+    } catch(e) {}
 }
 
 function applyGlobalThemeCss(cssCode) {
