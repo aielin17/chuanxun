@@ -313,7 +313,7 @@
                     <button class="collapsed-extra-btn" title="塔罗占卜" onclick="(function(){document.getElementById('collapsed-extras-panel').style.display='none';document.getElementById('collapse-expand-btn').classList.remove('open');generateFortune();})();">
                         <i class="fas fa-star-and-crescent"></i>
                     </button>
-                    <button class="collapsed-extra-btn" title="视频通话" onclick="(function(){document.getElementById('collapsed-extras-panel').style.display='none';document.getElementById('collapse-expand-btn').classList.remove('open');if(window.callFeature&&typeof window.callFeature.startCall==='function')window.callFeature.startCall(false);})();">
+                    <button class="collapsed-extra-btn" id="collapsed-call-btn" title="视频通话" onclick="(function(){document.getElementById('collapsed-extras-panel').style.display='none';document.getElementById('collapse-expand-btn').classList.remove('open');if(window.callFeature&&typeof window.callFeature.startCall==='function')window.callFeature.startCall(false);})();">
                         <i class="fas fa-video"></i>
                     </button>
                     <button class="collapsed-extra-btn" title="退出收纳" onclick="window.exitCollapseMode && window.exitCollapseMode()" style="color:#ff5050; background:rgba(255,80,80,0.1);">
@@ -1160,7 +1160,7 @@
                             <span class="setting-pill-label">模拟视频通话 <span style="font-size:11px;color:var(--text-secondary);font-weight:400;">关闭后隐藏主界面通话按键</span></span>
                             <label class="notif-toggle-switch" style="position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0;">
                                 <input type="checkbox" id="call-enabled-toggle" style="opacity:0;width:0;height:0;">
-                                <span class="notif-toggle-slider" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:var(--border-color);border-radius:24px;transition:0.3s;"></span>
+                                <span class="notif-toggle-slider"></span>
                             </label>
                         </div>
                     </div>
