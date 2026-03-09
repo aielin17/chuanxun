@@ -902,6 +902,9 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
             localStorage.setItem(KEY_ENABLED, S.enabled);
             const btn = document.getElementById('call-toolbar-btn');
             if (btn) btn.style.display = S.enabled ? '' : 'none';
+            // Also sync the collapsed-panel video button visibility
+            const collapsedCallBtn = document.getElementById('collapsed-call-btn');
+            if (collapsedCallBtn) collapsedCallBtn.style.display = S.enabled ? '' : 'none';
             if (!S.enabled && S.active) endCall();
             S.enabled ? scheduleRandomCall() : clearTimeout(S.randomCallTimer);
         });
@@ -928,6 +931,9 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
                 if (tog) {
                     tog.checked = S.enabled;
                 }
+                // Sync collapsed panel video button
+                const collapsedCallBtn = document.getElementById('collapsed-call-btn');
+                if (collapsedCallBtn) collapsedCallBtn.style.display = S.enabled ? '' : 'none';
             };
             syncCallToggle();
             // Also sync after chat-modal opens (settings might not be rendered yet)
