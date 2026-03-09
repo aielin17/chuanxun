@@ -676,7 +676,29 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
         fillAv('call-inc-avatar'); fillNm('call-inc-name');
         ov.classList.add('visible');
         clearTimeout(S.incomingTimer);
-        S.incomingTimer = setTimeout(() => ov.classList.remove('visible'), 22000);
+
+        // 30% chance the partner auto-rejects after 4-10 seconds
+        const autoRejectChance = 0.30;
+        if (Math.random() < autoRejectChance) {
+            const rejectDelay = 4000 + Math.random() * 6000;
+            S.incomingTimer = setTimeout(() => {
+                if (!ov.classList.contains('visible')) return;
+                ov.classList.remove('visible');
+                // Send reject message to chat
+                const rejectMessages = [
+                    `📵 ${getName()} 未接听你的视频通话`,
+                    `📵 ${getName()} 拒绝了你的视频通话`,
+                    `📵 ${getName()} 没有接听`,
+                    `📵 通话未接通，${getName()} 可能正在忙`,
+                ];
+                const msg = rejectMessages[Math.floor(Math.random() * rejectMessages.length)];
+                const input = document.getElementById('message-input');
+                const send  = document.getElementById('send-btn');
+                if (input && send) { input.value = msg; send.click(); }
+            }, rejectDelay);
+        } else {
+            S.incomingTimer = setTimeout(() => ov.classList.remove('visible'), 22000);
+        }
     }
 
     function scheduleRandomCall() {
@@ -878,9 +900,6 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
             if (e.target.id !== 'call-enabled-toggle') return;
             S.enabled = e.target.checked;
             localStorage.setItem(KEY_ENABLED, S.enabled);
-            // Style the notif-toggle-slider knob
-            const slider = e.target.nextElementSibling;
-            if (slider) slider.style.background = S.enabled ? 'var(--accent-color)' : '';
             const btn = document.getElementById('call-toolbar-btn');
             if (btn) btn.style.display = S.enabled ? '' : 'none';
             if (!S.enabled && S.active) endCall();
@@ -908,9 +927,6 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
                 const tog = document.getElementById('call-enabled-toggle');
                 if (tog) {
                     tog.checked = S.enabled;
-                    // Style the notif-toggle-slider to reflect state
-                    const slider = tog.nextElementSibling;
-                    if (slider) slider.style.background = S.enabled ? 'var(--accent-color)' : '';
                 }
             };
             syncCallToggle();

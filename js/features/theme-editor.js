@@ -101,21 +101,30 @@ function applyAvatarShapeToDOM(type, shape) {
             setupFor('partner');
         }
         const themeColorMappings = {
-            '--primary-bg': '主背景色',
-            '--secondary-bg': '卡片 / 弹窗背景',
-            '--header-bg': '顶栏背景',
-            '--input-area-bg': '输入区背景',
-            '--text-primary': '主要文字',
-            '--text-secondary': '次要文字 / 占位符',
-            '--border-color': '边框 / 分割线',
-            '--accent-color': '主强调色（图标 / 高亮）',
-            '--accent-color-dark': '强调色深色变体',
-            '--send-btn-bg': '发送按钮背景色',
-            '--message-sent-bg': '我方气泡背景',
-            '--message-sent-text': '我方气泡文字',
-            '--message-received-bg': '对方气泡背景',
-            '--message-received-text': '对方气泡文字',
-            '--favorite-color': '收藏星标颜色',
+            // ── 背景 ──
+            '--primary-bg':        '主背景色（聊天区底色）',
+            '--secondary-bg':      '卡片 / 弹窗背景',
+            '--header-bg':         '顶栏背景',
+            '--input-area-bg':     '输入区背景',
+            // ── 文字 ──
+            '--text-primary':      '主要文字颜色',
+            '--text-secondary':    '次要文字 / 占位符',
+            // ── 线条 ──
+            '--border-color':      '边框 / 分割线颜色',
+            // ── 强调色 ──
+            '--accent-color':      '主强调色（图标 / 高亮 / 按钮）',
+            '--accent-color-dark': '强调色深色变体（深色模式用）',
+            // ── 我方气泡 ──
+            '--message-sent-bg':   '【我方气泡】背景色',
+            '--message-sent-text': '【我方气泡】文字颜色',
+            // ── 对方气泡 ──
+            '--message-received-bg':   '【对方气泡】背景色',
+            '--message-received-text': '【对方气泡】文字颜色',
+            // ── 发送按钮 ──
+            '--send-btn-bg':        '发送按钮 背景色',
+            '--send-btn-icon-color':'发送按钮 图标色',
+            // ── 其他 ──
+            '--favorite-color':    '收藏星标颜色',
         };
 
         const themeExtraMappings = {
@@ -195,8 +204,12 @@ function initThemeEditor() {
             settings.customThemeColors = customColors;
             throttledSaveData && throttledSaveData();
             updateUI();
+            // Re-apply bubble CSS AFTER updateUI so specificity boost takes effect last
+            if (settings.customBubbleCss) {
+                try { applyCustomBubbleCss(settings.customBubbleCss); } catch(e) {}
+            }
             hideModal(document.getElementById('theme-editor-modal'));
-            showNotification('主题已应用', 'success');
+            showNotification('主题已应用 ✓', 'success');
         };
     }
     
@@ -299,39 +312,65 @@ function initThemeEditor() {
             grid.innerHTML = '';
             const rootStyle = getComputedStyle(document.documentElement);
 
-            const colorHeading = document.createElement('div');
-            colorHeading.style.cssText = 'grid-column:1/-1;font-size:11px;font-weight:700;color:var(--text-secondary);letter-spacing:2px;text-transform:uppercase;padding:4px 0 2px;border-bottom:1px solid var(--border-color);margin-bottom:4px;';
-            colorHeading.textContent = '🎨 颜色';
-            grid.appendChild(colorHeading);
+            // ── Grouped colour pickers ────────────────────────────────────────
+            const groups = [
+                { label: '🖼 背景颜色',  vars: ['--primary-bg','--secondary-bg','--header-bg','--input-area-bg'] },
+                { label: '✏️ 文字 & 线条', vars: ['--text-primary','--text-secondary','--border-color'] },
+                { label: '✨ 强调色',     vars: ['--accent-color','--accent-color-dark'] },
+                { label: '💬 我方气泡',  vars: ['--message-sent-bg','--message-sent-text'] },
+                { label: '💬 对方气泡',  vars: ['--message-received-bg','--message-received-text'] },
+                { label: '📤 发送按钮',  vars: ['--send-btn-bg','--send-btn-icon-color'] },
+                { label: '⭐ 其他',       vars: ['--favorite-color'] },
+            ];
 
-            for (const [variable, label] of Object.entries(themeColorMappings)) {
-                // currentColors (from saved schemes) take priority; otherwise read from computed style
-                const rawVal = currentColors
-                    ? (currentColors[variable] || rootStyle.getPropertyValue(variable).trim())
-                    : rootStyle.getPropertyValue(variable).trim();
+            groups.forEach(group => {
+                const heading = document.createElement('div');
+                heading.style.cssText = 'grid-column:1/-1;font-size:11px;font-weight:700;color:var(--text-secondary);letter-spacing:1.5px;text-transform:uppercase;padding:8px 0 4px;border-bottom:1px solid var(--border-color);margin-top:6px;';
+                heading.textContent = group.label;
+                grid.appendChild(heading);
 
-                // Resolve var() references and convert to hex
-                let colorValue = resolveColorVar(rawVal, rootStyle) || '#888888';
+                group.vars.forEach(variable => {
+                    const label = themeColorMappings[variable];
+                    if (!label) return;
 
-                const item = document.createElement('div');
-                item.className = 'color-picker-item';
-                item.innerHTML = `<label for="color-${variable.replace(/--/g,'')}">${label}</label><input type="color" id="color-${variable.replace(/--/g,'')}" data-variable="${variable}" value="${colorValue}">`;
-                grid.appendChild(item);
-                item.querySelector('input[type="color"]').addEventListener('input', (e) => {
-                    document.documentElement.style.setProperty(e.target.dataset.variable, e.target.value);
-                    // Keep --accent-color-rgb in sync whenever --accent-color changes
-                    if (e.target.dataset.variable === '--accent-color') {
-                        const hex = e.target.value.replace('#', '');
-                        const r = parseInt(hex.slice(0,2),16);
-                        const g = parseInt(hex.slice(2,4),16);
-                        const b = parseInt(hex.slice(4,6),16);
-                        document.documentElement.style.setProperty('--accent-color-rgb', `${r},${g},${b}`);
-                    }
+                    const rawVal = currentColors
+                        ? (currentColors[variable] || rootStyle.getPropertyValue(variable).trim())
+                        : rootStyle.getPropertyValue(variable).trim();
+                    const colorValue = resolveColorVar(rawVal, rootStyle) || '#888888';
+
+                    const item = document.createElement('div');
+                    item.style.cssText = 'grid-column:1/-1;display:flex;align-items:center;gap:10px;background:var(--primary-bg);padding:8px 10px;border-radius:10px;border:1px solid var(--border-color);';
+                    item.innerHTML = `
+                        <input type="color" data-variable="${variable}" value="${colorValue}"
+                            style="width:38px;height:38px;border-radius:8px;border:2px solid var(--border-color);padding:2px;cursor:pointer;background:none;flex-shrink:0;">
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-size:13px;font-weight:600;color:var(--text-primary);">${label}</div>
+                            <div style="font-size:10px;color:var(--text-secondary);font-family:monospace;margin-top:1px;">${variable}</div>
+                        </div>
+                        <div class="te-swatch" style="width:22px;height:22px;border-radius:5px;border:1px solid var(--border-color);background:${colorValue};flex-shrink:0;"></div>`;
+
+                    const input = item.querySelector('input[type="color"]');
+                    const swatch = item.querySelector('.te-swatch');
+
+                    input.addEventListener('input', (e) => {
+                        const v = e.target.dataset.variable;
+                        const val = e.target.value;
+                        document.documentElement.style.setProperty(v, val);
+                        swatch.style.background = val;
+                        if (v === '--accent-color') {
+                            const h = val.replace('#','');
+                            document.documentElement.style.setProperty('--accent-color-rgb',
+                                `${parseInt(h.slice(0,2),16)},${parseInt(h.slice(2,4),16)},${parseInt(h.slice(4,6),16)}`);
+                        }
+                    });
+
+                    grid.appendChild(item);
                 });
-            }
+            });
 
+            // ── Numeric / select controls ────────────────────────────────────
             const extraHeading = document.createElement('div');
-            extraHeading.style.cssText = 'grid-column:1/-1;font-size:11px;font-weight:700;color:var(--text-secondary);letter-spacing:2px;text-transform:uppercase;padding:8px 0 2px;border-bottom:1px solid var(--border-color);margin-bottom:4px;margin-top:8px;';
+            extraHeading.style.cssText = 'grid-column:1/-1;font-size:11px;font-weight:700;color:var(--text-secondary);letter-spacing:1.5px;text-transform:uppercase;padding:8px 0 4px;border-bottom:1px solid var(--border-color);margin-top:6px;';
             extraHeading.textContent = '⚙️ 数值 & 字重';
             grid.appendChild(extraHeading);
 
@@ -339,7 +378,7 @@ function initThemeEditor() {
                 const rawVal = rootStyle.getPropertyValue(variable).trim() || cfg.default;
                 const numVal = parseFloat(rawVal);
                 const item = document.createElement('div');
-                item.style.cssText = 'grid-column:1/-1;display:flex;align-items:center;gap:10px;background:var(--primary-bg);padding:8px;border-radius:8px;';
+                item.style.cssText = 'grid-column:1/-1;display:flex;align-items:center;gap:10px;background:var(--primary-bg);padding:8px 10px;border-radius:10px;border:1px solid var(--border-color);';
                 if (cfg.type === 'range') {
                     item.innerHTML = `
                         <label style="font-size:13px;flex:1;">${cfg.label}</label>
@@ -369,8 +408,9 @@ function initThemeEditor() {
                 grid.appendChild(item);
             }
 
+            // ── Live preview ─────────────────────────────────────────────────
             const previewHeading = document.createElement('div');
-            previewHeading.style.cssText = 'grid-column:1/-1;font-size:11px;font-weight:700;color:var(--text-secondary);letter-spacing:2px;text-transform:uppercase;padding:8px 0 2px;border-bottom:1px solid var(--border-color);margin-bottom:4px;margin-top:8px;';
+            previewHeading.style.cssText = 'grid-column:1/-1;font-size:11px;font-weight:700;color:var(--text-secondary);letter-spacing:1.5px;text-transform:uppercase;padding:8px 0 4px;border-bottom:1px solid var(--border-color);margin-top:6px;';
             previewHeading.textContent = '👁 实时预览';
             grid.appendChild(previewHeading);
 
@@ -381,16 +421,17 @@ function initThemeEditor() {
                     <div style="width:32px;height:32px;border-radius:50%;background:var(--accent-color);flex-shrink:0;display:flex;align-items:center;justify-content:center;">
                         <i class="fas fa-user" style="font-size:12px;color:#fff;"></i>
                     </div>
-                    <div class="message message-received" style="max-width:180px;font-size:var(--font-size);color:var(--message-received-text,var(--text-primary));">你是我朝夕相伴触手可及的虚拟</div>
+                    <div class="message message-received" style="max-width:180px;">你是我朝夕相伴触手可及的虚拟</div>
                 </div>
                 <div style="display:flex;align-items:flex-end;gap:8px;justify-content:flex-end;">
-                    <div class="message message-sent" style="max-width:180px;font-size:var(--font-size);background:var(--message-sent-bg,var(--accent-color));color:var(--message-sent-text,#fff);">你是我未曾拥有无法捕捉的亲昵</div>
+                    <div class="message message-sent" style="max-width:180px;">你是我未曾拥有无法捕捉的亲昵</div>
                     <div style="width:32px;height:32px;border-radius:50%;background:var(--send-btn-bg,var(--accent-color));flex-shrink:0;display:flex;align-items:center;justify-content:center;">
                         <i class="fas fa-paper-plane" style="font-size:11px;color:var(--send-btn-icon-color,#fff);"></i>
                     </div>
                 </div>`;
             grid.appendChild(previewBox);
         }
+
 
         function applyTheme(colors, isReset = false) {
             if (isReset) {
