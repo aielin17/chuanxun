@@ -217,11 +217,14 @@ html body .message.message-image-bubble-none {
 
     // ── ALSO sync the CSS variables so everything (timestamps, reply quotes, etc.)
     // inherits the same text color the user intended ──────────────────────────
+    // NOTE: Only sync if the variable is NOT already set by the theme editor (customThemeColors).
+    // This prevents bubble CSS from overriding an explicitly chosen theme-editor color.
     try {
+        const alreadyCustomized = (typeof settings !== 'undefined' && settings.customThemeColors) ? settings.customThemeColors : {};
         // Match color declarations in .message-sent and .message-received blocks
         const sentMatch  = cssCode.match(/\.message-sent\s*\{([^}]*)\}/);
         const recvMatch  = cssCode.match(/\.message-received\s*\{([^}]*)\}/);
-        if (sentMatch) {
+        if (sentMatch && !alreadyCustomized['--message-sent-text']) {
             const colorLine = sentMatch[1].match(/\bcolor\s*:\s*([^;}\n]+)/);
             if (colorLine) {
                 const v = colorLine[1].trim().replace(/!important/g,'').trim();
@@ -230,7 +233,7 @@ html body .message.message-image-bubble-none {
                 }
             }
         }
-        if (recvMatch) {
+        if (recvMatch && !alreadyCustomized['--message-received-text']) {
             const colorLine = recvMatch[1].match(/\bcolor\s*:\s*([^;}\n]+)/);
             if (colorLine) {
                 const v = colorLine[1].trim().replace(/!important/g,'').trim();
@@ -273,7 +276,8 @@ async function exportAllData() {
         };
         const str = JSON.stringify(payload, null, 2);
         const fileName = `chat-full-backup-${new Date().toISOString().slice(0,10)}.json`;
-        fallbackExport(str, fileName);
+        const blob = new Blob([str], { type: 'application/json' });
+        downloadFileFallback(blob, fileName);
     } catch(e) {
         console.error('全量导出失败:', e);
         showNotification('全量导出失败，请重试', 'error');
