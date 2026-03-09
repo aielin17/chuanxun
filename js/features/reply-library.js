@@ -522,12 +522,24 @@ function _renderGroupBlock(list, group, groupItems, disabledSet, isUngrouped = f
                 ${isDisabled ? `<span title="已屏蔽" style="color:${colorDot};">${ICONS.eyeOff}</span>` : ''}
             </div>
             <span style="font-size:11px;color:var(--text-secondary);">${groupItems.length} 条</span>
+            ${_batchModeActive && groupItems.length > 0 ? (() => {
+                const allSel = groupItems.every(x => _batchSelectedIndices.has(x.idx));
+                const someSel = !allSel && groupItems.some(x => _batchSelectedIndices.has(x.idx));
+                return `<button class="grp-select-all-btn" data-gid="${group.id}" title="${allSel ? '取消本组全选' : '全选本组'}" style="
+                    margin-left:auto;flex-shrink:0;padding:3px 9px;border-radius:20px;cursor:pointer;
+                    font-size:11px;font-weight:700;font-family:var(--font-family);
+                    transition:all 0.15s;
+                    border:1.5px solid ${allSel ? 'var(--accent-color)' : someSel ? colorDot : 'var(--border-color)'};
+                    background:${allSel ? 'var(--accent-color)' : someSel ? colorDot + '22' : 'var(--primary-bg)'};
+                    color:${allSel ? '#fff' : someSel ? colorDot : 'var(--text-secondary)'};
+                ">${allSel ? '✓ 全选' : someSel ? `已选${groupItems.filter(x=>_batchSelectedIndices.has(x.idx)).length}` : '全选'}</button>`;
+            })() : `<div style="flex:1;"></div>`}
             ${!isUngrouped ? `
             <button class="grp-edit-btn" title="编辑分组" style="
-                margin-left:auto;width:26px;height:26px;border-radius:8px;border:1px solid var(--border-color);
+                ${_batchModeActive ? '' : 'margin-left:auto;'}width:26px;height:26px;border-radius:8px;border:1px solid var(--border-color);
                 background:var(--primary-bg);color:var(--text-secondary);cursor:pointer;
                 display:flex;align-items:center;justify-content:center;flex-shrink:0;
-            ">${ICONS.edit}</button>` : '<div style="flex:1;"></div>'}
+            ">${ICONS.edit}</button>` : ''}
             <div class="grp-chevron" style="color:var(--text-secondary);transition:transform 0.2s;transform:${isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)'};">
                 ${ICONS.chevronD}
             </div>
@@ -544,8 +556,19 @@ function _renderGroupBlock(list, group, groupItems, disabledSet, isUngrouped = f
         _renderCardList(body, groupItems, disabledSet);
     }
 
+    section.querySelector('.grp-select-all-btn')?.addEventListener('click', e => {
+        e.stopPropagation();
+        const allSel = groupItems.every(x => _batchSelectedIndices.has(x.idx));
+        if (allSel) {
+            groupItems.forEach(x => _batchSelectedIndices.delete(x.idx));
+        } else {
+            groupItems.forEach(x => _batchSelectedIndices.add(x.idx));
+        }
+        renderReplyLibrary();
+    });
+
     section.querySelector(`#grp-hdr-${group.id}`).addEventListener('click', e => {
-        if (e.target.closest('.grp-edit-btn') || e.target.closest(`#grp-tag-${group.id}`)) return;
+        if (e.target.closest('.grp-edit-btn') || e.target.closest(`#grp-tag-${group.id}`) || e.target.closest('.grp-select-all-btn')) return;
         group._collapsed = !group._collapsed;
         body.style.display = group._collapsed ? 'none' : 'block';
         section.querySelector('.grp-chevron').style.transform = group._collapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
@@ -1640,9 +1663,28 @@ function _showBatchAddDialog() {
             font-size:13px;font-family:var(--font-family);outline:none;resize:vertical;
             line-height:1.6;transition:border 0.18s;
         "></textarea>
-        <div style="font-size:11px;color:var(--text-secondary);margin-top:6px;margin-bottom:16px;">
+        <div style="font-size:11px;color:var(--text-secondary);margin-top:6px;margin-bottom:12px;">
             <span id="batch-add-count">0 条</span>
         </div>
+        ${(customReplyGroups && customReplyGroups.length > 0) ? `
+        <div style="margin-bottom:16px;">
+            <div style="font-size:11px;font-weight:700;color:var(--text-secondary);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;">添加到分组</div>
+            <div id="ba-group-list" style="display:flex;flex-wrap:wrap;gap:7px;">
+                <button class="ba-grp-pill" data-gidx="-1" style="
+                    padding:5px 13px;border-radius:20px;font-size:12px;font-family:var(--font-family);cursor:pointer;
+                    border:1.5px solid var(--accent-color);background:var(--accent-color);color:#fff;font-weight:700;
+                    transition:all .15s;
+                ">不分组</button>
+                ${customReplyGroups.map((g, i) => `
+                <button class="ba-grp-pill" data-gidx="${i}" style="
+                    padding:5px 13px;border-radius:20px;font-size:12px;font-family:var(--font-family);cursor:pointer;
+                    border:1.5px solid ${g.color}44;background:${g.color}18;color:${g.color};font-weight:600;
+                    transition:all .15s;
+                ">
+                    <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${g.color};margin-right:4px;vertical-align:middle;"></span>${g.name}
+                </button>`).join('')}
+            </div>
+        </div>` : ''}
         <div style="display:flex;gap:10px;">
             <button id="ba-cancel" style="flex:1;padding:12px;border:1.5px solid var(--border-color);border-radius:13px;background:none;color:var(--text-secondary);font-size:13px;cursor:pointer;font-family:var(--font-family);">取消</button>
             <button id="ba-confirm" style="flex:2;padding:12px;border:none;border-radius:13px;background:var(--accent-color);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font-family);">添加</button>
@@ -1660,28 +1702,69 @@ function _showBatchAddDialog() {
     ta.addEventListener('focus', e => { e.target.style.borderColor = 'var(--accent-color)'; });
     ta.addEventListener('blur', e => { e.target.style.borderColor = 'var(--border-color)'; });
 
+    // Group pill selection
+    let _selectedGroupIdx = -1; // -1 = no group
+    const pillContainer = panel.querySelector('#ba-group-list');
+    if (pillContainer) {
+        pillContainer.addEventListener('click', e => {
+            const pill = e.target.closest('.ba-grp-pill');
+            if (!pill) return;
+            _selectedGroupIdx = parseInt(pill.dataset.gidx);
+            // Update pill styles
+            pillContainer.querySelectorAll('.ba-grp-pill').forEach((p, i) => {
+                const gidx = parseInt(p.dataset.gidx);
+                if (gidx === -1) {
+                    const isActive = _selectedGroupIdx === -1;
+                    p.style.background = isActive ? 'var(--accent-color)' : 'transparent';
+                    p.style.color = isActive ? '#fff' : 'var(--text-secondary)';
+                    p.style.borderColor = isActive ? 'var(--accent-color)' : 'var(--border-color)';
+                } else {
+                    const g = customReplyGroups[gidx];
+                    if (!g) return;
+                    const isActive = _selectedGroupIdx === gidx;
+                    p.style.background = isActive ? g.color : g.color + '18';
+                    p.style.color = isActive ? '#fff' : g.color;
+                    p.style.borderColor = isActive ? g.color : g.color + '44';
+                }
+            });
+        });
+    }
+
     panel.querySelector('#ba-cancel').onclick = () => overlay.remove();
     overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
     panel.querySelector('#ba-confirm').onclick = () => {
         const lines = ta.value.split('\n').map(l => l.trim()).filter(Boolean);
         if (!lines.length) { showNotification('请输入内容', 'warning'); return; }
         let added = 0, skipped = 0;
+        const newItems = [];
         lines.forEach(val => {
             const norm = normalizeStringStrict(val);
             const isDup = currentSubTab === 'custom'
                 ? (customReplies.some(r => normalizeStringStrict(r) === norm) || CONSTANTS.REPLY_MESSAGES.some(r => normalizeStringStrict(r) === norm))
                 : false;
             if (isDup) { skipped++; return; }
-            if (currentSubTab === 'custom') customReplies.push(val);
+            if (currentSubTab === 'custom') { customReplies.push(val); newItems.push(val); }
             else if (currentSubTab === 'pokes') customPokes.push(val);
             else if (currentSubTab === 'statuses') customStatuses.push(val);
             else if (currentSubTab === 'mottos') customMottos.push(val);
             added++;
         });
+        // Assign newly added items to selected group
+        if (currentSubTab === 'custom' && _selectedGroupIdx >= 0 && newItems.length > 0 && customReplyGroups) {
+            const targetGroup = customReplyGroups[_selectedGroupIdx];
+            if (targetGroup) {
+                if (!targetGroup.items) targetGroup.items = [];
+                newItems.forEach(item => {
+                    if (!targetGroup.items.includes(item)) targetGroup.items.push(item);
+                });
+            }
+        }
         throttledSaveData();
         overlay.remove();
         renderReplyLibrary();
-        showNotification(`✓ 添加 ${added} 条${skipped ? `，跳过 ${skipped} 条重复` : ''}`, 'success');
+        const groupHint = _selectedGroupIdx >= 0 && customReplyGroups?.[_selectedGroupIdx]
+            ? `，已加入「${customReplyGroups[_selectedGroupIdx].name}」` : '';
+        showNotification(`✓ 添加 ${added} 条${skipped ? `，跳过 ${skipped} 条重复` : ''}${groupHint}`, 'success');
     };
 }
 

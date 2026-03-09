@@ -2121,7 +2121,7 @@ playlist.style.top = (rect.top + (player.classList.contains('collapsed') ? 65 : 
     }
 };
 
-        const getRandomItem = (arr) => arr[Math.floor(Math.random() * arr.length)];
+        // getRandomItem is defined globally in utils.js
 
 
 
