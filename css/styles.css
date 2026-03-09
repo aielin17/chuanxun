@@ -1546,10 +1546,12 @@
             left: 3px; bottom: 3px; background: white; border-radius: 50%;
             transition: 0.3s; box-shadow: 0 1px 4px rgba(0,0,0,0.2);
         }
-        #notif-permission-toggle:checked + .notif-toggle-slider {
+        #notif-permission-toggle:checked + .notif-toggle-slider,
+        input[type="checkbox"]:checked + .notif-toggle-slider {
             background: var(--accent-color);
         }
-        #notif-permission-toggle:checked + .notif-toggle-slider::before {
+        #notif-permission-toggle:checked + .notif-toggle-slider::before,
+        input[type="checkbox"]:checked + .notif-toggle-slider::before {
             transform: translateX(20px);
         }
 
