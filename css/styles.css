@@ -9602,9 +9602,7 @@
             overflow: hidden !important;
             display: flex !important;
             flex-direction: column !important;
-            height: 93vh !important;       /* fallback for older iOS */
             height: 93dvh !important;
-            max-height: 93vh !important;
             max-height: 93dvh !important;
             min-height: 200px !important;
             border-radius: 28px 28px 0 0 !important;
@@ -9613,7 +9611,7 @@
             margin: 0 auto !important;
             box-shadow: 0 -8px 40px rgba(0,0,0,0.18) !important;
             background: var(--primary-bg) !important;
-            /* ⚠️ 移除 will-change，防止创建层叠上下文困住 fixed 抽屉 */
+            will-change: transform, opacity;
             animation: dmSheetIn 0.38s cubic-bezier(0.32,0.72,0,1) both !important;
             transform: translateY(0) !important;
             opacity: 1 !important;
@@ -9934,73 +9932,6 @@
         .dm-toggle-pill input:checked + .dm-toggle-slider::after {
             transform: translateX(20px);
         }
-
-        /* ── 危险操作：全宽按钮卡片（移动端友好） ── */
-        .dm-danger-cards {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .dm-danger-card {
-            width: 100%;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 14px 16px;
-            border-radius: 16px;
-            border: 1.5px solid;
-            background: transparent;
-            cursor: pointer;
-            font-family: var(--font-family);
-            text-align: left;
-            transition: all 0.18s;
-            box-sizing: border-box;
-        }
-        .dm-danger-card:active { transform: scale(0.98); }
-        .dm-danger-card-orange {
-            border-color: rgba(255,150,0,0.3);
-            background: rgba(255,150,0,0.06);
-        }
-        .dm-danger-card-orange:hover { background: rgba(255,150,0,0.12); border-color: #ff9600; }
-        .dm-danger-card-red {
-            border-color: rgba(224,80,80,0.3);
-            background: rgba(224,80,80,0.06);
-        }
-        .dm-danger-card-red:hover { background: rgba(224,80,80,0.12); border-color: #e05050; }
-        .dm-danger-card-icon {
-            width: 42px; height: 42px;
-            border-radius: 13px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 16px;
-            flex-shrink: 0;
-        }
-        .dm-danger-card-orange .dm-danger-card-icon {
-            background: rgba(255,150,0,0.15);
-            color: #ff9600;
-        }
-        .dm-danger-card-red .dm-danger-card-icon {
-            background: rgba(224,80,80,0.15);
-            color: #e05050;
-        }
-        .dm-danger-card-body { flex: 1; min-width: 0; }
-        .dm-danger-card-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 2px;
-        }
-        .dm-danger-card-desc {
-            font-size: 11.5px;
-            color: var(--text-secondary);
-        }
-        .dm-danger-card-arrow {
-            font-size: 11px;
-            color: var(--text-secondary);
-            opacity: 0.5;
-            flex-shrink: 0;
-        }
-        .dm-danger-card-orange .dm-danger-card-arrow { color: #ff9600; opacity: 0.7; }
-        .dm-danger-card-red .dm-danger-card-arrow    { color: #e05050; opacity: 0.7; }
 
         /* ── 危险操作按钮 ── */
         .dm-danger-btn {
@@ -10403,8 +10334,8 @@
            ══════════════════════════════════════════ */
         #wordcloud-panel {
             overflow-y: auto;
-            max-height: 62vh;
-            padding: 2px 0 4px;
+            max-height: 66vh;
+            padding: 2px 0 8px;
             scrollbar-width: none;
         }
         #wordcloud-panel::-webkit-scrollbar { display: none; }
@@ -10412,51 +10343,60 @@
         #wordcloud-container {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
         }
 
-        /* ── toolbar ── */
-        .wc-toolbar {
+        /* ── 顶部 header：tabs + 重生成按钮 ── */
+        .wc-header {
             display: flex;
-            gap: 6px;
             align-items: center;
-            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .wc-tabs { flex: 1; min-width: 0; }
+        .wc-tabs-track {
+            display: flex;
+            background: var(--secondary-bg);
+            border-radius: 12px;
+            padding: 3px;
+            gap: 2px;
         }
         .wc-view-btn {
             flex: 1;
             min-width: 0;
-            padding: 7px 6px;
+            padding: 7px 4px;
             border: none;
             border-radius: 9px;
-            background: var(--secondary-bg);
+            background: transparent;
             color: var(--text-secondary);
-            font-size: 12px;
+            font-size: 11.5px;
             font-weight: 600;
             cursor: pointer;
             font-family: var(--font-family);
-            transition: all 0.2s;
+            transition: background 0.2s, color 0.2s, box-shadow 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 4px;
+            gap: 3px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
+        .wc-view-btn i { font-size: 10px; opacity: 0.8; }
         .wc-view-btn.active {
             background: var(--primary-bg);
             color: var(--accent-color);
-            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 6px rgba(0,0,0,0.12);
         }
         .wc-view-btn:hover:not(.active) {
-            background: rgba(var(--accent-color-rgb), 0.08);
+            background: rgba(var(--accent-color-rgb), 0.07);
             color: var(--text-primary);
         }
+
         .wc-regen-btn {
-            width: 32px;
-            height: 32px;
+            width: 34px;
+            height: 34px;
             border: none;
-            border-radius: 9px;
+            border-radius: 10px;
             background: var(--secondary-bg);
             color: var(--text-secondary);
             cursor: pointer;
@@ -10464,60 +10404,101 @@
             align-items: center;
             justify-content: center;
             font-size: 13px;
-            transition: all 0.2s;
+            transition: all 0.25s;
             flex-shrink: 0;
         }
         .wc-regen-btn:hover {
             background: rgba(var(--accent-color-rgb), 0.12);
             color: var(--accent-color);
-            transform: rotate(45deg);
+            transform: rotate(30deg) scale(1.05);
         }
-        .wc-regen-btn:active { transform: rotate(180deg); }
+        .wc-regen-btn:active { transform: rotate(180deg) scale(0.95); }
 
-        /* ── canvas 容器 ── */
+        /* ── 摘要信息条 ── */
+        .wc-summary {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .wc-summary-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 99px;
+            background: rgba(var(--accent-color-rgb), 0.08);
+            color: var(--accent-color);
+            font-size: 11px;
+            font-weight: 600;
+            font-family: var(--font-family);
+        }
+        .wc-summary-pill i { font-size: 9px; opacity: 0.8; }
+
+        /* ── 画布容器：无边框，让圆角 canvas 自己呈现 ── */
         .wc-canvas-wrap {
-            background: var(--secondary-bg);
-            border-radius: 16px;
-            border: 1px solid var(--border-color);
-            padding: 12px;
+            border-radius: 18px;
             overflow: hidden;
+            line-height: 0;
+            /* 柔和的外阴影增加层次感 */
+            box-shadow: 0 4px 24px rgba(0,0,0,0.14), 0 1px 4px rgba(0,0,0,0.08);
         }
 
         /* ── 词频榜 ── */
         .wc-rank-section {
             background: var(--secondary-bg);
-            border-radius: 14px;
+            border-radius: 16px;
             border: 1px solid var(--border-color);
             padding: 12px 14px;
         }
         .wc-rank-title {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 700;
-            color: var(--text-primary);
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
             margin-bottom: 10px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
         }
+        .wc-rank-title i { color: #FB923C; font-size: 11px; }
         .wc-rank-item {
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 5px 0;
+            padding: 6px 0;
             border-bottom: 1px solid var(--border-color);
         }
         .wc-rank-item:last-child { border-bottom: none; }
-        .wc-rank-idx {
-            font-size: 14px;
-            width: 22px;
-            text-align: center;
+
+        /* 序号徽章 */
+        .wc-rank-badge {
+            width: 20px;
+            height: 20px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 800;
             flex-shrink: 0;
+            font-family: var(--font-family);
         }
+
+        /* 颜色圆点 */
+        .wc-rank-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            opacity: 0.85;
+        }
+
         .wc-rank-word {
             font-size: 13px;
             font-weight: 600;
             color: var(--text-primary);
-            width: 60px;
+            width: 52px;
             flex-shrink: 0;
             white-space: nowrap;
             overflow: hidden;
@@ -10525,23 +10506,24 @@
         }
         .wc-rank-bar-wrap {
             flex: 1;
-            height: 6px;
+            height: 5px;
             background: var(--border-color);
-            border-radius: 3px;
+            border-radius: 99px;
             overflow: hidden;
         }
         .wc-rank-bar {
             height: 100%;
-            background: linear-gradient(90deg, var(--accent-color), rgba(var(--accent-color-rgb), 0.5));
-            border-radius: 3px;
-            transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+            border-radius: 99px;
+            transition: width 0.7s cubic-bezier(0.22, 1, 0.36, 1);
         }
         .wc-rank-count {
-            font-size: 11px;
+            font-size: 10.5px;
             color: var(--text-secondary);
-            width: 28px;
+            font-weight: 600;
+            width: 32px;
             text-align: right;
             flex-shrink: 0;
+            font-variant-numeric: tabular-nums;
         }
         .wc-rank-empty, .wc-empty {
             text-align: center;
