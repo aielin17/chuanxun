@@ -1332,9 +1332,15 @@
                 <button class="stats-nav-btn" id="favorites-tab-btn" onclick="switchStatsTab('favorites')" data-tab="favorites">
                     <i class="fas fa-star"></i> 收藏
                 </button>
+                <button class="stats-nav-btn" id="wordcloud-tab-btn" onclick="switchStatsTab('wordcloud')" data-tab="wordcloud">
+                    <i class="fas fa-cloud"></i> 词云
+                </button>
             </div>
             <div id="stats-panel">
                 <div class="stats-content" id="stats-content"></div>
+            </div>
+            <div id="wordcloud-panel" style="display:none;">
+                <div id="wordcloud-container"></div>
             </div>
             <div id="search-panel" style="display:none;">
                 <div class="stats-search-box">
