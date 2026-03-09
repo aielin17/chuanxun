@@ -9544,26 +9544,26 @@
             align-items: flex-end !important;
             padding: 0 !important;
         }
+        /* Reset ALL base .modal-content properties for data-modal */
         #data-modal .modal-content {
             padding: 0 !important;
             overflow: hidden !important;
             display: flex !important;
             flex-direction: column !important;
+            /* Use a defined height so flex children can distribute */
+            height: 93dvh !important;
             max-height: 93dvh !important;
-            height: auto !important;
+            min-height: 200px !important;
             border-radius: 28px 28px 0 0 !important;
             width: 100% !important;
             max-width: 520px !important;
             margin: 0 auto !important;
-            /* Kill the slide-in animation that expects a centered modal */
-            transform: none !important;
+            box-shadow: 0 -8px 40px rgba(0,0,0,0.18) !important;
+            background: var(--secondary-bg) !important;
+            /* Suppress base animation; our own plays via transform */
             animation: dmSheetIn 0.38s cubic-bezier(0.32,0.72,0,1) both !important;
-        }
-        /* When showModal sets opacity:1 transform:none via JS, we keep our layout intact */
-        #data-modal[style*="flex"] .modal-content,
-        #data-modal[style*="block"] .modal-content {
+            transform: none !important;
             opacity: 1 !important;
-            transform: translateY(0) !important;
         }
         @keyframes dmSheetIn {
             from { transform: translateY(60px); opacity: 0; }
