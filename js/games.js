@@ -1447,12 +1447,20 @@ function initComboMenu() {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   词云生成 renderWordCloud
+   词云生成 renderWordCloud  v2 — 美化重制版
    纯 Canvas 实现，无外部依赖
+   改进：
+     · 深色渐变背景 + 氛围光晕
+     · 文字按频率分层：渐变填充 / 普通填充 / 半透明
+     · 字重分层：top5 = 900，中层 = 700，尾部 = 500
+     · 部分词随机倾斜 ±20°（仅英文/短词，中文保持横排）
+     · 螺旋步长自适应，减少空白浪费
+     · 每个词有模糊投影，顶层词有高光光晕
+     · 词频榜重设计：彩色序号标签 + 渐变进度条 + 数字徽章
    ══════════════════════════════════════════════════════════════ */
 (function() {
 
-    /* ── 停用词表（中文常用虚词 + 标点 + 数字） ── */
+    /* ── 停用词表 ── */
     var STOP_WORDS = new Set([
         '的','了','是','我','你','他','她','它','们','这','那','有','在','就','也','都',
         '和','与','或','但','不','没','很','太','更','最','已','被','让','把','对','从',
@@ -1467,50 +1475,36 @@ function initComboMenu() {
         'ok','OK','Ok','yes','no','hh','hhhh','hhh','嗯','额'
     ]);
 
-    /* ── 分词（简单按字符切割 + 2-6 字词组） ── */
+    /* ── 分词 ── */
     function tokenize(text) {
-        // 清洗：去掉 URL、表情占位、HTML 标签、纯数字
         text = text
             .replace(/https?:\/\/\S+/g, '')
             .replace(/\[.*?\]/g, '')
             .replace(/<[^>]+>/g, '')
             .replace(/[^\u4e00-\u9fa5a-zA-Z]/g, ' ')
             .toLowerCase();
-
         var words = {};
-
-        // 提取中文词（2-5 字滑窗，优先 2 字）
         var cn = text.replace(/[a-z ]/g, '');
         for (var i = 0; i < cn.length; i++) {
             for (var l = 2; l <= 5 && i + l <= cn.length; l++) {
                 var w = cn.slice(i, i + l);
-                if (!STOP_WORDS.has(w) && w.length >= 2) {
-                    words[w] = (words[w] || 0) + (l === 2 ? 1 : l === 3 ? 1.5 : 2);
-                }
+                if (!STOP_WORDS.has(w)) words[w] = (words[w] || 0) + (l === 2 ? 1 : l === 3 ? 1.5 : 2);
             }
         }
-
-        // 提取英文单词（3 字以上）
         var en = text.match(/[a-z]{3,}/g) || [];
-        en.forEach(function(w) {
-            if (!STOP_WORDS.has(w)) words[w] = (words[w] || 0) + 1;
-        });
-
+        en.forEach(function(w) { if (!STOP_WORDS.has(w)) words[w] = (words[w] || 0) + 1; });
         return words;
     }
 
-    /* ── 混合两个词频表 ── */
     function mergeFreq(a, b) {
         var out = Object.assign({}, a);
         Object.keys(b).forEach(function(k) { out[k] = (out[k] || 0) + b[k]; });
         return out;
     }
 
-    /* ── 取 Top-N 词 ── */
     function topWords(freq, n) {
-        // 根据语料量动态设置最低频率阈值，过滤噪音碎片
-        var totalMsgs = Object.keys(freq).length;
-        var minFreq = totalMsgs > 200 ? 3 : totalMsgs > 50 ? 2 : 1;
+        var totalEntries = Object.keys(freq).length;
+        var minFreq = totalEntries > 200 ? 3 : totalEntries > 50 ? 2 : 1;
         return Object.entries(freq)
             .filter(function(e) { return e[1] >= minFreq; })
             .sort(function(a, b) { return b[1] - a[1]; })
@@ -1518,49 +1512,110 @@ function initComboMenu() {
             .map(function(e) { return { word: e[0], count: e[1] }; });
     }
 
-    /* ── 颜色方案（跟随 accent-color 生成渐变色系） ── */
-    function getPalette() {
+    /* ── 主题色解析 ── */
+    function getThemeColors() {
         var style = getComputedStyle(document.documentElement);
+        var isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+                  || document.documentElement.classList.contains('dark');
         var accent = style.getPropertyValue('--accent-color').trim() || '#E8729A';
-        // 从 accent 衍生出 5 个色调
-        return [accent, '#9C6FD4', '#3BC8A4', '#4A90E2', '#FFB74D', '#F06060',
-                '#7EC8E3', '#A8D8A8', '#DDA0DD', '#F0C27F'];
+        return { accent: accent, isDark: isDark };
     }
 
-    /* ── Canvas 词云核心 ── */
+    /* ── 颜色调色盘（与主题联动） ── */
+    function getPalette(accent, isDark) {
+        // 定义基础色系
+        var bases = [accent, '#9C6FD4', '#3BC8A4', '#4A90E2', '#F06060',
+                     '#FFB74D', '#7EC8E3', '#A78BFA', '#34D399', '#FB923C'];
+        // 深色主题下颜色更亮，浅色主题下颜色更柔
+        return bases.map(function(c) { return c; });
+    }
+
+    /* ── hex → rgb ── */
+    function hexToRgb(hex) {
+        hex = hex.replace('#', '');
+        if (hex.length === 3) hex = hex.split('').map(function(c) { return c+c; }).join('');
+        var n = parseInt(hex, 16);
+        return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+    }
+
+    /* ── 绘制词云 Canvas ── */
     function drawWordCloud(canvas, words, who) {
         var ctx = canvas.getContext('2d');
         var dpr = window.devicePixelRatio || 1;
-        // 每次绘制前重置变换，防止多次调用时 scale 累积
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        // 使用 CSS 像素尺寸（scale 后坐标系即 CSS 像素）
         var W = canvas.width / dpr;
         var H = canvas.height / dpr;
+
+        var theme = getThemeColors();
+        var palette = getPalette(theme.accent, theme.isDark);
+        var isDark = theme.isDark;
+
+        /* ── 1. 背景 ── */
         ctx.clearRect(0, 0, W, H);
+        var bgGrad = ctx.createRadialGradient(W * 0.5, H * 0.5, 0, W * 0.5, H * 0.5, Math.max(W, H) * 0.65);
+        if (isDark) {
+            bgGrad.addColorStop(0,   'rgba(40,28,50,1)');
+            bgGrad.addColorStop(0.6, 'rgba(22,18,32,1)');
+            bgGrad.addColorStop(1,   'rgba(14,12,22,1)');
+        } else {
+            bgGrad.addColorStop(0,   'rgba(255,245,252,1)');
+            bgGrad.addColorStop(0.6, 'rgba(250,240,255,1)');
+            bgGrad.addColorStop(1,   'rgba(240,232,252,1)');
+        }
+        ctx.fillStyle = bgGrad;
+        ctx.beginPath();
+        ctx.roundRect ? ctx.roundRect(0, 0, W, H, 16) : ctx.rect(0, 0, W, H);
+        ctx.fill();
+
+        /* ── 2. 中心光晕装饰 ── */
+        var glowRgb = hexToRgb(theme.accent);
+        var glowAlpha = isDark ? 0.18 : 0.10;
+        var centerGlow = ctx.createRadialGradient(W*0.5, H*0.5, 0, W*0.5, H*0.5, Math.min(W,H)*0.45);
+        centerGlow.addColorStop(0, 'rgba('+glowRgb.r+','+glowRgb.g+','+glowRgb.b+','+glowAlpha+')');
+        centerGlow.addColorStop(1, 'rgba('+glowRgb.r+','+glowRgb.g+','+glowRgb.b+',0)');
+        ctx.fillStyle = centerGlow;
+        ctx.fillRect(0, 0, W, H);
 
         if (!words.length) {
-            ctx.fillStyle = getComputedStyle(document.documentElement)
-                .getPropertyValue('--text-secondary').trim() || '#999';
+            ctx.fillStyle = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.3)';
             ctx.font = '14px sans-serif';
             ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
             ctx.fillText('暂无足够内容生成词云', W / 2, H / 2);
             return;
         }
 
-        var palette = getPalette();
         var maxCount = words[0].count;
         var minCount = words[words.length - 1].count;
-        var placed = []; // [{x, y, w, h}]
+        var placed = [];
 
-        var MIN_FONT = 13, MAX_FONT = 52;
-
+        /* 字号映射：对数缩放让差异更自然 */
+        var MIN_FONT = 11, MAX_FONT = isDark ? 46 : 44;
         function fontSize(count) {
             if (maxCount === minCount) return (MIN_FONT + MAX_FONT) / 2;
-            return MIN_FONT + ((count - minCount) / (maxCount - minCount)) * (MAX_FONT - MIN_FONT);
+            var t = Math.log(count - minCount + 1) / Math.log(maxCount - minCount + 1);
+            return MIN_FONT + t * (MAX_FONT - MIN_FONT);
         }
 
-        function overlaps(x, y, w, h) {
-            var pad = 4;
+        /* 字重：前5名超粗，中层粗，尾部普通 */
+        function fontWeight(idx) {
+            if (idx < 5) return '900';
+            if (idx < 15) return '700';
+            return '500';
+        }
+
+        /* 倾斜角：仅对短词(≤3字/英文)施加，±20° */
+        function tiltAngle(word, idx) {
+            if (idx < 3) return 0; // 前3个词不倾斜，保持醒目
+            var isChinese = /[\u4e00-\u9fa5]/.test(word);
+            if (isChinese && word.length > 2) return 0;
+            var seed = idx * 7919 + word.charCodeAt(0) * 31;
+            var norm = ((seed % 100) / 100) * 2 - 1; // -1 ~ 1
+            return norm * (Math.PI / 9); // ±20°
+        }
+
+        function overlaps(x, y, w, h, pad) {
+            pad = pad || 5;
             for (var i = 0; i < placed.length; i++) {
                 var p = placed[i];
                 if (x - pad < p.x + p.w && x + w + pad > p.x &&
@@ -1569,49 +1624,107 @@ function initComboMenu() {
             return false;
         }
 
-        // 螺旋放置
+        ctx.textBaseline = 'alphabetic';
+
         words.forEach(function(item, idx) {
             var fs = fontSize(item.count);
-            ctx.font = 'bold ' + fs + 'px var(--font-family, sans-serif)';
+            var fw = fontWeight(idx);
+            var tilt = tiltAngle(item.word, idx);
+            var colorHex = palette[idx % palette.length];
+            var colorRgb = hexToRgb(colorHex);
+
+            /* 透明度分层：词越小越透明 */
+            var rank_t = idx / Math.max(words.length - 1, 1);
+            var alpha = isDark
+                ? (1.0 - rank_t * 0.55)   // 深色：最小词 45% 透明
+                : (0.95 - rank_t * 0.50);  // 浅色：最小词 50% 透明
+
+            ctx.font = fw + ' ' + fs + 'px var(--font-family, "PingFang SC", sans-serif)';
             var tw = ctx.measureText(item.word).width;
-            var th = fs * 1.25;
-            var color = palette[idx % palette.length];
+            var th = fs * 1.3;
+
+            /* 倾斜时需扩展碰撞盒 */
+            var cw = tilt !== 0
+                ? Math.abs(tw * Math.cos(tilt)) + Math.abs(th * Math.sin(tilt)) + 6
+                : tw;
+            var ch2 = tilt !== 0
+                ? Math.abs(tw * Math.sin(tilt)) + Math.abs(th * Math.cos(tilt)) + 6
+                : th;
 
             var placed_ = false;
-            var angle = 0, r = 0, step = 0.22;
+            /* 螺旋：前几个词步长密，后面词步长宽，充分利用空间 */
+            var spiralStep = 0.18 + idx * 0.003;
+            var rInc = 0.45 + idx * 0.008;
+            var angle = (idx * 2.618) % (Math.PI * 2); // 黄金角起始
+            var r = 0;
             var cx = W / 2, cy = H / 2;
+            var pad = Math.max(3, 6 - idx * 0.08);
 
-            for (var tries = 0; tries < 600; tries++) {
-                var px = cx + r * Math.cos(angle) - tw / 2;
-                var py = cy + r * Math.sin(angle) + th / 3;
+            for (var tries = 0; tries < 800; tries++) {
+                var bx = cx + r * Math.cos(angle) - cw / 2;
+                var by = cy + r * Math.sin(angle) - ch2 / 2;
 
-                // 边界检查
-                if (px > 6 && py > th && px + tw < W - 6 && py < H - 6) {
-                    if (!overlaps(px, py - th, tw, th)) {
-                        ctx.fillStyle = color;
-                        ctx.fillText(item.word, px, py);
-                        placed.push({ x: px, y: py - th, w: tw, h: th });
+                if (bx > 4 && by > 4 && bx + cw < W - 4 && by + ch2 < H - 4) {
+                    if (!overlaps(bx, by, cw, ch2, pad)) {
+                        /* ── 绘制 ── */
+                        ctx.save();
+                        ctx.translate(bx + cw / 2, by + ch2 / 2);
+                        ctx.rotate(tilt);
+
+                        /* 投影 */
+                        ctx.shadowColor = 'rgba(' + colorRgb.r + ',' + colorRgb.g + ',' + colorRgb.b + ',' + (isDark ? 0.7 : 0.3) + ')';
+                        ctx.shadowBlur = idx < 5 ? 16 : idx < 15 ? 8 : 3;
+                        ctx.shadowOffsetX = 0;
+                        ctx.shadowOffsetY = idx < 5 ? 2 : 1;
+
+                        /* 渐变文字（前8个词）/ 纯色文字（其余） */
+                        if (idx < 8) {
+                            var grad = ctx.createLinearGradient(-tw/2, -th, tw/2, 0);
+                            grad.addColorStop(0, 'rgba('+colorRgb.r+','+colorRgb.g+','+colorRgb.b+','+(alpha * 1.0)+')');
+                            grad.addColorStop(1, 'rgba('+colorRgb.r+','+colorRgb.g+','+colorRgb.b+','+(alpha * 0.75)+')');
+                            ctx.fillStyle = grad;
+                        } else {
+                            ctx.fillStyle = 'rgba('+colorRgb.r+','+colorRgb.g+','+colorRgb.b+','+alpha+')';
+                        }
+
+                        ctx.font = fw + ' ' + fs + 'px var(--font-family, "PingFang SC", sans-serif)';
+                        ctx.fillText(item.word, -tw / 2, th * 0.28);
+
+                        /* 前5名词加内描边光晕 */
+                        if (idx < 5) {
+                            ctx.shadowBlur = 0;
+                            ctx.strokeStyle = 'rgba('+colorRgb.r+','+colorRgb.g+','+colorRgb.b+',0.2)';
+                            ctx.lineWidth = 0.5;
+                            ctx.strokeText(item.word, -tw / 2, th * 0.28);
+                        }
+
+                        ctx.restore();
+                        placed.push({ x: bx, y: by, w: cw, h: ch2 });
                         placed_ = true;
                         break;
                     }
                 }
-                angle += step;
-                r += 0.55;
+                angle += spiralStep;
+                r += rInc;
             }
-            // 若实在放不下就缩小字号再尝试一次
+
+            /* 实在放不下时缩小后随机插入 */
             if (!placed_) {
-                var fsSmall = Math.max(11, fs * 0.65);
-                ctx.font = 'bold ' + fsSmall + 'px var(--font-family, sans-serif)';
-                var tw2 = ctx.measureText(item.word).width;
-                var th2 = fsSmall * 1.25;
-                // 随机找个空位
-                for (var t2 = 0; t2 < 200; t2++) {
-                    var rx = 10 + Math.random() * (W - 20 - tw2);
-                    var ry = th2 + Math.random() * (H - th2 - 10);
-                    if (!overlaps(rx, ry - th2, tw2, th2)) {
-                        ctx.fillStyle = color;
-                        ctx.fillText(item.word, rx, ry);
-                        placed.push({ x: rx, y: ry - th2, w: tw2, h: th2 });
+                var fsS = Math.max(9, fs * 0.6);
+                ctx.font = '500 ' + fsS + 'px var(--font-family, sans-serif)';
+                var tw3 = ctx.measureText(item.word).width;
+                var th3 = fsS * 1.3;
+                for (var t2 = 0; t2 < 300; t2++) {
+                    var rx = 8 + Math.random() * (W - 16 - tw3);
+                    var ry = 8 + Math.random() * (H - 16 - th3);
+                    if (!overlaps(rx, ry, tw3, th3, 3)) {
+                        ctx.save();
+                        ctx.fillStyle = 'rgba('+colorRgb.r+','+colorRgb.g+','+colorRgb.b+','+(alpha*0.7)+')';
+                        ctx.shadowColor = 'rgba('+colorRgb.r+','+colorRgb.g+','+colorRgb.b+',0.3)';
+                        ctx.shadowBlur = 4;
+                        ctx.fillText(item.word, rx, ry + th3 * 0.7);
+                        ctx.restore();
+                        placed.push({ x: rx, y: ry, w: tw3, h: th3 });
                         break;
                     }
                 }
@@ -1624,7 +1737,6 @@ function initComboMenu() {
         var container = document.getElementById('wordcloud-container');
         if (!container) return;
 
-        // 检查是否有消息数据
         if (typeof messages === 'undefined' || !messages || messages.length === 0) {
             container.innerHTML = '<div class="wc-empty"><i class="fas fa-cloud"></i><p>暂无聊天记录</p></div>';
             return;
@@ -1640,99 +1752,127 @@ function initComboMenu() {
             return m.sender === 'user' && m.text && m.type !== 'system' && typeof m.text === 'string';
         });
 
-        // 词频统计
         var partnerFreq = {};
         partnerMsgs.forEach(function(m) { partnerFreq = mergeFreq(partnerFreq, tokenize(m.text)); });
         var myFreq = {};
         myMsgs.forEach(function(m) { myFreq = mergeFreq(myFreq, tokenize(m.text)); });
         var allFreq = mergeFreq(partnerFreq, myFreq);
 
-        var partnerTop = topWords(partnerFreq, 60);
-        var myTop = topWords(myFreq, 60);
-        var allTop = topWords(allFreq, 60);
+        var partnerTop = topWords(partnerFreq, 55);
+        var myTop      = topWords(myFreq,      55);
+        var allTop     = topWords(allFreq,      55);
 
-        // 当前选中视图
         var currentView = container._currentView || 'all';
 
         function getViewData(v) {
-            if (v === 'partner') return { words: partnerTop, label: pName };
-            if (v === 'me') return { words: myTop, label: mName };
-            return { words: allTop, label: '全部' };
+            if (v === 'partner') return { words: partnerTop, label: pName, totalMsgs: partnerMsgs.length };
+            if (v === 'me')      return { words: myTop,      label: mName, totalMsgs: myMsgs.length    };
+            return { words: allTop, label: '全部', totalMsgs: partnerMsgs.length + myMsgs.length };
+        }
+
+        /* ── 词频榜渲染 ── */
+        function renderRank(words) {
+            var rankList = container.querySelector('.wc-rank-list');
+            if (!rankList) return;
+            if (!words.length) { rankList.innerHTML = '<div class="wc-rank-empty">暂无数据</div>'; return; }
+
+            var theme = getThemeColors();
+            var palette = getPalette(theme.accent, theme.isDark);
+            var max = words[0].count;
+
+            /* 徽章颜色：前3名金/银/铜，其余用调色盘 */
+            var badgeColors = ['#F59E0B','#94A3B8','#CD7F32'];
+            var badgeBg     = ['rgba(245,158,11,0.15)','rgba(148,163,184,0.15)','rgba(205,127,50,0.15)'];
+
+            rankList.innerHTML = words.slice(0, 10).map(function(item, i) {
+                var pct     = Math.round(item.count / max * 100);
+                var dotColor= palette[i % palette.length];
+                var bColor  = i < 3 ? badgeColors[i] : dotColor;
+                var bBg     = i < 3 ? badgeBg[i]     : 'rgba(0,0,0,0.06)';
+                var rank    = i < 3 ? ['1','2','3'][i] : String(i + 1);
+                return '<div class="wc-rank-item">'
+                    + '<span class="wc-rank-badge" style="background:'+bBg+';color:'+bColor+';">'+rank+'</span>'
+                    + '<span class="wc-rank-dot" style="background:'+dotColor+';"></span>'
+                    + '<span class="wc-rank-word">' + item.word + '</span>'
+                    + '<div class="wc-rank-bar-wrap">'
+                    +   '<div class="wc-rank-bar" style="width:'+pct+'%;background:linear-gradient(90deg,'+dotColor+','+dotColor+'88);"></div>'
+                    + '</div>'
+                    + '<span class="wc-rank-count">×' + Math.round(item.count) + '</span>'
+                    + '</div>';
+            }).join('');
+        }
+
+        /* ── 摘要栏渲染 ── */
+        function renderSummary(data) {
+            var bar = container.querySelector('.wc-summary');
+            if (!bar) return;
+            bar.innerHTML =
+                '<span class="wc-summary-pill"><i class="fas fa-comment"></i> ' + data.totalMsgs + ' 条消息</span>'
+                + '<span class="wc-summary-pill"><i class="fas fa-font"></i> ' + data.words.length + ' 个高频词</span>';
         }
 
         function renderView(v) {
             container._currentView = v;
-            // 更新 tab 高亮
             container.querySelectorAll('.wc-view-btn').forEach(function(btn) {
                 btn.classList.toggle('active', btn.dataset.view === v);
             });
-
             var canvas = container.querySelector('#wc-canvas');
             if (!canvas) return;
             var data = getViewData(v);
             drawWordCloud(canvas, data.words, v);
-
-            // 更新词频榜
-            var rankList = container.querySelector('.wc-rank-list');
-            if (rankList) {
-                if (!data.words.length) {
-                    rankList.innerHTML = '<div class="wc-rank-empty">暂无数据</div>';
-                    return;
-                }
-                var max = data.words[0].count;
-                rankList.innerHTML = data.words.slice(0, 10).map(function(item, i) {
-                    var pct = Math.round(item.count / max * 100);
-                    var medals = ['🥇','🥈','🥉'];
-                    return '<div class="wc-rank-item">'
-                        + '<span class="wc-rank-idx">' + (medals[i] || (i + 1)) + '</span>'
-                        + '<span class="wc-rank-word">' + item.word + '</span>'
-                        + '<div class="wc-rank-bar-wrap"><div class="wc-rank-bar" style="width:' + pct + '%"></div></div>'
-                        + '<span class="wc-rank-count">' + Math.round(item.count) + '</span>'
-                        + '</div>';
-                }).join('');
-            }
+            renderRank(data.words);
+            renderSummary(data);
         }
 
-        // 构建 HTML 骨架（首次或重置时）
+        /* ── 构建骨架 ── */
         if (!container.querySelector('#wc-canvas')) {
             var dpr = window.devicePixelRatio || 1;
-            // offsetWidth 可能在面板刚显示时为 0，取父容器宽度作后备
-            var cw = Math.min(
+            var cw  = Math.min(
                 container.offsetWidth ||
                 (container.parentElement && container.parentElement.offsetWidth) ||
                 340, 500
             );
-            var ch = Math.round(cw * 0.62);
+            var ch  = Math.round(cw * 0.66);
 
             container.innerHTML =
-                '<div class="wc-toolbar">'
-                +   '<button class="wc-view-btn' + (currentView === 'all' ? ' active' : '') + '" data-view="all"><i class="fas fa-users"></i> 全部</button>'
-                +   '<button class="wc-view-btn' + (currentView === 'partner' ? ' active' : '') + '" data-view="partner"><i class="fas fa-user-circle"></i> ' + pName + '</button>'
-                +   '<button class="wc-view-btn' + (currentView === 'me' ? ' active' : '') + '" data-view="me"><i class="fas fa-user"></i> ' + mName + '</button>'
-                +   '<button class="wc-regen-btn" title="重新生成"><i class="fas fa-sync-alt"></i></button>'
+                /* ── 顶部工具栏 ── */
+                '<div class="wc-header">'
+                +   '<div class="wc-tabs" id="wc-tabs">'
+                +     '<div class="wc-tabs-track">'
+                +       '<button class="wc-view-btn' + (currentView==='all'?     ' active':'') + '" data-view="all"><i class="fas fa-heart-pulse"></i> 全部</button>'
+                +       '<button class="wc-view-btn' + (currentView==='partner'? ' active':'') + '" data-view="partner"><i class="fas fa-user-circle"></i> ' + pName + '</button>'
+                +       '<button class="wc-view-btn' + (currentView==='me'?      ' active':'') + '" data-view="me"><i class="fas fa-user"></i> ' + mName + '</button>'
+                +     '</div>'
+                +   '</div>'
+                +   '<button class="wc-regen-btn" title="重新生成"><i class="fas fa-wand-magic-sparkles"></i></button>'
                 + '</div>'
+
+                /* ── 摘要信息条 ── */
+                + '<div class="wc-summary"></div>'
+
+                /* ── 画布 ── */
                 + '<div class="wc-canvas-wrap">'
-                +   '<canvas id="wc-canvas" width="' + (cw * dpr) + '" height="' + (ch * dpr) + '" style="width:' + cw + 'px;height:' + ch + 'px;border-radius:14px;display:block;margin:0 auto;"></canvas>'
+                +   '<canvas id="wc-canvas"'
+                +     ' width="' + (cw * dpr) + '"'
+                +     ' height="' + (ch * dpr) + '"'
+                +     ' style="width:' + cw + 'px;height:' + ch + 'px;border-radius:16px;display:block;margin:0 auto;">'
+                +   '</canvas>'
                 + '</div>'
+
+                /* ── 词频榜 ── */
                 + '<div class="wc-rank-section">'
-                +   '<div class="wc-rank-title"><i class="fas fa-fire"></i> 高频词 Top 10</div>'
+                +   '<div class="wc-rank-title"><i class="fas fa-fire-flame-curved"></i> 高频词 Top 10</div>'
                 +   '<div class="wc-rank-list"></div>'
                 + '</div>';
 
-            // ⚠️ 不在此处调用 ctx.scale()。
-            // drawWordCloud 内部每次调用 ctx.setTransform(dpr,...) 统一重置，
-            // 避免多次 renderWordCloud 时 scale 叠加。
-
-            // 绑定 toolbar 按钮
-            container.querySelector('.wc-toolbar').addEventListener('click', function(e) {
+            /* 事件绑定 */
+            container.querySelector('.wc-tabs-track').addEventListener('click', function(e) {
                 var btn = e.target.closest('.wc-view-btn');
-                var regen = e.target.closest('.wc-regen-btn');
                 if (btn) renderView(btn.dataset.view);
-                if (regen) {
-                    // 重置容器，强制重绘
-                    container.innerHTML = '';
-                    window.renderWordCloud();
-                }
+            });
+            container.querySelector('.wc-regen-btn').addEventListener('click', function() {
+                container.innerHTML = '';
+                window.renderWordCloud();
             });
         }
 
