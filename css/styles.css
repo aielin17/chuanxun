@@ -41,57 +41,76 @@
             --in-chat-avatar-size: 36px;
         }
 
+        /* ═══════════════════════════════════════════════
+           主题色方案 — 亮色模式
+           每个方案只需定义 accent 色系；气泡文字等继承自 :root
+        ═══════════════════════════════════════════════ */
+
+        /* ── 金色（默认） ── */
         :root[data-color-theme="gold"] {
             --accent-color: #c5a47e;
             --accent-color-dark: #d4af37;
             --accent-color-rgb: 197, 164, 126;
         }
+        /* ── 冷蓝 ── */
         :root[data-color-theme="blue"] {
             --accent-color: #7FA6CD;
             --accent-color-dark: #7FA6CD;
             --accent-color-rgb: 127, 166, 205;
         }
+        /* ── 薰紫 ── */
         :root[data-color-theme="purple"] {
             --accent-color: #BB9EC7;
             --accent-color-dark: #BB9EC7;
             --accent-color-rgb: 187, 158, 199;
         }
+        /* ── 薄荷绿 ── */
         :root[data-color-theme="green"] {
             --accent-color: #7BC8A4;
             --accent-color-dark: #7BC8A4;
             --accent-color-rgb: 123, 200, 164;
         }
+        /* ── 樱花粉 ── */
         :root[data-color-theme="pink"] {
             --accent-color: #F4A6B3;
             --accent-color-dark: #F4A6B3;
             --accent-color-rgb: 244, 166, 179;
         }
+        /* ── 黑白 ── */
         :root[data-color-theme="black-white"] {
             --accent-color: #333333;
             --accent-color-dark: #D6D6D6;
             --accent-color-rgb: 51, 51, 51;
+            --message-sent-text: #f5f5f5; /* 深色气泡配浅色文字 */
         }
+        /* ── 糖果柔色 ── */
         :root[data-color-theme="pastel"] {
             --accent-color: #A8D8EA;
             --accent-color-dark: #AA96DA;
             --accent-color-rgb: 168, 216, 234;
         }
+        /* ── 日落橙 ── */
         :root[data-color-theme="sunset"] {
             --accent-color: #FF9A8B;
             --accent-color-dark: #FF6B6B;
             --accent-color-rgb: 255, 154, 139;
         }
+        /* ── 森林绿 ── */
         :root[data-color-theme="forest"] {
             --accent-color: #7BA05B;
             --accent-color-dark: #556B2F;
             --accent-color-rgb: 123, 160, 91;
         }
+        /* ── 深海蓝 ── */
         :root[data-color-theme="ocean"] {
             --accent-color: #4A90E2;
             --accent-color-dark: #2E5B9A;
             --accent-color-rgb: 74, 144, 226;
         }
 
+        /* ═══════════════════════════════════════════════
+           深色模式基础变量（覆盖 :root 中的亮色值）
+        ═══════════════════════════════════════════════ */
         html[data-theme="dark"] {
             --primary-bg: #121212;
             --secondary-bg: #1e1e1e;
@@ -101,16 +120,42 @@
             --message-sent-bg: var(--accent-color);
             --message-sent-text: #ffffff;
             --message-received-bg: #2a2a2a;
-            --message-received-text: #e5e5e5; 
-            --header-bg: #1e1e1e; 
-            --input-area-bg: #1e1e1e; 
+            --message-received-text: #e5e5e5;
+            --header-bg: #1e1e1e;
+            --input-area-bg: #1e1e1e;
             --send-btn-bg: var(--accent-color);
             --shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
             --favorite-color: #ffd700;
-
             --primary-bg-rgb: 18, 18, 18;
             --secondary-bg-rgb: 30, 30, 30;
         }
+
+        /* ═══════════════════════════════════════════════
+           深色模式 × 各主题特殊覆盖
+           （主要处理浅色 accent 在暗背景上的气泡文字可读性）
+        ═══════════════════════════════════════════════ */
+
+        /* 黑白主题暗色模式：accent 变浅灰，气泡文字改为深色 */
+        html[data-theme="dark"][data-color-theme="black-white"] {
+            --accent-color: #d0d0d0;
+            --accent-color-dark: #d0d0d0;
+            --accent-color-rgb: 208, 208, 208;
+            --message-sent-text: #1a1a1a;
+        }
+        /* 糖果柔色暗色模式：浅蓝气泡配深字 */
+        html[data-theme="dark"][data-color-theme="pastel"] {
+            --message-sent-text: #1a2a30;
+        }
+        /* 日落橙暗色模式：浅橙气泡配深字 */
+        html[data-theme="dark"][data-color-theme="sunset"] {
+            --message-sent-text: #2a0a00;
+        }
+        /* 樱花粉暗色模式：浅粉气泡配深字 */
+        html[data-theme="dark"][data-color-theme="pink"] {
+            --message-sent-text: #2a0a10;
+        }
+
+
 
 
         #splash-declaration {
@@ -10073,6 +10118,33 @@
 
         @media (max-width: 480px) {
             #data-modal .modal-content { max-height: 96dvh; border-radius: 24px 24px 0 0; }
+
+            /* 危险操作行在窄屏上允许换行 */
+            .dm-row-item {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .dm-row-item .dm-row-info {
+                flex: 1 1 60%;
+                min-width: 0;
+            }
+            .dm-danger-btn {
+                padding: 7px 12px;
+                font-size: 12px;
+                flex-shrink: 0;
+            }
+            /* 通知 toggle 行不折行，但缩小间距 */
+            .dm-row-item:has(.dm-toggle-pill) {
+                flex-wrap: nowrap;
+                gap: 8px;
+            }
+            /* 数据格子在极窄屏下保持2列但内容可缩小 */
+            .dm-tile {
+                padding: 12px 10px 11px;
+            }
+            .dm-tile-title { font-size: 12px; }
+            .dm-tile-desc  { font-size: 10px; }
+            .dm-tile-icon  { width: 36px; height: 36px; font-size: 14px; }
         }
 
         @keyframes slideUpSheet {
