@@ -9540,11 +9540,16 @@
         /* ═══════════════════════════════════════════════════════
            DATA MODAL — Full Redesign
            ═══════════════════════════════════════════════════════ */
+        /* ══════════════════════════════════════════════════════════
+           DATA MODAL — 新版网格卡片布局 v10
+           设计理念：每个功能区独占视觉空间，告别行列拥挤
+        ══════════════════════════════════════════════════════════ */
+
         #data-modal {
             align-items: flex-end !important;
             padding: 0 !important;
         }
-        /* Reset ALL base .modal-content properties for data-modal */
+
         #data-modal .modal-content {
             padding: 0 !important;
             overflow: hidden !important;
@@ -9558,90 +9563,137 @@
             max-width: 520px !important;
             margin: 0 auto !important;
             box-shadow: 0 -8px 40px rgba(0,0,0,0.18) !important;
-            background: var(--secondary-bg) !important;
-            /* CSS Fix: use will-change to isolate stacking context;
-               animation overrides any JS-set transform/opacity on open */
+            background: var(--primary-bg) !important;
             will-change: transform, opacity;
             animation: dmSheetIn 0.38s cubic-bezier(0.32,0.72,0,1) both !important;
-            /* These !important rules beat JS inline styles set by showModal() */
             transform: translateY(0) !important;
             opacity: 1 !important;
         }
+
         @keyframes dmSheetIn {
             from { transform: translateY(60px); opacity: 0; }
             to   { transform: translateY(0);    opacity: 1; }
         }
 
-        /* ── Hero Header ── */
-        .dm-hero {
-            position: relative;
-            overflow: hidden;
-            flex-shrink: 0;
-            flex-grow: 0;
-            padding: 28px 24px 22px;
-            background: linear-gradient(135deg,
-                rgba(var(--accent-color-rgb), 0.18) 0%,
-                rgba(var(--accent-color-rgb), 0.06) 60%,
-                transparent 100%);
-            border-bottom: 1px solid rgba(var(--accent-color-rgb), 0.12);
-        }
-        .dm-hero::before {
-            content: '';
-            position: absolute;
-            top: -40px; right: -30px;
-            width: 140px; height: 140px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(var(--accent-color-rgb),0.15) 0%, transparent 70%);
-            pointer-events: none;
-        }
-        .dm-hero-top {
+        /* ── 顶部导航栏 ── */
+        .dm-topbar {
             display: flex;
             align-items: center;
-            gap: 14px;
-            margin-bottom: 18px;
+            justify-content: space-between;
+            padding: 18px 20px 14px;
+            flex-shrink: 0;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--secondary-bg);
         }
-        .dm-hero-icon {
-            width: 46px; height: 46px;
-            border-radius: 16px;
-            background: rgba(var(--accent-color-rgb), 0.15);
-            border: 1.5px solid rgba(var(--accent-color-rgb), 0.25);
+        .dm-topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .dm-topbar-back {
+            width: 34px; height: 34px;
+            border-radius: 10px;
+            border: 1.5px solid var(--border-color);
+            background: transparent;
+            color: var(--text-secondary);
             display: flex; align-items: center; justify-content: center;
-            color: var(--accent-color);
-            font-size: 18px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.18s;
             flex-shrink: 0;
         }
-        .dm-hero-text-group { flex: 1; }
-        .dm-hero-title {
-            font-size: 19px;
+        .dm-topbar-back:hover { border-color: var(--accent-color); color: var(--accent-color); }
+        .dm-topbar-title {
+            font-size: 17px;
             font-weight: 700;
             color: var(--text-primary);
             font-family: var(--font-family);
-            line-height: 1.2;
         }
-        .dm-hero-subtitle {
+        .dm-topbar-close {
+            width: 34px; height: 34px;
+            border-radius: 10px;
+            border: none;
+            background: rgba(var(--accent-color-rgb), 0.12);
+            color: var(--accent-color);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.18s;
+            flex-shrink: 0;
+        }
+        .dm-topbar-close:hover { background: rgba(var(--accent-color-rgb), 0.22); }
+
+        /* ── 可滚动主体 ── */
+        .dm-body {
+            flex: 1 1 0 !important;
+            min-height: 0 !important;
+            overflow-y: auto !important;
+            overflow-x: hidden;
+            overscroll-behavior: contain;
+            padding: 16px 16px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .dm-body::-webkit-scrollbar { width: 0; }
+
+        /* ── 存储概览卡片 ── */
+        .dm-storage-card {
+            background: var(--secondary-bg);
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            padding: 16px 18px;
+            position: relative;
+            overflow: hidden;
+        }
+        .dm-storage-card::before {
+            content: '';
+            position: absolute;
+            top: -20px; right: -20px;
+            width: 100px; height: 100px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(var(--accent-color-rgb),0.12) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .dm-storage-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+        .dm-storage-title {
             font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
             color: var(--text-secondary);
-            margin-top: 3px;
         }
-        /* Storage stats strip */
-        .dm-stats-strip {
+        .dm-storage-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--accent-color);
+            font-variant-numeric: tabular-nums;
+        }
+        .dm-stats-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-columns: repeat(3, 1fr);
             gap: 8px;
+            margin-bottom: 14px;
         }
-        .dm-stat-pill {
-            background: rgba(var(--secondary-bg-rgb, 255,255,255), 0.7);
-            border: 1px solid rgba(var(--accent-color-rgb), 0.15);
+        .dm-stat-block {
+            background: var(--primary-bg);
             border-radius: 14px;
-            padding: 10px 8px;
+            padding: 12px 8px;
             text-align: center;
-            backdrop-filter: blur(4px);
         }
-        html[data-theme="dark"] .dm-stat-pill {
-            background: rgba(255,255,255,0.05);
+        .dm-stat-block-icon {
+            font-size: 16px;
+            margin-bottom: 6px;
+            opacity: 0.7;
         }
         .dm-stat-pill-val {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 700;
             color: var(--text-primary);
             font-variant-numeric: tabular-nums;
@@ -9650,176 +9702,159 @@
         .dm-stat-pill-key {
             font-size: 10px;
             color: var(--text-secondary);
-            margin-top: 4px;
-            letter-spacing: 0.3px;
-        }
-        /* Progress bar inside hero */
-        .dm-progress-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 12px;
+            margin-top: 3px;
         }
         .dm-progress-track {
-            flex: 1;
-            height: 5px;
-            background: rgba(var(--accent-color-rgb), 0.14);
+            width: 100%;
+            height: 6px;
+            background: rgba(var(--accent-color-rgb), 0.12);
             border-radius: 99px;
             overflow: hidden;
         }
         .dm-progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, var(--accent-color), rgba(var(--accent-color-rgb),0.6));
+            background: linear-gradient(90deg, var(--accent-color), rgba(var(--accent-color-rgb),0.55));
             border-radius: 99px;
-            transition: width 0.8s cubic-bezier(.22,1,.36,1);
-        }
-        .dm-progress-label {
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--accent-color);
-            white-space: nowrap;
+            transition: width 0.9s cubic-bezier(.22,1,.36,1);
         }
 
-        /* ── Scrollable body ── */
-        .dm-body {
-            flex: 1 1 0 !important;
-            min-height: 0 !important;
-            overflow-y: auto !important;
-            overflow-x: hidden;
-            overscroll-behavior: contain;
-            padding: 18px 18px 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            -webkit-overflow-scrolling: touch;
-        }
-        .dm-body::-webkit-scrollbar { width: 0; }
-
-        /* ── Section label ── */
+        /* ── 分区标题 ── */
         .dm-section-label {
             display: flex;
             align-items: center;
-            gap: 7px;
-            font-size: 10px;
+            gap: 6px;
+            font-size: 11px;
             font-weight: 700;
-            letter-spacing: 1.2px;
+            letter-spacing: 0.9px;
             text-transform: uppercase;
             color: var(--text-secondary);
-            padding: 8px 4px 4px;
+            padding: 0 2px;
         }
-        .dm-section-label i { font-size: 9px; opacity: 0.7; }
-        .dm-section-label.danger-label { color: #e05050; opacity: 0.8; }
+        .dm-section-label i { font-size: 10px; opacity: 0.65; }
+        .dm-section-label.danger-label { color: #e05050; opacity: 0.85; }
 
-        /* ── Action cards ── */
-        .dm-action-card {
+        /* ── 功能网格（2列） ── */
+        .dm-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        /* ── 功能格子卡片 ── */
+        .dm-tile {
+            background: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 16px 14px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1);
+            position: relative;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        .dm-tile::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 18px;
+            background: rgba(var(--accent-color-rgb), 0);
+            transition: background 0.18s;
+        }
+        .dm-tile:active {
+            transform: scale(0.96);
+        }
+        .dm-tile:active::after {
+            background: rgba(var(--accent-color-rgb), 0.06);
+        }
+
+        .dm-tile-icon {
+            width: 44px; height: 44px;
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .dm-tile-icon.blue   { background: linear-gradient(135deg,#4A90E2,#3576C8); color:#fff; }
+        .dm-tile-icon.teal   { background: linear-gradient(135deg,#3BC8A4,#20A882); color:#fff; }
+        .dm-tile-icon.amber  { background: linear-gradient(135deg,#FFB74D,#F08C00); color:#fff; }
+        .dm-tile-icon.violet { background: linear-gradient(135deg,#9C6FD4,#7C4FBA); color:#fff; }
+        .dm-tile-icon.slate  { background: linear-gradient(135deg,rgba(var(--accent-color-rgb),0.25),rgba(var(--accent-color-rgb),0.12)); color:var(--accent-color); }
+        .dm-tile-icon.red    { background: linear-gradient(135deg,#F06060,#D03030); color:#fff; }
+
+        .dm-tile-info {}
+        .dm-tile-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            line-height: 1.2;
+            margin-bottom: 3px;
+        }
+        .dm-tile-desc {
+            font-size: 11px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+        .dm-tile-arrow {
+            position: absolute;
+            bottom: 12px; right: 14px;
+            font-size: 10px;
+            color: var(--text-secondary);
+            opacity: 0.35;
+        }
+
+        /* ── 宽版单行卡片（通知、危险操作） ── */
+        .dm-row-card {
             background: var(--secondary-bg);
             border: 1px solid var(--border-color);
             border-radius: 18px;
             overflow: hidden;
         }
-        .dm-action-row {
+        .dm-row-item {
             display: flex;
-            min-height: 52px;  /* Fix: 确保触摸目标足够大 */
             align-items: center;
-            gap: 12px;
-            padding: 14px 16px;
+            gap: 14px;
+            padding: 15px 18px;
             border-bottom: 1px solid var(--border-color);
             transition: background 0.15s;
         }
-        .dm-action-row:last-child { border-bottom: none; }
-        .dm-action-row:active { background: rgba(var(--accent-color-rgb), 0.04); }
+        .dm-row-item:last-child { border-bottom: none; }
+        .dm-row-item:active { background: rgba(var(--accent-color-rgb), 0.04); }
 
-        /* Icon badge */
-        .dm-badge {
-            width: 36px; height: 36px;
+        .dm-row-icon {
+            width: 40px; height: 40px;
             border-radius: 12px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 14px;
+            font-size: 15px;
             flex-shrink: 0;
         }
-        .dm-badge.blue    { background: linear-gradient(135deg,#4A90E2,#3576C8); color:#fff; }
-        .dm-badge.teal    { background: linear-gradient(135deg,#3BC8A4,#20A882); color:#fff; }
-        .dm-badge.amber   { background: linear-gradient(135deg,#FFB74D,#F08C00); color:#fff; }
-        .dm-badge.violet  { background: linear-gradient(135deg,#9C6FD4,#7C4FBA); color:#fff; }
-        .dm-badge.red     { background: linear-gradient(135deg,#F06060,#D03030); color:#fff; }
-        .dm-badge.slate   { background: linear-gradient(135deg,rgba(var(--accent-color-rgb),0.3),rgba(var(--accent-color-rgb),0.15)); color:var(--accent-color); }
+        .dm-row-icon.amber  { background: linear-gradient(135deg,#FFB74D,#F08C00); color:#fff; }
+        .dm-row-icon.slate  { background: linear-gradient(135deg,rgba(var(--accent-color-rgb),0.25),rgba(var(--accent-color-rgb),0.12)); color:var(--accent-color); }
+        .dm-row-icon.violet { background: linear-gradient(135deg,#9C6FD4,#7C4FBA); color:#fff; }
+        .dm-row-icon.red    { background: linear-gradient(135deg,#F06060,#D03030); color:#fff; }
 
-        .dm-action-info { flex: 1; min-width: 0; }
-        .dm-action-title {
-            font-size: 13.5px;
+        .dm-row-info { flex: 1; min-width: 0; }
+        .dm-row-title {
+            font-size: 14px;
             font-weight: 600;
             color: var(--text-primary);
             font-family: var(--font-family);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
-        .dm-action-desc {
-            font-size: 11px;
+        .dm-row-desc {
+            font-size: 11.5px;
             color: var(--text-secondary);
             margin-top: 2px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
 
-        /* Button cluster on right */
-        .dm-btn-cluster {
-            display: flex;
-            gap: 6px;
-            flex-shrink: 0;
-        }
-        .dm-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            padding: 6px 13px;
-            border-radius: 10px;
-            font-size: 12px;
-            font-weight: 600;
-            border: 1.5px solid var(--border-color);
-            background: var(--primary-bg);
-            color: var(--text-primary);
-            cursor: pointer;
-            font-family: var(--font-family);
-            transition: all 0.18s;
-            white-space: nowrap;
-            line-height: 1;
-        }
-        .dm-btn:hover {
-            border-color: var(--accent-color);
-            color: var(--accent-color);
-            background: rgba(var(--accent-color-rgb),0.06);
-            transform: translateY(-1px);
-        }
-        .dm-btn:active { transform: translateY(0); }
-        .dm-btn.export {
-            background: var(--accent-color);
-            color: #fff;
-            border-color: var(--accent-color);
-        }
-        .dm-btn.export:hover { opacity: 0.85; color: #fff; }
-        .dm-btn.danger-btn {
-            border-color: rgba(224,80,80,0.35);
-            color: #e05050;
-            background: rgba(224,80,80,0.05);
-        }
-        .dm-btn.danger-btn:hover {
-            background: rgba(224,80,80,0.1);
-            border-color: #e05050;
-        }
-
-        /* Notification toggle row */
-        .dm-notif-toggle-wrap {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 14px 16px;
-        }
+        /* ── Toggle 开关 ── */
         .dm-toggle-pill {
             position: relative;
             display: inline-block;
-            width: 46px; height: 26px;
+            width: 48px; height: 28px;
             flex-shrink: 0;
         }
         .dm-toggle-pill input {
@@ -9830,18 +9865,18 @@
             cursor: pointer;
             inset: 0;
             background: var(--border-color);
-            border-radius: 26px;
+            border-radius: 28px;
             transition: 0.28s;
         }
         .dm-toggle-slider::after {
             content: '';
             position: absolute;
             left: 3px; top: 3px;
-            width: 20px; height: 20px;
+            width: 22px; height: 22px;
             background: #fff;
             border-radius: 50%;
             transition: 0.28s;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.22);
         }
         .dm-toggle-pill input:checked + .dm-toggle-slider {
             background: var(--accent-color);
@@ -9850,70 +9885,191 @@
             transform: translateX(20px);
         }
 
-        /* Chevron for nav rows */
-        .dm-chevron {
-            color: var(--text-secondary);
-            font-size: 11px;
-            opacity: 0.45;
-            flex-shrink: 0;
-            margin-left: 4px;
-        }
-
-        /* ── Footer ── */
-        .dm-footer {
-            flex-shrink: 0 !important;
-            flex-grow: 0 !important;
-            display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 8px;
-            padding: 12px 18px;
-            padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
-            border-top: 1px solid var(--border-color);
-            background: var(--secondary-bg);
-        }
-        .dm-footer-back {
-            display: flex;
+        /* ── 危险操作按钮 ── */
+        .dm-danger-btn {
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
             gap: 6px;
-            padding: 10px;
+            padding: 8px 16px;
             border-radius: 12px;
             font-size: 13px;
             font-weight: 600;
-            border: 1.5px solid var(--border-color);
-            background: transparent;
-            color: var(--text-secondary);
+            border: 1.5px solid rgba(224,80,80,0.3);
+            background: rgba(224,80,80,0.06);
+            color: #e05050;
             cursor: pointer;
             font-family: var(--font-family);
             transition: all 0.18s;
+            flex-shrink: 0;
+            white-space: nowrap;
         }
-        .dm-footer-back:hover { border-color: var(--accent-color); color: var(--accent-color); }
-        .dm-footer-close {
-            display: flex;
+        .dm-danger-btn:hover { background: rgba(224,80,80,0.12); border-color: #e05050; }
+        .dm-danger-btn:active { transform: scale(0.97); }
+
+        /* ── 导航行按钮 ── */
+        .dm-nav-btn {
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
-            padding: 10px;
-            border-radius: 12px;
-            font-size: 13px;
-            font-weight: 600;
-            border: none;
-            background: var(--accent-color);
-            color: #fff;
+            width: 32px; height: 32px;
+            border-radius: 10px;
+            border: 1.5px solid var(--border-color);
+            background: var(--primary-bg);
+            color: var(--text-secondary);
             cursor: pointer;
-            font-family: var(--font-family);
-            transition: opacity 0.18s;
+            font-size: 12px;
+            transition: all 0.18s;
+            flex-shrink: 0;
         }
-        .dm-footer-close:hover { opacity: 0.85; }
+        .dm-nav-btn:hover { border-color: var(--accent-color); color: var(--accent-color); }
+
+        /* ── 底部操作抽屉（点击卡片后弹出） ── */
+        .dm-action-drawer {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.22s;
+        }
+        .dm-action-drawer.open {
+            pointer-events: all;
+            opacity: 1;
+        }
+        .dm-drawer-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.42);
+            backdrop-filter: blur(3px);
+        }
+        .dm-drawer-sheet {
+            position: relative;
+            z-index: 1;
+            background: var(--secondary-bg);
+            border-radius: 28px 28px 0 0;
+            padding: 0 0 max(20px, env(safe-area-inset-bottom, 0px));
+            transform: translateY(40px);
+            transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+        }
+        .dm-action-drawer.open .dm-drawer-sheet {
+            transform: translateY(0);
+        }
+        .dm-drawer-handle {
+            width: 36px; height: 4px;
+            background: var(--border-color);
+            border-radius: 99px;
+            margin: 12px auto 0;
+        }
+        .dm-drawer-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 20px 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .dm-drawer-title-icon {
+            width: 36px; height: 36px;
+            border-radius: 11px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 15px;
+            flex-shrink: 0;
+        }
+        .dm-drawer-title-text {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+            font-family: var(--font-family);
+        }
+        .dm-drawer-subtitle {
+            font-size: 11.5px;
+            color: var(--text-secondary);
+            margin-top: 1px;
+        }
+        .dm-drawer-actions {
+            padding: 14px 16px 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+        }
+        .dm-drawer-action-btn {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            width: 100%;
+            padding: 15px 18px;
+            border-radius: 16px;
+            border: 1.5px solid var(--border-color);
+            background: var(--primary-bg);
+            cursor: pointer;
+            transition: all 0.18s;
+            text-align: left;
+            font-family: var(--font-family);
+            -webkit-tap-highlight-color: transparent;
+        }
+        .dm-drawer-action-btn:active { transform: scale(0.98); }
+        .dm-drawer-action-btn.primary {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+        .dm-drawer-action-btn.primary:active { opacity: 0.85; }
+        .dm-drawer-btn-icon {
+            width: 38px; height: 38px;
+            border-radius: 11px;
+            background: rgba(255,255,255,0.15);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+            color: #fff;
+        }
+        .dm-drawer-action-btn:not(.primary) .dm-drawer-btn-icon {
+            background: rgba(var(--accent-color-rgb),0.1);
+            color: var(--accent-color);
+        }
+        .dm-drawer-btn-text {}
+        .dm-drawer-btn-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+            line-height: 1.2;
+        }
+        .dm-drawer-action-btn:not(.primary) .dm-drawer-btn-title {
+            color: var(--text-primary);
+        }
+        .dm-drawer-btn-desc {
+            font-size: 11.5px;
+            color: rgba(255,255,255,0.7);
+            margin-top: 2px;
+        }
+        .dm-drawer-action-btn:not(.primary) .dm-drawer-btn-desc {
+            color: var(--text-secondary);
+        }
+        .dm-drawer-cancel {
+            display: block;
+            width: calc(100% - 32px);
+            margin: 8px 16px 2px;
+            padding: 14px;
+            border-radius: 14px;
+            border: none;
+            background: rgba(var(--accent-color-rgb), 0.08);
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 600;
+            font-family: var(--font-family);
+            cursor: pointer;
+            transition: all 0.18s;
+        }
+        .dm-drawer-cancel:active { transform: scale(0.98); }
+
+        /* ── 兼容旧版 ID（data.js 查询这些 ID） ── */
+        .dm-btn { display: none !important; }
+        .dm-badge { display: none !important; }
+        .dm-action-card { display: none !important; }
 
         @media (max-width: 480px) {
             #data-modal .modal-content { max-height: 96dvh; border-radius: 24px 24px 0 0; }
-            .dm-hero { padding: 22px 18px 18px; }
-            .dm-body { padding: 14px 14px 8px; }
-            .dm-btn-cluster { flex-direction: column; }
-            .dm-btn { width: 100%; justify-content: center; }
-            .dm-action-row { flex-wrap: wrap; }
-            .dm-btn-cluster { width: 100%; margin-left: 48px; }
         }
 
         @keyframes slideUpSheet {

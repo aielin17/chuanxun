@@ -30,103 +30,140 @@
     /* ═══════════════════════════════════════════════════════════
        1. 正确的 modal-content 内部 HTML
     ═══════════════════════════════════════════════════════════ */
-    var INNER_HTML = '<div class="dm-hero">'
-        + '<div class="dm-hero-top">'
-        +   '<div class="dm-hero-icon"><i class="fas fa-database"></i></div>'
-        +   '<div class="dm-hero-text-group">'
-        +     '<div class="dm-hero-title">数据管理</div>'
-        +     '<div class="dm-hero-subtitle">备份、恢复与存储状态</div>'
+    var INNER_HTML =
+        /* ── 顶部导航栏 ── */
+        '<div class="dm-topbar">'
+        +   '<div class="dm-topbar-left">'
+        +     '<button class="dm-topbar-back" id="back-data"><i class="fas fa-arrow-left"></i></button>'
+        +     '<span class="dm-topbar-title">数据管理</span>'
         +   '</div>'
-        + '</div>'
-        + '<div class="dm-stats-strip">'
-        +   '<div class="dm-stat-pill"><div class="dm-stat-pill-val" id="dm-stat-msgs">—</div><div class="dm-stat-pill-key">聊天记录</div></div>'
-        +   '<div class="dm-stat-pill"><div class="dm-stat-pill-val" id="dm-stat-settings">—</div><div class="dm-stat-pill-key">设置数据</div></div>'
-        +   '<div class="dm-stat-pill"><div class="dm-stat-pill-val" id="dm-stat-media">—</div><div class="dm-stat-pill-key">图片媒体</div></div>'
-        + '</div>'
-        + '<div class="dm-progress-row">'
-        +   '<div class="dm-progress-track"><div class="dm-progress-fill" id="dm-storage-bar" style="width:0%"></div></div>'
-        +   '<span class="dm-progress-label" id="dm-storage-total">计算中…</span>'
-        + '</div>'
+        +   '<button class="dm-topbar-close" id="close-data"><i class="fas fa-xmark"></i></button>'
         + '</div>'
 
+        /* ── 滚动主体 ── */
         + '<div class="dm-body">'
 
-        +   '<div class="dm-section-label"><i class="fas fa-bell"></i> 消息通知</div>'
-        +   '<div class="dm-action-card">'
-        +     '<div class="dm-notif-toggle-wrap">'
-        +       '<div class="dm-badge amber"><i class="fas fa-bell"></i></div>'
-        +       '<div class="dm-action-info">'
-        +         '<div class="dm-action-title">后台消息推送</div>'
-        +         '<div class="dm-action-desc" id="notif-status-text">挂在后台时收到新消息自动弹出提醒</div>'
-        +       '</div>'
-        +       '<label class="dm-toggle-pill">'
-        +         '<input type="checkbox" id="notif-permission-toggle" onchange="handleNotifToggle(this)">'
-        +         '<span class="dm-toggle-slider"></span>'
-        +       '</label>'
+        /* 存储概览卡片 */
+        +   '<div class="dm-storage-card">'
+        +     '<div class="dm-storage-header">'
+        +       '<span class="dm-storage-title"><i class="fas fa-database" style="margin-right:5px;opacity:0.55"></i>存储用量</span>'
+        +       '<span class="dm-storage-label" id="dm-storage-total">计算中…</span>'
         +     '</div>'
+        +     '<div class="dm-stats-grid">'
+        +       '<div class="dm-stat-block"><div class="dm-stat-block-icon" style="color:var(--accent-color)"><i class="fas fa-comments"></i></div><div class="dm-stat-pill-val" id="dm-stat-msgs">—</div><div class="dm-stat-pill-key">聊天记录</div></div>'
+        +       '<div class="dm-stat-block"><div class="dm-stat-block-icon" style="color:#9C6FD4"><i class="fas fa-sliders"></i></div><div class="dm-stat-pill-val" id="dm-stat-settings">—</div><div class="dm-stat-pill-key">设置数据</div></div>'
+        +       '<div class="dm-stat-block"><div class="dm-stat-block-icon" style="color:#3BC8A4"><i class="fas fa-images"></i></div><div class="dm-stat-pill-val" id="dm-stat-media">—</div><div class="dm-stat-pill-key">图片媒体</div></div>'
+        +     '</div>'
+        +     '<div class="dm-progress-track"><div class="dm-progress-fill" id="dm-storage-bar" style="width:0%"></div></div>'
         +   '</div>'
 
+        /* 备份与恢复网格 */
         +   '<div class="dm-section-label"><i class="fas fa-cloud-upload-alt"></i> 备份与恢复</div>'
-        +   '<div class="dm-action-card">'
-        +     '<div class="dm-action-row">'
-        +       '<div class="dm-badge blue"><i class="fas fa-layer-group"></i></div>'
-        +       '<div class="dm-action-info"><div class="dm-action-title">全量备份</div><div class="dm-action-desc">外观、设置、字卡、心情、信封等全部</div></div>'
-        +       '<div class="dm-btn-cluster">'
-        +         '<button class="dm-btn export" id="export-all-settings"><i class="fas fa-download"></i> 导出</button>'
-        +         '<button class="dm-btn" id="import-all-settings"><i class="fas fa-upload"></i> 导入</button>'
-        +       '</div>'
+        +   '<div class="dm-grid">'
+        +     '<div class="dm-tile" id="dm-tile-full-backup">'
+        +       '<div class="dm-tile-icon blue"><i class="fas fa-layer-group"></i></div>'
+        +       '<div class="dm-tile-info"><div class="dm-tile-title">全量备份</div><div class="dm-tile-desc">所有设置与数据</div></div>'
+        +       '<i class="fas fa-chevron-right dm-tile-arrow"></i>'
         +     '</div>'
-        +     '<div class="dm-action-row">'
-        +       '<div class="dm-badge teal"><i class="fas fa-comments"></i></div>'
-        +       '<div class="dm-action-info"><div class="dm-action-title">聊天记录</div><div class="dm-action-desc">仅导出 / 导入消息内容</div></div>'
-        +       '<div class="dm-btn-cluster">'
-        +         '<button class="dm-btn export" id="export-chat-btn"><i class="fas fa-download"></i> 导出</button>'
-        +         '<button class="dm-btn" id="import-chat-btn"><i class="fas fa-upload"></i> 导入</button>'
-        +       '</div>'
+        +     '<div class="dm-tile" id="dm-tile-chat-backup">'
+        +       '<div class="dm-tile-icon teal"><i class="fas fa-comments"></i></div>'
+        +       '<div class="dm-tile-info"><div class="dm-tile-title">聊天记录</div><div class="dm-tile-desc">消息内容单独备份</div></div>'
+        +       '<i class="fas fa-chevron-right dm-tile-arrow"></i>'
         +     '</div>'
         +   '</div>'
 
-        +   '<div class="dm-section-label"><i class="fas fa-circle-info"></i> 关于</div>'
-        +   '<div class="dm-action-card">'
-        +     '<div class="dm-action-row" id="replay-tutorial-btn-row" style="cursor:pointer">'
-        +       '<div class="dm-badge slate"><i class="fas fa-compass"></i></div>'
-        +       '<div class="dm-action-info"><div class="dm-action-title">重放新手引导</div><div class="dm-action-desc">重新播放功能介绍教程</div></div>'
-        +       '<button class="dm-btn" id="replay-tutorial-btn"><i class="fas fa-play"></i> 播放</button>'
-        +       '<i class="fas fa-chevron-right dm-chevron"></i>'
+        /* 隐藏旧ID供JS绑定 */
+        +   '<div style="display:none">'
+        +     '<button id="export-all-settings"></button>'
+        +     '<button id="import-all-settings"></button>'
+        +     '<button id="export-chat-btn"></button>'
+        +     '<button id="import-chat-btn"></button>'
+        +   '</div>'
+
+        /* 通知与关于 */
+        +   '<div class="dm-section-label"><i class="fas fa-bell"></i> 通知与关于</div>'
+        +   '<div class="dm-row-card">'
+        +     '<div class="dm-row-item">'
+        +       '<div class="dm-row-icon amber"><i class="fas fa-bell"></i></div>'
+        +       '<div class="dm-row-info"><div class="dm-row-title">后台消息推送</div><div class="dm-row-desc" id="notif-status-text">收到新消息时弹出提醒</div></div>'
+        +       '<label class="dm-toggle-pill"><input type="checkbox" id="notif-permission-toggle" onchange="handleNotifToggle(this)"><span class="dm-toggle-slider"></span></label>'
         +     '</div>'
-        +     '<div class="dm-action-row" id="open-credits-row" style="cursor:pointer">'
-        +       '<div class="dm-badge violet"><i class="fas fa-scroll"></i></div>'
-        +       '<div class="dm-action-info"><div class="dm-action-title">声明与致谢</div><div class="dm-action-desc">开源声明、致谢名单</div></div>'
-        +       '<button class="dm-btn" id="open-credits-btn"><i class="fas fa-arrow-right"></i> 查看</button>'
-        +       '<i class="fas fa-chevron-right dm-chevron"></i>'
+        +     '<div class="dm-row-item" id="replay-tutorial-btn-row" style="cursor:pointer">'
+        +       '<div class="dm-row-icon slate"><i class="fas fa-compass"></i></div>'
+        +       '<div class="dm-row-info"><div class="dm-row-title">重放新手引导</div><div class="dm-row-desc">重新播放功能介绍教程</div></div>'
+        +       '<button class="dm-nav-btn" id="replay-tutorial-btn"><i class="fas fa-play"></i></button>'
+        +     '</div>'
+        +     '<div class="dm-row-item" id="open-credits-row" style="cursor:pointer">'
+        +       '<div class="dm-row-icon violet"><i class="fas fa-scroll"></i></div>'
+        +       '<div class="dm-row-info"><div class="dm-row-title">声明与致谢</div><div class="dm-row-desc">开源声明、致谢名单</div></div>'
+        +       '<button class="dm-nav-btn" id="open-credits-btn"><i class="fas fa-chevron-right"></i></button>'
         +     '</div>'
         +   '</div>'
 
+        /* 危险操作 */
         +   '<div class="dm-section-label danger-label"><i class="fas fa-triangle-exclamation"></i> 危险操作</div>'
-        +   '<div class="dm-action-card">'
-        +     '<div class="dm-action-row">'
-        +       '<div class="dm-badge red"><i class="fas fa-trash-alt"></i></div>'
-        +       '<div class="dm-action-info"><div class="dm-action-title">重置全部数据</div><div class="dm-action-desc">清空所有本地数据，操作不可撤销</div></div>'
-        +       '<button class="dm-btn danger-btn" id="clear-storage"><i class="fas fa-rotate-right"></i> 重置</button>'
+        +   '<div class="dm-row-card">'
+        +     '<div class="dm-row-item">'
+        +       '<div class="dm-row-icon red"><i class="fas fa-trash-alt"></i></div>'
+        +       '<div class="dm-row-info"><div class="dm-row-title">重置全部数据</div><div class="dm-row-desc">清空所有本地数据，不可撤销</div></div>'
+        +       '<button class="dm-danger-btn" id="clear-storage"><i class="fas fa-rotate-right"></i> 重置</button>'
         +     '</div>'
         +   '</div>'
 
-        + '</div>' // .dm-body
+        + '</div>' /* /dm-body */
 
-        + '<div class="dm-footer">'
-        +   '<button class="dm-footer-back" id="back-data" onclick="(function(){hideModal(document.getElementById(\'data-modal\'));showModal(document.getElementById(\'settings-modal\'))})()">'
-        +     '<i class="fas fa-arrow-left"></i> 返回'
-        +   '</button>'
-        +   '<button class="dm-footer-close" id="close-data">'
-        +     '<i class="fas fa-check"></i> 完成'
-        +   '</button>'
+        /* 全量备份抽屉 */
+        + '<div class="dm-action-drawer" id="dm-drawer-full">'
+        +   '<div class="dm-drawer-backdrop" id="dm-drawer-full-backdrop"></div>'
+        +   '<div class="dm-drawer-sheet">'
+        +     '<div class="dm-drawer-handle"></div>'
+        +     '<div class="dm-drawer-title">'
+        +       '<div class="dm-drawer-title-icon blue" style="background:linear-gradient(135deg,#4A90E2,#3576C8);color:#fff"><i class="fas fa-layer-group"></i></div>'
+        +       '<div><div class="dm-drawer-title-text">全量备份</div><div class="dm-drawer-subtitle">包含所有设置、外观、字卡等数据</div></div>'
+        +     '</div>'
+        +     '<div class="dm-drawer-actions">'
+        +       '<button class="dm-drawer-action-btn primary" id="export-all-settings-real">'
+        +         '<div class="dm-drawer-btn-icon"><i class="fas fa-download"></i></div>'
+        +         '<div class="dm-drawer-btn-text"><div class="dm-drawer-btn-title">导出备份</div><div class="dm-drawer-btn-desc">将数据保存为文件</div></div>'
+        +       '</button>'
+        +       '<button class="dm-drawer-action-btn" id="import-all-settings-real">'
+        +         '<div class="dm-drawer-btn-icon"><i class="fas fa-upload"></i></div>'
+        +         '<div class="dm-drawer-btn-text"><div class="dm-drawer-btn-title">从文件恢复</div><div class="dm-drawer-btn-desc">选择之前导出的备份文件</div></div>'
+        +       '</button>'
+        +     '</div>'
+        +     '<button class="dm-drawer-cancel" id="dm-drawer-full-cancel">取消</button>'
+        +   '</div>'
+        + '</div>'
+
+        /* 聊天记录抽屉 */
+        + '<div class="dm-action-drawer" id="dm-drawer-chat">'
+        +   '<div class="dm-drawer-backdrop" id="dm-drawer-chat-backdrop"></div>'
+        +   '<div class="dm-drawer-sheet">'
+        +     '<div class="dm-drawer-handle"></div>'
+        +     '<div class="dm-drawer-title">'
+        +       '<div class="dm-drawer-title-icon" style="background:linear-gradient(135deg,#3BC8A4,#20A882);color:#fff"><i class="fas fa-comments"></i></div>'
+        +       '<div><div class="dm-drawer-title-text">聊天记录</div><div class="dm-drawer-subtitle">仅包含消息内容</div></div>'
+        +     '</div>'
+        +     '<div class="dm-drawer-actions">'
+        +       '<button class="dm-drawer-action-btn primary" id="export-chat-btn-real" style="background:linear-gradient(135deg,#3BC8A4,#20A882);border-color:#3BC8A4">'
+        +         '<div class="dm-drawer-btn-icon"><i class="fas fa-download"></i></div>'
+        +         '<div class="dm-drawer-btn-text"><div class="dm-drawer-btn-title">导出聊天</div><div class="dm-drawer-btn-desc">将消息记录保存为文件</div></div>'
+        +       '</button>'
+        +       '<button class="dm-drawer-action-btn" id="import-chat-btn-real">'
+        +         '<div class="dm-drawer-btn-icon"><i class="fas fa-upload"></i></div>'
+        +         '<div class="dm-drawer-btn-text"><div class="dm-drawer-btn-title">导入聊天</div><div class="dm-drawer-btn-desc">从文件恢复历史消息</div></div>'
+        +       '</button>'
+        +     '</div>'
+        +     '<button class="dm-drawer-cancel" id="dm-drawer-chat-cancel">取消</button>'
+        +   '</div>'
         + '</div>';
 
     /* ═══════════════════════════════════════════════════════════
        2. 写入 HTML（若已正确则跳过）
     ═══════════════════════════════════════════════════════════ */
     function isCorrect(mc) {
-        return mc.querySelector('.dm-hero') !== null
+        return mc.querySelector('.dm-topbar') !== null
+            && mc.querySelector('.dm-storage-card') !== null
             && mc.querySelector('.dm6') === null
             && mc.querySelector('.dm6-tabs') === null;
     }
@@ -221,6 +258,19 @@
     /* ═══════════════════════════════════════════════════════════
        5. 事件绑定（写入 HTML 后调用）
     ═══════════════════════════════════════════════════════════ */
+    function openDrawer(drawerId) {
+        var drawer = document.getElementById(drawerId);
+        if (!drawer) return;
+        drawer.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+    function closeDrawer(drawerId) {
+        var drawer = document.getElementById(drawerId);
+        if (!drawer) return;
+        drawer.classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
     function bindAll(mc) {
         /* close-data */
         var closeBtn = mc.querySelector('#close-data');
@@ -228,6 +278,73 @@
             var modal = document.getElementById('data-modal');
             if (modal && typeof hideModal === 'function') hideModal(modal);
         });
+
+        /* back-data */
+        var backBtn = mc.querySelector('#back-data');
+        if (backBtn) backBtn.addEventListener('click', function () {
+            var dataModal = document.getElementById('data-modal');
+            if (dataModal && typeof hideModal === 'function') hideModal(dataModal);
+            var settingsModal = document.getElementById('settings-modal');
+            if (settingsModal && typeof showModal === 'function') showModal(settingsModal);
+        });
+
+        /* 全量备份 tile */
+        var tileFullBackup = mc.querySelector('#dm-tile-full-backup');
+        if (tileFullBackup) tileFullBackup.addEventListener('click', function () { openDrawer('dm-drawer-full'); });
+
+        /* 聊天记录 tile */
+        var tileChatBackup = mc.querySelector('#dm-tile-chat-backup');
+        if (tileChatBackup) tileChatBackup.addEventListener('click', function () { openDrawer('dm-drawer-chat'); });
+
+        /* 全量备份抽屉 */
+        var fullDrawer = document.getElementById('dm-drawer-full');
+        if (fullDrawer) {
+            var backdrop1 = fullDrawer.querySelector('#dm-drawer-full-backdrop');
+            if (backdrop1) backdrop1.addEventListener('click', function () { closeDrawer('dm-drawer-full'); });
+            var cancelBtn1 = fullDrawer.querySelector('#dm-drawer-full-cancel');
+            if (cancelBtn1) cancelBtn1.addEventListener('click', function () { closeDrawer('dm-drawer-full'); });
+            var exportAllReal = fullDrawer.querySelector('#export-all-settings-real');
+            if (exportAllReal) exportAllReal.addEventListener('click', function () {
+                closeDrawer('dm-drawer-full');
+                if (typeof exportAllData === 'function') exportAllData();
+            });
+            var importAllReal = fullDrawer.querySelector('#import-all-settings-real');
+            if (importAllReal) importAllReal.addEventListener('click', function () {
+                closeDrawer('dm-drawer-full');
+                var inp = document.createElement('input');
+                inp.type = 'file'; inp.accept = '.json';
+                inp.onchange = function (e) {
+                    var f = e.target.files && e.target.files[0];
+                    if (f && typeof importAllData === 'function') importAllData(f);
+                };
+                inp.click();
+            });
+        }
+
+        /* 聊天记录抽屉 */
+        var chatDrawer = document.getElementById('dm-drawer-chat');
+        if (chatDrawer) {
+            var backdrop2 = chatDrawer.querySelector('#dm-drawer-chat-backdrop');
+            if (backdrop2) backdrop2.addEventListener('click', function () { closeDrawer('dm-drawer-chat'); });
+            var cancelBtn2 = chatDrawer.querySelector('#dm-drawer-chat-cancel');
+            if (cancelBtn2) cancelBtn2.addEventListener('click', function () { closeDrawer('dm-drawer-chat'); });
+            var exportChatReal = chatDrawer.querySelector('#export-chat-btn-real');
+            if (exportChatReal) exportChatReal.addEventListener('click', function () {
+                closeDrawer('dm-drawer-chat');
+                if (typeof exportChatHistory === 'function') exportChatHistory();
+            });
+            var importChatReal = chatDrawer.querySelector('#import-chat-btn-real');
+            if (importChatReal) importChatReal.addEventListener('click', function () {
+                closeDrawer('dm-drawer-chat');
+                var inp = document.createElement('input');
+                inp.type = 'file'; inp.accept = '.json';
+                inp.onchange = function (e) {
+                    var f = e.target.files && e.target.files[0];
+                    if (f && typeof importChatHistory === 'function') importChatHistory(f);
+                };
+                inp.click();
+            });
+        }
 
         /* clear-storage */
         var clearBtn = mc.querySelector('#clear-storage');
