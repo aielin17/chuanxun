@@ -28,7 +28,10 @@ window.switchStatsTab = function(tab) {
         }, 100);
     } else if (tab === 'wordcloud') {
         if (wordcloudPanel) wordcloudPanel.style.display = 'block';
-        if (typeof renderWordCloud === 'function') renderWordCloud();
+        // 使用 rAF 确保 display:block 的布局已完成，offsetWidth 可读
+        requestAnimationFrame(function() {
+            if (typeof renderWordCloud === 'function') renderWordCloud();
+        });
     } else {
         if (favoritesPanel) favoritesPanel.style.display = 'block';
         if (typeof renderFavorites === 'function') renderFavorites();
