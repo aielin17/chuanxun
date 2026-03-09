@@ -33,14 +33,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     try {
-        safeAwait(Promise.all([
-            setupEventListeners?.(),
-            initThemeEditor?.(),
-            initAnniversaryModule?.(),
-            initMoodListeners?.(),
-            initDecisionModule?.(),
-            initComboMenu?.()
-        ]));
+        // Bug Fix #4: 移除未被 await 的并行初始化
+        // 原先这些函数在 Promise.all 中"发射后不管"，
+        // 之后 loadData() 内部又各自初始化一次，导致事件绑定重复。
+        // 改为在 loadData 完成后统一执行。
+        try { setupEventListeners?.(); } catch(e) { console.error('setupEventListeners:', e); }
 
         if (typeof localforage === 'undefined') {
             console.warn('LocalForage 未加载，将使用 localStorage 降级方案');

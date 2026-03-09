@@ -9550,7 +9550,6 @@
             overflow: hidden !important;
             display: flex !important;
             flex-direction: column !important;
-            /* Use a defined height so flex children can distribute */
             height: 93dvh !important;
             max-height: 93dvh !important;
             min-height: 200px !important;
@@ -9560,9 +9559,12 @@
             margin: 0 auto !important;
             box-shadow: 0 -8px 40px rgba(0,0,0,0.18) !important;
             background: var(--secondary-bg) !important;
-            /* Suppress base animation; our own plays via transform */
+            /* CSS Fix: use will-change to isolate stacking context;
+               animation overrides any JS-set transform/opacity on open */
+            will-change: transform, opacity;
             animation: dmSheetIn 0.38s cubic-bezier(0.32,0.72,0,1) both !important;
-            transform: none !important;
+            /* These !important rules beat JS inline styles set by showModal() */
+            transform: translateY(0) !important;
             opacity: 1 !important;
         }
         @keyframes dmSheetIn {
@@ -9717,6 +9719,7 @@
         }
         .dm-action-row {
             display: flex;
+            min-height: 52px;  /* Fix: 确保触摸目标足够大 */
             align-items: center;
             gap: 12px;
             padding: 14px 16px;

@@ -536,7 +536,7 @@ const saveData = async () => {
 };
 
         function initializeRandomUI() {
-            const getRandomItem = (arr) => arr[Math.floor(Math.random() * arr.length)];
+            // getRandomItem is now a global function in utils.js
 
 
             document.querySelector('.header-motto').textContent = getRandomItem(CONSTANTS.HEADER_MOTTOS);
@@ -737,12 +737,9 @@ function manageAutoSendTimer() {
             DOMElements.themeToggle.innerHTML = settings.isDarkMode ? '<i class="fas fa-sun"></i>': '<i class="fas fa-moon"></i>';
             DOMElements.partner.name.textContent = settings.partnerName;
             DOMElements.me.name.textContent = settings.myName;
-            var displayStatus = settings.partnerStatus;
-            if (customStatuses && customStatuses.length > 0 && (displayStatus === '在线' || !displayStatus)) {
-                displayStatus = customStatuses[Math.floor(Math.random() * customStatuses.length)];
-                settings.partnerStatus = displayStatus;
-            }
-            DOMElements.partner.status.textContent = displayStatus;
+            // Bug Fix #3: 不在 updateUI 里随机化状态（每次切换主题都会乱改状态）
+            // 状态变更只在 checkStatusChange() 和 loadData() 中发生
+            DOMElements.partner.status.textContent = settings.partnerStatus || '在线';
             DOMElements.me.statusText.textContent = settings.myStatus;
             if (typeof window.updateDynamicNames === 'function') window.updateDynamicNames();
             document.documentElement.style.setProperty('--font-size', `${settings.fontSize}px`);
