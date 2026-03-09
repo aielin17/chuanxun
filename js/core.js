@@ -245,18 +245,18 @@ const loadData = async () => {
         const savedMyStickers = getVal(17);
         const savedReplyGroups = getVal(18);
 
-        if (savedPartnerPersonas) partnerPersonas = savedPartnerPersonas; 
-
-        if (savedShowNameConfig !== null) {
-            showPartnerNameInChat = savedShowNameConfig;
-            document.body.classList.toggle('show-partner-name', showPartnerNameInChat);
-        }
+        if (savedPartnerPersonas) partnerPersonas = savedPartnerPersonas;
 
         if (savedSettings) Object.assign(settings, savedSettings);
+
+        // Bug Fix: 合并 showPartnerNameInChat 的两次赋值，优先使用 settings 中的值（后加载、更新），
+        // 若 settings 中未定义再回退到独立存储的 savedShowNameConfig
         if (settings.showPartnerNameInChat !== undefined) {
             showPartnerNameInChat = settings.showPartnerNameInChat;
-            document.body.classList.toggle('show-partner-name', showPartnerNameInChat);
+        } else if (savedShowNameConfig !== null) {
+            showPartnerNameInChat = savedShowNameConfig;
         }
+        document.body.classList.toggle('show-partner-name', showPartnerNameInChat);
         try {
             if (settings.customFontUrl) applyCustomFont(settings.customFontUrl);
             if (settings.customBubbleCss) applyCustomBubbleCss(settings.customBubbleCss);

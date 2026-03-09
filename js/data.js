@@ -103,12 +103,12 @@
         /* 危险操作 */
         +   '<div class="dm-section-label danger-label"><i class="fas fa-triangle-exclamation"></i> 危险操作</div>'
         +   '<div class="dm-row-card">'
-        +     '<div class="dm-row-item">'
+        +     '<div class="dm-row-item dm-danger-row-mobile">'
         +       '<div class="dm-row-icon" style="background:rgba(255,150,0,0.12);color:#ff9600"><i class="fas fa-comment-slash"></i></div>'
         +       '<div class="dm-row-info"><div class="dm-row-title">仅清除聊天记录</div><div class="dm-row-desc">保留所有设置，仅删除当前会话消息</div></div>'
         +       '<button class="dm-danger-btn" id="clear-chat-only" style="background:rgba(255,150,0,0.1);color:#ff9600;border-color:rgba(255,150,0,0.3);"><i class="fas fa-comment-slash"></i> 清除</button>'
         +     '</div>'
-        +     '<div class="dm-row-item">'
+        +     '<div class="dm-row-item dm-danger-row-mobile">'
         +       '<div class="dm-row-icon red"><i class="fas fa-trash-alt"></i></div>'
         +       '<div class="dm-row-info"><div class="dm-row-title">重置全部数据</div><div class="dm-row-desc">清空所有本地数据，不可撤销</div></div>'
         +       '<button class="dm-danger-btn" id="clear-storage"><i class="fas fa-rotate-right"></i> 重置</button>'
@@ -454,6 +454,10 @@
         }, 60);
     }
 
+    // Bug Fix: MutationObserver 改为单例模式，防止每次 init() 调用时堆积新的 Observer
+    var _styleObserver = null;
+    var _contentObserver = null;
+
     function init() {
         var modal = document.getElementById('data-modal');
         if (!modal) return;
@@ -462,21 +466,27 @@
         var mc = modal.querySelector('.modal-content');
         if (mc) mc.dataset.dm6Built = 'v9';
 
+        /* 断开旧的 Observer，防止重复堆积 */
+        if (_styleObserver) { _styleObserver.disconnect(); _styleObserver = null; }
+        if (_contentObserver) { _contentObserver.disconnect(); _contentObserver = null; }
+
         /* 观察 modal 的 style 变化（显示/隐藏） */
-        new MutationObserver(function () {
+        _styleObserver = new MutationObserver(function () {
             var d = modal.style.display;
             if (d === 'flex' || d === 'block') onModalOpen(modal);
-        }).observe(modal, { attributes: true, attributeFilter: ['style'] });
+        });
+        _styleObserver.observe(modal, { attributes: true, attributeFilter: ['style'] });
 
         /* 观察 modal-content 的子节点变化（防止 rebuild 替换内容） */
         if (mc) {
-            new MutationObserver(function () {
+            _contentObserver = new MutationObserver(function () {
                 var mc2 = modal.querySelector('.modal-content');
                 if (mc2 && !isCorrect(mc2)) {
                     mc2.dataset.dm6Built = 'v9';
                     writeHTML(mc2);
                 }
-            }).observe(mc, { childList: true, subtree: false });
+            });
+            _contentObserver.observe(mc, { childList: true, subtree: false });
         }
     }
 

@@ -1445,3 +1445,286 @@ function initComboMenu() {
         contentArea.appendChild(wrapper);
     }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   词云生成 renderWordCloud
+   纯 Canvas 实现，无外部依赖
+   ══════════════════════════════════════════════════════════════ */
+(function() {
+
+    /* ── 停用词表（中文常用虚词 + 标点 + 数字） ── */
+    var STOP_WORDS = new Set([
+        '的','了','是','我','你','他','她','它','们','这','那','有','在','就','也','都',
+        '和','与','或','但','不','没','很','太','更','最','已','被','让','把','对','从',
+        '到','于','以','为','之','其','而','则','所','等','啊','哦','嗯','哈','呢','吧',
+        '吗','嘛','呀','哇','哎','唉','嗯嗯','哈哈','嘻嘻','呵呵','哦哦','啊啊',
+        '一','二','三','四','五','六','七','八','九','十','个','次','条','件','种',
+        '好','行','可以','可','又','再','还','来','去','说','想','知道','觉得','感觉',
+        '什么','怎么','为什么','哪','谁','哪里','怎样','如何','这么','那么',
+        '然后','因为','所以','如果','虽然','但是','而且','不过','只是','只有',
+        '没有','不是','还是','就是','真的','真的吗','对啊','好的','好吧','嗯嗯',
+        '今天','昨天','明天','现在','以前','以后','时候','时间','一下','一直',
+        'ok','OK','Ok','yes','no','hh','hhhh','hhh','嗯','额'
+    ]);
+
+    /* ── 分词（简单按字符切割 + 2-6 字词组） ── */
+    function tokenize(text) {
+        // 清洗：去掉 URL、表情占位、HTML 标签、纯数字
+        text = text
+            .replace(/https?:\/\/\S+/g, '')
+            .replace(/\[.*?\]/g, '')
+            .replace(/<[^>]+>/g, '')
+            .replace(/[^\u4e00-\u9fa5a-zA-Z]/g, ' ')
+            .toLowerCase();
+
+        var words = {};
+
+        // 提取中文词（2-5 字滑窗，优先 2 字）
+        var cn = text.replace(/[a-z ]/g, '');
+        for (var i = 0; i < cn.length; i++) {
+            for (var l = 2; l <= 5 && i + l <= cn.length; l++) {
+                var w = cn.slice(i, i + l);
+                if (!STOP_WORDS.has(w) && w.length >= 2) {
+                    words[w] = (words[w] || 0) + (l === 2 ? 1 : l === 3 ? 1.5 : 2);
+                }
+            }
+        }
+
+        // 提取英文单词（3 字以上）
+        var en = text.match(/[a-z]{3,}/g) || [];
+        en.forEach(function(w) {
+            if (!STOP_WORDS.has(w)) words[w] = (words[w] || 0) + 1;
+        });
+
+        return words;
+    }
+
+    /* ── 混合两个词频表 ── */
+    function mergeFreq(a, b) {
+        var out = Object.assign({}, a);
+        Object.keys(b).forEach(function(k) { out[k] = (out[k] || 0) + b[k]; });
+        return out;
+    }
+
+    /* ── 取 Top-N 词 ── */
+    function topWords(freq, n) {
+        return Object.entries(freq)
+            .sort(function(a, b) { return b[1] - a[1]; })
+            .slice(0, n)
+            .map(function(e) { return { word: e[0], count: e[1] }; });
+    }
+
+    /* ── 颜色方案（跟随 accent-color 生成渐变色系） ── */
+    function getPalette() {
+        var style = getComputedStyle(document.documentElement);
+        var accent = style.getPropertyValue('--accent-color').trim() || '#E8729A';
+        // 从 accent 衍生出 5 个色调
+        return [accent, '#9C6FD4', '#3BC8A4', '#4A90E2', '#FFB74D', '#F06060',
+                '#7EC8E3', '#A8D8A8', '#DDA0DD', '#F0C27F'];
+    }
+
+    /* ── Canvas 词云核心 ── */
+    function drawWordCloud(canvas, words, who) {
+        var ctx = canvas.getContext('2d');
+        var W = canvas.width, H = canvas.height;
+        ctx.clearRect(0, 0, W, H);
+
+        if (!words.length) {
+            ctx.fillStyle = getComputedStyle(document.documentElement)
+                .getPropertyValue('--text-secondary').trim() || '#999';
+            ctx.font = '14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('暂无足够内容生成词云', W / 2, H / 2);
+            return;
+        }
+
+        var palette = getPalette();
+        var maxCount = words[0].count;
+        var minCount = words[words.length - 1].count;
+        var placed = []; // [{x, y, w, h}]
+
+        var MIN_FONT = 13, MAX_FONT = 52;
+
+        function fontSize(count) {
+            if (maxCount === minCount) return (MIN_FONT + MAX_FONT) / 2;
+            return MIN_FONT + ((count - minCount) / (maxCount - minCount)) * (MAX_FONT - MIN_FONT);
+        }
+
+        function overlaps(x, y, w, h) {
+            var pad = 4;
+            for (var i = 0; i < placed.length; i++) {
+                var p = placed[i];
+                if (x - pad < p.x + p.w && x + w + pad > p.x &&
+                    y - pad < p.y + p.h && y + h + pad > p.y) return true;
+            }
+            return false;
+        }
+
+        // 螺旋放置
+        words.forEach(function(item, idx) {
+            var fs = fontSize(item.count);
+            ctx.font = 'bold ' + fs + 'px var(--font-family, sans-serif)';
+            var tw = ctx.measureText(item.word).width;
+            var th = fs * 1.25;
+            var color = palette[idx % palette.length];
+
+            var placed_ = false;
+            var angle = 0, r = 0, step = 0.22;
+            var cx = W / 2, cy = H / 2;
+
+            for (var tries = 0; tries < 600; tries++) {
+                var px = cx + r * Math.cos(angle) - tw / 2;
+                var py = cy + r * Math.sin(angle) + th / 3;
+
+                // 边界检查
+                if (px > 6 && py > th && px + tw < W - 6 && py < H - 6) {
+                    if (!overlaps(px, py - th, tw, th)) {
+                        ctx.fillStyle = color;
+                        ctx.fillText(item.word, px, py);
+                        placed.push({ x: px, y: py - th, w: tw, h: th });
+                        placed_ = true;
+                        break;
+                    }
+                }
+                angle += step;
+                r += 0.55;
+            }
+            // 若实在放不下就缩小字号再尝试一次
+            if (!placed_) {
+                var fsSmall = Math.max(11, fs * 0.65);
+                ctx.font = 'bold ' + fsSmall + 'px var(--font-family, sans-serif)';
+                var tw2 = ctx.measureText(item.word).width;
+                var th2 = fsSmall * 1.25;
+                // 随机找个空位
+                for (var t2 = 0; t2 < 200; t2++) {
+                    var rx = 10 + Math.random() * (W - 20 - tw2);
+                    var ry = th2 + Math.random() * (H - th2 - 10);
+                    if (!overlaps(rx, ry - th2, tw2, th2)) {
+                        ctx.fillStyle = color;
+                        ctx.fillText(item.word, rx, ry);
+                        placed.push({ x: rx, y: ry - th2, w: tw2, h: th2 });
+                        break;
+                    }
+                }
+            }
+        });
+    }
+
+    /* ── 主渲染函数 ── */
+    window.renderWordCloud = function() {
+        var container = document.getElementById('wordcloud-container');
+        if (!container) return;
+
+        // 检查是否有消息数据
+        if (typeof messages === 'undefined' || !messages || messages.length === 0) {
+            container.innerHTML = '<div class="wc-empty"><i class="fas fa-cloud"></i><p>暂无聊天记录</p></div>';
+            return;
+        }
+
+        var pName = (typeof settings !== 'undefined' && settings.partnerName) ? settings.partnerName : '对方';
+        var mName = (typeof settings !== 'undefined' && settings.myName) ? settings.myName : '我';
+
+        var partnerMsgs = messages.filter(function(m) {
+            return m.sender !== 'user' && m.text && m.type !== 'system' && typeof m.text === 'string';
+        });
+        var myMsgs = messages.filter(function(m) {
+            return m.sender === 'user' && m.text && m.type !== 'system' && typeof m.text === 'string';
+        });
+
+        // 词频统计
+        var partnerFreq = {};
+        partnerMsgs.forEach(function(m) { partnerFreq = mergeFreq(partnerFreq, tokenize(m.text)); });
+        var myFreq = {};
+        myMsgs.forEach(function(m) { myFreq = mergeFreq(myFreq, tokenize(m.text)); });
+        var allFreq = mergeFreq(partnerFreq, myFreq);
+
+        var partnerTop = topWords(partnerFreq, 60);
+        var myTop = topWords(myFreq, 60);
+        var allTop = topWords(allFreq, 60);
+
+        // 当前选中视图
+        var currentView = container._currentView || 'all';
+
+        function getViewData(v) {
+            if (v === 'partner') return { words: partnerTop, label: pName };
+            if (v === 'me') return { words: myTop, label: mName };
+            return { words: allTop, label: '全部' };
+        }
+
+        function renderView(v) {
+            container._currentView = v;
+            // 更新 tab 高亮
+            container.querySelectorAll('.wc-view-btn').forEach(function(btn) {
+                btn.classList.toggle('active', btn.dataset.view === v);
+            });
+
+            var canvas = container.querySelector('#wc-canvas');
+            if (!canvas) return;
+            var data = getViewData(v);
+            drawWordCloud(canvas, data.words, v);
+
+            // 更新词频榜
+            var rankList = container.querySelector('.wc-rank-list');
+            if (rankList) {
+                if (!data.words.length) {
+                    rankList.innerHTML = '<div class="wc-rank-empty">暂无数据</div>';
+                    return;
+                }
+                var max = data.words[0].count;
+                rankList.innerHTML = data.words.slice(0, 10).map(function(item, i) {
+                    var pct = Math.round(item.count / max * 100);
+                    var medals = ['🥇','🥈','🥉'];
+                    return '<div class="wc-rank-item">'
+                        + '<span class="wc-rank-idx">' + (medals[i] || (i + 1)) + '</span>'
+                        + '<span class="wc-rank-word">' + item.word + '</span>'
+                        + '<div class="wc-rank-bar-wrap"><div class="wc-rank-bar" style="width:' + pct + '%"></div></div>'
+                        + '<span class="wc-rank-count">' + Math.round(item.count) + '</span>'
+                        + '</div>';
+                }).join('');
+            }
+        }
+
+        // 构建 HTML 骨架（首次或重置时）
+        if (!container.querySelector('#wc-canvas')) {
+            var dpr = window.devicePixelRatio || 1;
+            var cw = Math.min(container.offsetWidth || 340, 500);
+            var ch = Math.round(cw * 0.62);
+
+            container.innerHTML =
+                '<div class="wc-toolbar">'
+                +   '<button class="wc-view-btn' + (currentView === 'all' ? ' active' : '') + '" data-view="all"><i class="fas fa-users"></i> 全部</button>'
+                +   '<button class="wc-view-btn' + (currentView === 'partner' ? ' active' : '') + '" data-view="partner"><i class="fas fa-user-circle"></i> ' + pName + '</button>'
+                +   '<button class="wc-view-btn' + (currentView === 'me' ? ' active' : '') + '" data-view="me"><i class="fas fa-user"></i> ' + mName + '</button>'
+                +   '<button class="wc-regen-btn" title="重新生成"><i class="fas fa-sync-alt"></i></button>'
+                + '</div>'
+                + '<div class="wc-canvas-wrap">'
+                +   '<canvas id="wc-canvas" width="' + (cw * dpr) + '" height="' + (ch * dpr) + '" style="width:' + cw + 'px;height:' + ch + 'px;border-radius:14px;display:block;margin:0 auto;"></canvas>'
+                + '</div>'
+                + '<div class="wc-rank-section">'
+                +   '<div class="wc-rank-title"><i class="fas fa-fire"></i> 高频词 Top 10</div>'
+                +   '<div class="wc-rank-list"></div>'
+                + '</div>';
+
+            // 缩放 canvas
+            var cv = container.querySelector('#wc-canvas');
+            if (cv && dpr !== 1) {
+                cv.getContext('2d').scale(dpr, dpr);
+            }
+
+            // 绑定 toolbar 按钮
+            container.querySelector('.wc-toolbar').addEventListener('click', function(e) {
+                var btn = e.target.closest('.wc-view-btn');
+                var regen = e.target.closest('.wc-regen-btn');
+                if (btn) renderView(btn.dataset.view);
+                if (regen) {
+                    // 重置容器，强制重绘
+                    container.innerHTML = '';
+                    window.renderWordCloud();
+                }
+            });
+        }
+
+        renderView(currentView);
+    };
+
+})();

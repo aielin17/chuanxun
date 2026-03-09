@@ -58,28 +58,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         setInterval(checkStatusChange, 60000);
 
+        // Bug Fix: 合并两次重复的 acceptDisclaimerBtn 事件绑定为一次
         if (disclaimerModal) {
             const tourSeen = await safeAwait(localforage?.getItem(APP_PREFIX + 'tour_seen'), false);
             
             if (!tourSeen) {
                 showModal(disclaimerModal);
                 
-                if (acceptDisclaimerBtn) {
+                if (acceptDisclaimerBtn && !acceptDisclaimerBtn._bound) {
+                    acceptDisclaimerBtn._bound = true;
                     acceptDisclaimerBtn.addEventListener('click', () => {
                         hideModal(disclaimerModal);
+                        localforage?.setItem(APP_PREFIX + 'tour_seen', true).catch(() => {});
                         startTour?.();
-                    }, { once: true }); 
+                    }, { once: true });
                 }
             }
-        }
-        
-        if (acceptDisclaimerBtn && !acceptDisclaimerBtn._closeFixed) {
-            acceptDisclaimerBtn._closeFixed = true;
-            acceptDisclaimerBtn.addEventListener('click', () => {
-                if (disclaimerModal && disclaimerModal.style.display !== 'none') {
-                    hideModal(disclaimerModal);
-                }
-            });
         }
 
         updateLoader('连接成功，欢迎回来。', '100%');
