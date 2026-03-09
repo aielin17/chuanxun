@@ -9602,7 +9602,9 @@
             overflow: hidden !important;
             display: flex !important;
             flex-direction: column !important;
+            height: 93vh !important;       /* fallback for older iOS */
             height: 93dvh !important;
+            max-height: 93vh !important;
             max-height: 93dvh !important;
             min-height: 200px !important;
             border-radius: 28px 28px 0 0 !important;
@@ -9611,7 +9613,7 @@
             margin: 0 auto !important;
             box-shadow: 0 -8px 40px rgba(0,0,0,0.18) !important;
             background: var(--primary-bg) !important;
-            will-change: transform, opacity;
+            /* ⚠️ 移除 will-change，防止创建层叠上下文困住 fixed 抽屉 */
             animation: dmSheetIn 0.38s cubic-bezier(0.32,0.72,0,1) both !important;
             transform: translateY(0) !important;
             opacity: 1 !important;
@@ -9932,6 +9934,73 @@
         .dm-toggle-pill input:checked + .dm-toggle-slider::after {
             transform: translateX(20px);
         }
+
+        /* ── 危险操作：全宽按钮卡片（移动端友好） ── */
+        .dm-danger-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .dm-danger-card {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border-radius: 16px;
+            border: 1.5px solid;
+            background: transparent;
+            cursor: pointer;
+            font-family: var(--font-family);
+            text-align: left;
+            transition: all 0.18s;
+            box-sizing: border-box;
+        }
+        .dm-danger-card:active { transform: scale(0.98); }
+        .dm-danger-card-orange {
+            border-color: rgba(255,150,0,0.3);
+            background: rgba(255,150,0,0.06);
+        }
+        .dm-danger-card-orange:hover { background: rgba(255,150,0,0.12); border-color: #ff9600; }
+        .dm-danger-card-red {
+            border-color: rgba(224,80,80,0.3);
+            background: rgba(224,80,80,0.06);
+        }
+        .dm-danger-card-red:hover { background: rgba(224,80,80,0.12); border-color: #e05050; }
+        .dm-danger-card-icon {
+            width: 42px; height: 42px;
+            border-radius: 13px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        .dm-danger-card-orange .dm-danger-card-icon {
+            background: rgba(255,150,0,0.15);
+            color: #ff9600;
+        }
+        .dm-danger-card-red .dm-danger-card-icon {
+            background: rgba(224,80,80,0.15);
+            color: #e05050;
+        }
+        .dm-danger-card-body { flex: 1; min-width: 0; }
+        .dm-danger-card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+        .dm-danger-card-desc {
+            font-size: 11.5px;
+            color: var(--text-secondary);
+        }
+        .dm-danger-card-arrow {
+            font-size: 11px;
+            color: var(--text-secondary);
+            opacity: 0.5;
+            flex-shrink: 0;
+        }
+        .dm-danger-card-orange .dm-danger-card-arrow { color: #ff9600; opacity: 0.7; }
+        .dm-danger-card-red .dm-danger-card-arrow    { color: #e05050; opacity: 0.7; }
 
         /* ── 危险操作按钮 ── */
         .dm-danger-btn {
