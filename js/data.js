@@ -100,25 +100,34 @@
         +     '</div>'
         +   '</div>'
 
-        /* 危险操作 */
+        /* 危险操作 - 改为全宽按钮卡片，移动端友好 */
         +   '<div class="dm-section-label danger-label"><i class="fas fa-triangle-exclamation"></i> 危险操作</div>'
-        +   '<div class="dm-row-card">'
-        +     '<div class="dm-row-item dm-danger-row-mobile">'
-        +       '<div class="dm-row-icon" style="background:rgba(255,150,0,0.12);color:#ff9600"><i class="fas fa-comment-slash"></i></div>'
-        +       '<div class="dm-row-info"><div class="dm-row-title">仅清除聊天记录</div><div class="dm-row-desc">保留所有设置，仅删除当前会话消息</div></div>'
-        +       '<button class="dm-danger-btn" id="clear-chat-only" style="background:rgba(255,150,0,0.1);color:#ff9600;border-color:rgba(255,150,0,0.3);"><i class="fas fa-comment-slash"></i> 清除</button>'
-        +     '</div>'
-        +     '<div class="dm-row-item dm-danger-row-mobile">'
-        +       '<div class="dm-row-icon red"><i class="fas fa-trash-alt"></i></div>'
-        +       '<div class="dm-row-info"><div class="dm-row-title">重置全部数据</div><div class="dm-row-desc">清空所有本地数据，不可撤销</div></div>'
-        +       '<button class="dm-danger-btn" id="clear-storage"><i class="fas fa-rotate-right"></i> 重置</button>'
-        +     '</div>'
+        +   '<div class="dm-danger-cards">'
+        +     '<button class="dm-danger-card dm-danger-card-orange" id="clear-chat-only">'
+        +       '<div class="dm-danger-card-icon"><i class="fas fa-comment-slash"></i></div>'
+        +       '<div class="dm-danger-card-body">'
+        +         '<div class="dm-danger-card-title">清除聊天记录</div>'
+        +         '<div class="dm-danger-card-desc">仅删除当前会话消息，设置保留</div>'
+        +       '</div>'
+        +       '<i class="fas fa-chevron-right dm-danger-card-arrow"></i>'
+        +     '</button>'
+        +     '<button class="dm-danger-card dm-danger-card-red" id="clear-storage">'
+        +       '<div class="dm-danger-card-icon"><i class="fas fa-trash-alt"></i></div>'
+        +       '<div class="dm-danger-card-body">'
+        +         '<div class="dm-danger-card-title">重置全部数据</div>'
+        +         '<div class="dm-danger-card-desc">清空所有数据，不可撤销</div>'
+        +       '</div>'
+        +       '<i class="fas fa-chevron-right dm-danger-card-arrow"></i>'
+        +     '</button>'
         +   '</div>'
 
         + '</div>' /* /dm-body */
+        ;
 
-        /* 全量备份抽屉 */
-        + '<div class="dm-action-drawer" id="dm-drawer-full">'
+    /* 抽屉 HTML 单独定义，将注入到 document.body 而非 modal-content，
+       避免 will-change:transform 层叠上下文导致 fixed 定位被困 */
+    var DRAWER_FULL_HTML =
+        '<div class="dm-action-drawer" id="dm-drawer-full">'
         +   '<div class="dm-drawer-backdrop" id="dm-drawer-full-backdrop"></div>'
         +   '<div class="dm-drawer-sheet">'
         +     '<div class="dm-drawer-handle"></div>'
@@ -138,10 +147,10 @@
         +     '</div>'
         +     '<button class="dm-drawer-cancel" id="dm-drawer-full-cancel">取消</button>'
         +   '</div>'
-        + '</div>'
+        + '</div>';
 
-        /* 聊天记录抽屉 */
-        + '<div class="dm-action-drawer" id="dm-drawer-chat">'
+    var DRAWER_CHAT_HTML =
+        '<div class="dm-action-drawer" id="dm-drawer-chat">'
         +   '<div class="dm-drawer-backdrop" id="dm-drawer-chat-backdrop"></div>'
         +   '<div class="dm-drawer-sheet">'
         +     '<div class="dm-drawer-handle"></div>'
@@ -173,9 +182,31 @@
             && mc.querySelector('.dm6-tabs') === null;
     }
 
+    /* 将抽屉注入 document.body，脱离 modal-content 的 will-change 层叠上下文，
+       确保 position:fixed 在 iOS Safari 等浏览器中能正确覆盖全屏 */
+    function ensureDrawersOnBody() {
+        var DRAWER_IDS = ['dm-drawer-full', 'dm-drawer-chat'];
+        DRAWER_IDS.forEach(function(id) {
+            var existing = document.getElementById(id);
+            // 若已在 body 直接子节点中则跳过
+            if (existing && existing.parentElement === document.body) return;
+            // 若在 modal 内则移到 body
+            if (existing) {
+                document.body.appendChild(existing);
+                return;
+            }
+            // 不存在则创建
+            var dummy = document.createElement('div');
+            if (id === 'dm-drawer-full') dummy.innerHTML = DRAWER_FULL_HTML;
+            else dummy.innerHTML = DRAWER_CHAT_HTML;
+            document.body.appendChild(dummy.firstElementChild);
+        });
+    }
+
     function writeHTML(mc) {
         mc.innerHTML = INNER_HTML;
         mc.dataset.dm6Built = 'v9'; // 阻止旧版 rebuild()
+        ensureDrawersOnBody();
         bindAll(mc);
     }
 
@@ -183,6 +214,7 @@
         if (!mc) return;
         mc.dataset.dm6Built = 'v9'; // 先打标记，再检查
         if (!isCorrect(mc)) writeHTML(mc);
+        else ensureDrawersOnBody(); // HTML 已正确但抽屉可能还在 modal 内
     }
 
     /* ═══════════════════════════════════════════════════════════

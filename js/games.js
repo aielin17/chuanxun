@@ -1508,7 +1508,11 @@ function initComboMenu() {
 
     /* ── 取 Top-N 词 ── */
     function topWords(freq, n) {
+        // 根据语料量动态设置最低频率阈值，过滤噪音碎片
+        var totalMsgs = Object.keys(freq).length;
+        var minFreq = totalMsgs > 200 ? 3 : totalMsgs > 50 ? 2 : 1;
         return Object.entries(freq)
+            .filter(function(e) { return e[1] >= minFreq; })
             .sort(function(a, b) { return b[1] - a[1]; })
             .slice(0, n)
             .map(function(e) { return { word: e[0], count: e[1] }; });
@@ -1526,7 +1530,12 @@ function initComboMenu() {
     /* ── Canvas 词云核心 ── */
     function drawWordCloud(canvas, words, who) {
         var ctx = canvas.getContext('2d');
-        var W = canvas.width, H = canvas.height;
+        var dpr = window.devicePixelRatio || 1;
+        // 每次绘制前重置变换，防止多次调用时 scale 累积
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        // 使用 CSS 像素尺寸（scale 后坐标系即 CSS 像素）
+        var W = canvas.width / dpr;
+        var H = canvas.height / dpr;
         ctx.clearRect(0, 0, W, H);
 
         if (!words.length) {
@@ -1687,7 +1696,12 @@ function initComboMenu() {
         // 构建 HTML 骨架（首次或重置时）
         if (!container.querySelector('#wc-canvas')) {
             var dpr = window.devicePixelRatio || 1;
-            var cw = Math.min(container.offsetWidth || 340, 500);
+            // offsetWidth 可能在面板刚显示时为 0，取父容器宽度作后备
+            var cw = Math.min(
+                container.offsetWidth ||
+                (container.parentElement && container.parentElement.offsetWidth) ||
+                340, 500
+            );
             var ch = Math.round(cw * 0.62);
 
             container.innerHTML =
@@ -1705,11 +1719,9 @@ function initComboMenu() {
                 +   '<div class="wc-rank-list"></div>'
                 + '</div>';
 
-            // 缩放 canvas
-            var cv = container.querySelector('#wc-canvas');
-            if (cv && dpr !== 1) {
-                cv.getContext('2d').scale(dpr, dpr);
-            }
+            // ⚠️ 不在此处调用 ctx.scale()。
+            // drawWordCloud 内部每次调用 ctx.setTransform(dpr,...) 统一重置，
+            // 避免多次 renderWordCloud 时 scale 叠加。
 
             // 绑定 toolbar 按钮
             container.querySelector('.wc-toolbar').addEventListener('click', function(e) {
