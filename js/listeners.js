@@ -1322,7 +1322,8 @@ document.getElementById('cancel-envelope').addEventListener('click', () => {
 
         function initDataManagementListeners() {
 
-            document.getElementById('clear-storage').addEventListener('click', clearAllAppData);
+            const clearStorageEl = document.getElementById('clear-storage');
+            if (clearStorageEl) clearStorageEl.addEventListener('click', clearAllAppData);
             const creditsBtn = document.getElementById('open-credits-btn');
             if (creditsBtn) {
                 creditsBtn.addEventListener('click', () => {
