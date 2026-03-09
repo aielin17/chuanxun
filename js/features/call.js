@@ -873,11 +873,14 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
             r.readAsDataURL(f); e.target.value = '';
         });
 
-        // Call feature toggle (delegated, works for both old dm-card and new dm2-card)
+        // Call feature toggle (delegated, works for both old dm-card and new chat-modal rhythm panel)
         document.addEventListener('change', e => {
             if (e.target.id !== 'call-enabled-toggle') return;
             S.enabled = e.target.checked;
             localStorage.setItem(KEY_ENABLED, S.enabled);
+            // Style the notif-toggle-slider knob
+            const slider = e.target.nextElementSibling;
+            if (slider) slider.style.background = S.enabled ? 'var(--accent-color)' : '';
             const btn = document.getElementById('call-toolbar-btn');
             if (btn) btn.style.display = S.enabled ? '' : 'none';
             if (!S.enabled && S.active) endCall();
@@ -900,6 +903,26 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
         const late = () => {
             injectToolbarBtn();
             if (S.enabled) scheduleRandomCall();
+            // Sync call-enabled-toggle checkbox in chat-modal rhythm panel
+            const syncCallToggle = () => {
+                const tog = document.getElementById('call-enabled-toggle');
+                if (tog) {
+                    tog.checked = S.enabled;
+                    // Style the notif-toggle-slider to reflect state
+                    const slider = tog.nextElementSibling;
+                    if (slider) slider.style.background = S.enabled ? 'var(--accent-color)' : '';
+                }
+            };
+            syncCallToggle();
+            // Also sync after chat-modal opens (settings might not be rendered yet)
+            const chatModal = document.getElementById('chat-modal');
+            if (chatModal) {
+                new MutationObserver(() => {
+                    if (chatModal.style.display === 'flex' || chatModal.style.display === 'block') {
+                        setTimeout(syncCallToggle, 50);
+                    }
+                }).observe(chatModal, { attributes: true, attributeFilter: ['style'] });
+            }
         };
         if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(late, 800));
         else setTimeout(late, 800);
