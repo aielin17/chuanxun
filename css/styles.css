@@ -10119,32 +10119,57 @@
         @media (max-width: 480px) {
             #data-modal .modal-content { max-height: 96dvh; border-radius: 24px 24px 0 0; }
 
-            /* 危险操作行在窄屏上允许换行 */
-            .dm-row-item {
-                flex-wrap: wrap;
-                gap: 8px;
-            }
-            .dm-row-item .dm-row-info {
-                flex: 1 1 60%;
-                min-width: 0;
-            }
-            .dm-danger-btn {
-                padding: 7px 12px;
-                font-size: 12px;
-                flex-shrink: 0;
-            }
-            /* 通知 toggle 行不折行，但缩小间距 */
-            .dm-row-item:has(.dm-toggle-pill) {
-                flex-wrap: nowrap;
-                gap: 8px;
-            }
-            /* 数据格子在极窄屏下保持2列但内容可缩小 */
-            .dm-tile {
-                padding: 12px 10px 11px;
-            }
+            /* ── 数据格子在极窄屏下保持2列但内容可缩小 ── */
+            .dm-tile { padding: 12px 10px 11px; }
             .dm-tile-title { font-size: 12px; }
             .dm-tile-desc  { font-size: 10px; }
             .dm-tile-icon  { width: 36px; height: 36px; font-size: 14px; }
+
+            /* ── 通用行项：不折行，min-width:0 防溢出 ── */
+            .dm-row-item {
+                flex-wrap: nowrap;
+                gap: 10px;
+                align-items: center;
+                padding: 12px 14px;
+            }
+            .dm-row-info {
+                flex: 1 1 0;
+                min-width: 0;
+            }
+            .dm-row-title {
+                font-size: 13px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .dm-row-desc {
+                font-size: 10.5px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            /* toggle 开关不缩小 */
+            .dm-row-item .dm-toggle-pill { flex-shrink: 0; }
+            /* 导航按钮缩小 */
+            .dm-nav-btn { width: 28px; height: 28px; flex-shrink: 0; }
+
+            /* ── 危险操作行：竖向卡片，按钮独占底部整行 ── */
+            /* :has() 支持的浏览器走这里 */
+            .dm-row-item:has(.dm-danger-btn) {
+                flex-wrap: wrap;
+            }
+            /* 兜底 class，覆盖不支持 :has() 的安卓 WebView */
+            .dm-danger-row-mobile {
+                flex-wrap: wrap !important;
+            }
+            .dm-danger-btn {
+                width: 100%;
+                justify-content: center;
+                padding: 9px 12px;
+                font-size: 13px;
+                flex-shrink: 0;
+                box-sizing: border-box;
+            }
         }
 
         @keyframes slideUpSheet {
@@ -10302,6 +10327,164 @@
         .stats-nav-btn:hover:not(.active) {
             background: rgba(var(--accent-color-rgb), 0.07);
             color: var(--text-primary);
+        }
+
+        /* ══════════════════════════════════════════
+           词云面板 styles
+           ══════════════════════════════════════════ */
+        #wordcloud-panel {
+            overflow-y: auto;
+            max-height: 62vh;
+            padding: 2px 0 4px;
+            scrollbar-width: none;
+        }
+        #wordcloud-panel::-webkit-scrollbar { display: none; }
+
+        #wordcloud-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* ── toolbar ── */
+        .wc-toolbar {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .wc-view-btn {
+            flex: 1;
+            min-width: 0;
+            padding: 7px 6px;
+            border: none;
+            border-radius: 9px;
+            background: var(--secondary-bg);
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: var(--font-family);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .wc-view-btn.active {
+            background: var(--primary-bg);
+            color: var(--accent-color);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        }
+        .wc-view-btn:hover:not(.active) {
+            background: rgba(var(--accent-color-rgb), 0.08);
+            color: var(--text-primary);
+        }
+        .wc-regen-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 9px;
+            background: var(--secondary-bg);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .wc-regen-btn:hover {
+            background: rgba(var(--accent-color-rgb), 0.12);
+            color: var(--accent-color);
+            transform: rotate(45deg);
+        }
+        .wc-regen-btn:active { transform: rotate(180deg); }
+
+        /* ── canvas 容器 ── */
+        .wc-canvas-wrap {
+            background: var(--secondary-bg);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            overflow: hidden;
+        }
+
+        /* ── 词频榜 ── */
+        .wc-rank-section {
+            background: var(--secondary-bg);
+            border-radius: 14px;
+            border: 1px solid var(--border-color);
+            padding: 12px 14px;
+        }
+        .wc-rank-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .wc-rank-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .wc-rank-item:last-child { border-bottom: none; }
+        .wc-rank-idx {
+            font-size: 14px;
+            width: 22px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .wc-rank-word {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            width: 60px;
+            flex-shrink: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .wc-rank-bar-wrap {
+            flex: 1;
+            height: 6px;
+            background: var(--border-color);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .wc-rank-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-color), rgba(var(--accent-color-rgb), 0.5));
+            border-radius: 3px;
+            transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .wc-rank-count {
+            font-size: 11px;
+            color: var(--text-secondary);
+            width: 28px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+        .wc-rank-empty, .wc-empty {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 13px;
+            padding: 20px 0;
+        }
+        .wc-empty i {
+            font-size: 32px;
+            display: block;
+            margin-bottom: 8px;
+            opacity: 0.4;
         }
 
         /* ── Search result items ── */
