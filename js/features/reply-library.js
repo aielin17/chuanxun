@@ -1,8 +1,3 @@
-/**
- * features/reply-library.js — 回复库 · 全新重构版
- * ✦ 移动优先 · 底部 Tab 导航 · 精美卡片 · 分组高度自定义 · 批量管理
- */
-
 if (typeof customReplyGroups === 'undefined') window.customReplyGroups = [];
 if (typeof replyGroupsEnabled === 'undefined') window.replyGroupsEnabled = false;
 
@@ -54,14 +49,11 @@ const ICONS = {
 };
 
 
-// 仅重渲染列表内容区域，不重建工具栏（搜索时使用，避免 input 焦点丢失）
 function _renderListContentOnly() {
     const list = document.getElementById('custom-replies-list');
     if (!list) return;
 
-    // 移除上次渲染的列表内容（保留 toolbar 和其子元素）
     const toolbar = document.getElementById('batch-ops-toolbar');
-    // 清理 list 中非 toolbar 的节点
     Array.from(list.children).forEach(child => {
         if (child !== toolbar) child.remove();
     });
@@ -1416,38 +1408,25 @@ function _showGroupExportPicker() {
     };
 }
 
-/**
- * 宽容JSON解析器：自动修复常见语法问题（尾随逗号、缺失逗号等）
- */
 function _parseFlexibleJSON(text) {
-    // First try strict parse
     try { return JSON.parse(text); } catch (_) {}
-    // Repair: remove trailing commas before ] or }
     let repaired = text
-        .replace(/,\s*([}\]])/g, '$1')      // trailing commas
-        .replace(/(["\d\w}])\s*\n\s*"/g, (m, p1) => {  // missing commas between string items
+        .replace(/,\s*([}\]])/g, '$1')  
+        .replace(/(["\d\w}])\s*\n\s*"/g, (m, p1) => { 
             if (p1 === '}' || p1 === ']') return m;
             return p1 + ',\n"';
         });
     try { return JSON.parse(repaired); } catch (_) {}
-    // More aggressive repair: fix missing commas between quoted strings on consecutive lines
     repaired = text.replace(/("(?:[^"\\]|\\.)*")\s*\n(\s*")/g, '$1,\n$2')
                    .replace(/,\s*([}\]])/g, '$1');
     return JSON.parse(repaired);
 }
 
-/**
- * 旧格式兼容转换：将旧版导出的字卡文件规范化为当前格式
- * 旧格式特征：有 exportDate 或 modules 字段
- * 新格式特征：有 version 字段
- */
 function _normalizeImportData(data) {
     if (!data || typeof data !== 'object') return data;
-    // Already new format with known keys
     const knownKeys = ['customReplies','customPokes','customStatuses','customMottos','customIntros','customEmojis','customReplyGroups','disabledDefaultReplies'];
     const hasNewFormat = knownKeys.some(k => Array.isArray(data[k]));
     if (hasNewFormat) return data;
-    // Old format: might have different structure or just plain array
     if (Array.isArray(data)) {
         return { customReplies: data };
     }
@@ -1730,7 +1709,6 @@ function _showBatchAddDialog() {
     ta.addEventListener('focus', e => { e.target.style.borderColor = 'var(--accent-color)'; });
     ta.addEventListener('blur', e => { e.target.style.borderColor = 'var(--border-color)'; });
 
-    // Group toggle button
     const groupToggle = panel.querySelector('#ba-group-toggle');
     const groupDrawer = panel.querySelector('#ba-group-drawer');
     const toggleArrow = panel.querySelector('#ba-toggle-arrow');
@@ -1754,15 +1732,13 @@ function _showBatchAddDialog() {
         });
     }
 
-    // Group pill selection
-    let _selectedGroupIdx = -1; // -1 = no group
+    let _selectedGroupIdx = -1; 
     const pillContainer = panel.querySelector('#ba-group-list');
     if (pillContainer) {
         pillContainer.addEventListener('click', e => {
             const pill = e.target.closest('.ba-grp-pill');
             if (!pill) return;
             _selectedGroupIdx = parseInt(pill.dataset.gidx);
-            // Update toggle label to show selected group
             if (toggleLabel) {
                 if (_selectedGroupIdx === -1) {
                     toggleLabel.textContent = '添加到分组';
@@ -1771,7 +1747,6 @@ function _showBatchAddDialog() {
                     toggleLabel.textContent = g ? `分组：${g.name}` : '添加到分组';
                 }
             }
-            // Update pill styles
             pillContainer.querySelectorAll('.ba-grp-pill').forEach((p, i) => {
                 const gidx = parseInt(p.dataset.gidx);
                 if (gidx === -1) {
@@ -1810,7 +1785,6 @@ function _showBatchAddDialog() {
             else if (currentSubTab === 'mottos') customMottos.push(val);
             added++;
         });
-        // Assign newly added items to selected group
         if (currentSubTab === 'custom' && _selectedGroupIdx >= 0 && newItems.length > 0 && customReplyGroups) {
             const targetGroup = customReplyGroups[_selectedGroupIdx];
             if (targetGroup) {
@@ -2018,11 +1992,9 @@ function applyAvatarFrame(avatarContainer, frameSettings) {
         frameElement.style.width = `${frameSettings.size || 100}%`;
         frameElement.style.height = `${frameSettings.size || 100}%`;
         frameElement.style.transform = `translate(calc(-50% + ${frameSettings.offsetX || 0}px), calc(-50% + ${frameSettings.offsetY || 0}px))`;
-        // Override overflow:hidden !important from shape classes so the frame is not clipped
         avatarContainer.style.setProperty('overflow', 'visible', 'important');
     } else {
         frameElement?.remove();
-        // Restore overflow management to CSS shape classes
         avatarContainer.style.removeProperty('overflow');
     }
 }
@@ -2090,7 +2062,6 @@ function setupAvatarFrameSettings() {
             reader.readAsDataURL(file);
         });
 
-        // URL import button
         const urlBtn = document.getElementById(`${type}-frame-url-btn-2`);
         if (urlBtn) {
             urlBtn.addEventListener('click', () => {

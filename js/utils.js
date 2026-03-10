@@ -1,11 +1,3 @@
-/**
- * utils.js - Utility Functions
- * 工具函数
- * 修复版：
- *  - Bug#1: getRandomItem 提升为全局函数（原在 initializeRandomUI 局部作用域）
- *  - Bug#2: 补充 exportAllData / importAllData 实现（全量备份按钮原先无效）
- */
-
         function safeGetItem(key) {
             try { return localStorage.getItem(key); }
             catch (e) { console.error('Error getting item:', e); return null; }
@@ -23,10 +15,6 @@
             catch (e) { console.error('Error removing item:', e); }
         }
 
-// ── Bug Fix #1 ──────────────────────────────────────────────────────────────
-// getRandomItem 原先是 initializeRandomUI() 内部的 const，
-// simulateReply() 和 checkStatusChange() 跨作用域调用时会抛 ReferenceError。
-// 现提升为全局函数并在两处也保留兼容引用。
 function getRandomItem(arr) {
     if (!arr || arr.length === 0) return null;
     return arr[Math.floor(Math.random() * arr.length)];
@@ -178,26 +166,12 @@ function applyCustomBubbleCss(cssCode) {
     let styleTag = document.getElementById(styleId);
     if (!cssCode || !cssCode.trim()) { if (styleTag) styleTag.remove(); return; }
     if (!styleTag) { styleTag = document.createElement('style'); styleTag.id = styleId; }
-    // Always move to absolute end of <head>
     document.head.appendChild(styleTag);
 
-    // ── AUTO BOOST SPECIFICITY ──────────────────────────────────────────────
-    // The main CSS sets .message-sent { color: var(--message-sent-text) }
-    // var(--message-sent-text) resolves to #ffffff from :root.
-    // User writes ".message-sent { color: black }" - same specificity, so cascade
-    // order matters... BUT updateUI() also calls setProperty on html element (inline style)
-    // which has infinite priority for CSS custom properties.
-    //
-    // THE ONLY RELIABLE FIX: rewrite every user rule to add "html body" prefix,
-    // boosting specificity to (0,2,1) vs main stylesheet's (0,1,0).
-    // This guarantees user rules always win without requiring !important.
-    // ─────────────────────────────────────────────────────────────────────────
     function boostSpecificity(css) {
-        // Parse rule blocks and boost each selector
         return css.replace(/([^{}@][^{}]*)\{([^{}]*)\}/g, (match, rawSel, body) => {
             const selectors = rawSel.split(',').map(s => s.trim()).filter(Boolean);
             const boosted = selectors.map(sel => {
-                // Don't double-boost already-boosted or @keyframes/media selectors
                 if (sel.startsWith('html') || sel.startsWith('@') || sel.startsWith('from') || sel.startsWith('to') || /^\d/.test(sel)) return sel;
                 return `html body ${sel}`;
             });
@@ -215,13 +189,8 @@ html body .message.message-image-bubble-none {
     box-shadow: none !important; padding: 0 !important; border-radius: 0 !important;
 }`;
 
-    // ── ALSO sync the CSS variables so everything (timestamps, reply quotes, etc.)
-    // inherits the same text color the user intended ──────────────────────────
-    // NOTE: Only sync if the variable is NOT already set by the theme editor (customThemeColors).
-    // This prevents bubble CSS from overriding an explicitly chosen theme-editor color.
     try {
         const alreadyCustomized = (typeof settings !== 'undefined' && settings.customThemeColors) ? settings.customThemeColors : {};
-        // Match color declarations in .message-sent and .message-received blocks
         const sentMatch  = cssCode.match(/\.message-sent\s*\{([^}]*)\}/);
         const recvMatch  = cssCode.match(/\.message-received\s*\{([^}]*)\}/);
         if (sentMatch && !alreadyCustomized['--message-sent-text']) {
@@ -253,9 +222,6 @@ function applyGlobalThemeCss(cssCode) {
     styleTag.textContent = cssCode;
 }
 
-// ── Bug Fix #2: 全量备份实现 ────────────────────────────────────────────────
-// data-modal.js 中的"全量备份"按钮调用这两个函数，
-// 但此前整个项目里从未定义过，点击无效。
 async function exportAllData() {
     try {
         showNotification('正在收集数据…', 'info', 2000);
@@ -291,7 +257,6 @@ async function importAllData(file) {
             let raw = e.target.result;
             if (raw.charCodeAt(0) === 0xFEFF) raw = raw.slice(1);
             const data = JSON.parse(raw);
-            // 旧格式兼容
             if (data.type !== 'full') {
                 if (typeof importChatHistory === 'function') importChatHistory(file);
                 return;

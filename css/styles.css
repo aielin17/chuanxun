@@ -44,76 +44,59 @@
             --in-chat-avatar-size: 36px;
         }
 
-        /* ═══════════════════════════════════════════════
-           主题色方案 — 亮色模式
-           每个方案只需定义 accent 色系；气泡文字等继承自 :root
-        ═══════════════════════════════════════════════ */
-
-        /* ── 金色（默认） ── */
         :root[data-color-theme="gold"] {
             --accent-color: #c5a47e;
             --accent-color-dark: #d4af37;
             --accent-color-rgb: 197, 164, 126;
         }
-        /* ── 冷蓝 ── */
         :root[data-color-theme="blue"] {
             --accent-color: #7FA6CD;
             --accent-color-dark: #7FA6CD;
             --accent-color-rgb: 127, 166, 205;
         }
-        /* ── 薰紫 ── */
         :root[data-color-theme="purple"] {
             --accent-color: #BB9EC7;
             --accent-color-dark: #BB9EC7;
             --accent-color-rgb: 187, 158, 199;
         }
-        /* ── 薄荷绿 ── */
         :root[data-color-theme="green"] {
             --accent-color: #7BC8A4;
             --accent-color-dark: #7BC8A4;
             --accent-color-rgb: 123, 200, 164;
         }
-        /* ── 樱花粉 ── */
         :root[data-color-theme="pink"] {
             --accent-color: #F4A6B3;
             --accent-color-dark: #F4A6B3;
             --accent-color-rgb: 244, 166, 179;
         }
-        /* ── 黑白 ── */
         :root[data-color-theme="black-white"] {
             --accent-color: #333333;
             --accent-color-dark: #D6D6D6;
             --accent-color-rgb: 51, 51, 51;
-            --message-sent-text: #f5f5f5; /* 深色气泡配浅色文字 */
+            --message-sent-text: #f5f5f5; 
         }
-        /* ── 糖果柔色 ── */
         :root[data-color-theme="pastel"] {
             --accent-color: #A8D8EA;
             --accent-color-dark: #AA96DA;
             --accent-color-rgb: 168, 216, 234;
         }
-        /* ── 日落橙 ── */
         :root[data-color-theme="sunset"] {
             --accent-color: #FF9A8B;
             --accent-color-dark: #FF6B6B;
             --accent-color-rgb: 255, 154, 139;
         }
-        /* ── 森林绿 ── */
         :root[data-color-theme="forest"] {
             --accent-color: #7BA05B;
             --accent-color-dark: #556B2F;
             --accent-color-rgb: 123, 160, 91;
         }
-        /* ── 深海蓝 ── */
         :root[data-color-theme="ocean"] {
             --accent-color: #4A90E2;
             --accent-color-dark: #2E5B9A;
             --accent-color-rgb: 74, 144, 226;
         }
 
-        /* ═══════════════════════════════════════════════
-           深色模式基础变量（覆盖 :root 中的亮色值）
-        ═══════════════════════════════════════════════ */
+
         html[data-theme="dark"] {
             --primary-bg: #121212;
             --secondary-bg: #1e1e1e;
@@ -133,27 +116,19 @@
             --secondary-bg-rgb: 30, 30, 30;
         }
 
-        /* ═══════════════════════════════════════════════
-           深色模式 × 各主题特殊覆盖
-           （主要处理浅色 accent 在暗背景上的气泡文字可读性）
-        ═══════════════════════════════════════════════ */
 
-        /* 黑白主题暗色模式：accent 变浅灰，气泡文字改为深色 */
         html[data-theme="dark"][data-color-theme="black-white"] {
             --accent-color: #d0d0d0;
             --accent-color-dark: #d0d0d0;
             --accent-color-rgb: 208, 208, 208;
             --message-sent-text: #1a1a1a;
         }
-        /* 糖果柔色暗色模式：浅蓝气泡配深字 */
         html[data-theme="dark"][data-color-theme="pastel"] {
             --message-sent-text: #1a2a30;
         }
-        /* 日落橙暗色模式：浅橙气泡配深字 */
         html[data-theme="dark"][data-color-theme="sunset"] {
             --message-sent-text: #2a0a00;
         }
-        /* 樱花粉暗色模式：浅粉气泡配深字 */
         html[data-theme="dark"][data-color-theme="pink"] {
             --message-sent-text: #2a0a10;
         }
@@ -489,13 +464,6 @@
             min-width: 36px;
             text-align: center;
         }
-
-        /* Note: dark mode sent-text color is controlled via --message-sent-text CSS variable.
-           High-specificity per-theme overrides are intentionally removed so that
-           theme-editor custom colors and custom bubble CSS work correctly. */
-
-
-
         .message.rounded {
             border-radius: var(--radius);
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
@@ -978,7 +946,6 @@
             border-bottom-left-radius: 6px;
         }
 
-        /* Image-only messages: no bubble, transparent */
         .message-image-bubble-none {
             background: transparent !important;
             border: none !important;
@@ -1363,7 +1330,6 @@
             to { opacity: 1; transform: scale(1) translateY(0); }
         }
 
-        /* ══ Call-event message (video call system events) ══ */
         .call-event-message {
             display: flex;
             justify-content: center;
@@ -1427,7 +1393,6 @@
         .call-event-pill:hover .call-event-delete { opacity: 0.5; }
         .call-event-delete:hover { opacity: 1 !important; }
 
-        /* ══ Danger-cards side-by-side layout ══ */
         .dm-danger-cards-row {
             display: flex;
             gap: 10px;
@@ -4225,7 +4190,6 @@
                 transform: rotateY(1800deg) scale(1.1);
             }
             100% {
-                /* 2160 = 6×360 → ends at 0°, front face showing (正面) */
                 transform: rotateY(2160deg) scale(1);
             }
         }
@@ -4243,7 +4207,6 @@
                 transform: rotateY(1980deg) scale(1.1);
             }
             100% {
-                /* 2340 = 6.5×360 → ends at 180°, back face showing (反面) */
                 transform: rotateY(2340deg) scale(1);
             }
         }
@@ -5007,7 +4970,6 @@
             gap: 10px;
         }
 
-        /* 第一行：总消息数（大卡片） */
         .overview-item.overview-large {
             display: flex;
             flex-direction: column;
@@ -5025,7 +4987,6 @@
             color: var(--accent-color);
         }
 
-        /* 第二行：我发送 + 对方发送（各占一半） */
         .overview-row-two {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -5049,7 +5010,6 @@
             background-color: var(--primary-bg);
         }
 
-        /* 第三行：日期卡片（横向布局） */
         .overview-item.overview-date {
             display: flex;
             flex-direction: row;
@@ -9707,14 +9667,7 @@
             background: var(--secondary-bg);
         }
 
-        /* ═══════════════════════════════════════════════════════
-           DATA MODAL — Full Redesign
-           ═══════════════════════════════════════════════════════ */
-        /* ══════════════════════════════════════════════════════════
-           DATA MODAL — 新版网格卡片布局 v10
-           设计理念：每个功能区独占视觉空间，告别行列拥挤
-        ══════════════════════════════════════════════════════════ */
-
+        
         #data-modal {
             align-items: flex-end !important;
             padding: 0 !important;
@@ -9745,7 +9698,6 @@
             to   { transform: translateY(0);    opacity: 1; }
         }
 
-        /* ── 顶部导航栏 ── */
         .dm-topbar {
             display: flex;
             align-items: center;
@@ -9793,7 +9745,6 @@
         }
         .dm-topbar-close:hover { background: rgba(var(--accent-color-rgb), 0.22); }
 
-        /* ── 可滚动主体 ── */
         .dm-body {
             flex: 1 1 0 !important;
             min-height: 0 !important;
@@ -9808,7 +9759,6 @@
         }
         .dm-body::-webkit-scrollbar { width: 0; }
 
-        /* ── 存储概览卡片 ── */
         .dm-storage-card {
             background: var(--secondary-bg);
             border-radius: 18px;
@@ -9888,7 +9838,6 @@
             transition: width 0.9s cubic-bezier(.22,1,.36,1);
         }
 
-        /* ── 分区标题 ── */
         .dm-section-label {
             display: flex;
             align-items: center;
@@ -9904,14 +9853,12 @@
         .dm-section-label i { font-size: 10px; opacity: 0.65; }
         .dm-section-label.danger-label { color: #e05050; opacity: 0.85; }
 
-        /* ── 功能网格（2列） ── */
         .dm-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 8px;
         }
 
-        /* ── 功能格子卡片 ── */
         .dm-tile {
             background: var(--secondary-bg);
             border: 1px solid var(--border-color);
@@ -9978,7 +9925,6 @@
             opacity: 0.35;
         }
 
-        /* ── 宽版单行卡片（通知、危险操作） ── */
         .dm-row-card {
             background: var(--secondary-bg);
             border: 1px solid var(--border-color);
@@ -10021,7 +9967,6 @@
             margin-top: 1px;
         }
 
-        /* ── Toggle 开关 ── */
         .dm-toggle-pill {
             position: relative;
             display: inline-block;
@@ -10056,7 +10001,6 @@
             transform: translateX(20px);
         }
 
-        /* ── 危险操作按钮 ── */
         .dm-danger-btn {
             display: inline-flex;
             align-items: center;
@@ -10077,7 +10021,6 @@
         .dm-danger-btn:hover { background: rgba(224,80,80,0.12); border-color: #e05050; }
         .dm-danger-btn:active { transform: scale(0.97); }
 
-        /* ── 导航行按钮 ── */
         .dm-nav-btn {
             display: inline-flex;
             align-items: center;
@@ -10094,7 +10037,6 @@
         }
         .dm-nav-btn:hover { border-color: var(--accent-color); color: var(--accent-color); }
 
-        /* ── 底部操作抽屉（点击卡片后弹出） ── */
         .dm-action-drawer {
             position: fixed;
             inset: 0;
@@ -10234,7 +10176,6 @@
         }
         .dm-drawer-cancel:active { transform: scale(0.98); }
 
-        /* ── 兼容旧版 ID（data.js 查询这些 ID） ── */
         .dm-btn { display: none !important; }
         .dm-badge { display: none !important; }
         .dm-action-card { display: none !important; }
@@ -10242,13 +10183,11 @@
         @media (max-width: 480px) {
             #data-modal .modal-content { max-height: 96dvh; border-radius: 24px 24px 0 0; }
 
-            /* ── 数据格子在极窄屏下保持2列但内容可缩小 ── */
             .dm-tile { padding: 12px 10px 11px; }
             .dm-tile-title { font-size: 12px; }
             .dm-tile-desc  { font-size: 10px; }
             .dm-tile-icon  { width: 36px; height: 36px; font-size: 14px; }
 
-            /* ── 通用行项：不折行，min-width:0 防溢出 ── */
             .dm-row-item {
                 flex-wrap: nowrap;
                 gap: 10px;
@@ -10271,17 +10210,12 @@
                 overflow: hidden;
                 text-overflow: ellipsis;
             }
-            /* toggle 开关不缩小 */
             .dm-row-item .dm-toggle-pill { flex-shrink: 0; }
-            /* 导航按钮缩小 */
             .dm-nav-btn { width: 28px; height: 28px; flex-shrink: 0; }
 
-            /* ── 危险操作行：竖向卡片，按钮独占底部整行 ── */
-            /* :has() 支持的浏览器走这里 */
             .dm-row-item:has(.dm-danger-btn) {
                 flex-wrap: wrap;
             }
-            /* 兜底 class，覆盖不支持 :has() 的安卓 WebView */
             .dm-danger-row-mobile {
                 flex-wrap: wrap !important;
             }
@@ -10423,7 +10357,6 @@
             margin: 0 !important;
         }
 
-        /* ── Stats tab nav bar ── */
         .stats-nav-btn {
             flex: 1;
             padding: 7px 6px;
@@ -10452,9 +10385,6 @@
             color: var(--text-primary);
         }
 
-        /* ══════════════════════════════════════════
-           词云 v4 — 极简编辑风 CSS
-           ══════════════════════════════════════════ */
         #wordcloud-panel {
             overflow-y: auto;
             max-height: 72vh;
@@ -10469,7 +10399,6 @@
             gap: 12px;
         }
 
-        /* ── 控制栏 ── */
         .wc-header {
             display: flex;
             align-items: center;
@@ -10527,7 +10456,6 @@
             transform: rotate(180deg);
         }
 
-        /* ── 摘要条 ── */
         .wc-summary {
             display: flex;
             justify-content: center;
@@ -10545,7 +10473,6 @@
         }
         .wc-summary-pill i { color: var(--accent-color); opacity: 1; }
 
-        /* ── Canvas 容器 ── */
         .wc-canvas-wrap {
             border-radius: 16px;
             overflow: hidden;
@@ -10557,7 +10484,6 @@
             height: auto;
         }
 
-        /* ── 排行榜 ── */
         .wc-rank-section {
             background: var(--secondary-bg);
             border: 1px solid var(--border-color);
@@ -10623,7 +10549,6 @@
             font-variant-numeric: tabular-nums;
         }
 
-        /* ── 空状态 ── */
         .wc-empty {
             text-align: center;
             padding: 50px 20px;
@@ -10643,7 +10568,6 @@
             50% { transform: translateY(-6px); }
         }
 
-                /* ── Search result items ── */
         .search-result-item:hover {
             border-color: rgba(var(--accent-color-rgb), 0.35) !important;
             background: var(--secondary-bg) !important;
@@ -10659,19 +10583,16 @@
             border-color: var(--accent-color) !important;
         }
 
-        /* ── Header opacity always-clear mode ── */
         .header[data-always-clear] {
             opacity: 1 !important;
             transition: none !important;
         }
 
-        /* ── Keepalive audio toggle state desc ── */
         #keepalive-audio-switch.active .setting-pill-knob {
             transform: translateX(20px);
             background: #fff;
         }
 
-        /* ── Keepalive dot indicator ── */
         .keepalive-dot {
             position: absolute;
             bottom: -1px;
@@ -10693,7 +10614,6 @@
             0%,100% { box-shadow: 0 0 0 3px rgba(76,217,100,0.3); }
             50%      { box-shadow: 0 0 0 6px rgba(76,217,100,0.1); }
         }
-        /* Waveform bars */
         .keepalive-wave-bar {
             width: 3px;
             height: 14px;
@@ -10708,7 +10628,6 @@
             100% { transform: scaleY(1.0); }
         }
 
-        /* ── Search result items ── */
         .search-result-item {
             display: flex;
             gap: 10px;
@@ -10740,7 +10659,6 @@
         .sri-empty   { text-align: center; padding: 28px 0 16px; color: var(--text-secondary); font-size: 13px; }
         .sri-empty i { font-size: 26px; opacity: 0.25; display: block; margin-bottom: 10px; }
 
-        /* ── Stats search box ── */
         .stats-search-box {
             background: var(--secondary-bg);
             border-radius: 12px;

@@ -1,8 +1,3 @@
-/**
- * features/theme-editor.js - 主题编辑器 Theme Editor
- * 主题方案管理与头像形状设置
- */
-
 function applyAvatarShapeToDOM(type, shape) {
             const SHAPES = ['circle','square'];
             const avatarContainer = type === 'my' ? DOMElements.me.avatarContainer : DOMElements.partner.avatarContainer;
@@ -101,32 +96,23 @@ function applyAvatarShapeToDOM(type, shape) {
             setupFor('partner');
         }
         const themeColorMappings = {
-            // ── 背景 ──
             '--primary-bg':        '主背景（聊天底色）',
             '--secondary-bg':      '卡片 / 弹窗背景',
             '--header-bg':         '顶栏背景色',
             '--input-area-bg':     '输入框区域背景',
-            // ── 文字 ──
             '--text-primary':      '主要文字颜色',
             '--text-secondary':    '次要文字 / 说明文字',
-            // ── 线条 ──
             '--border-color':      '边框 / 分割线颜色',
-            // ── 强调色（会影响全局图标、高亮、链接等） ──
             '--accent-color':      '强调色（全局图标/高亮/链接，影响广泛）',
             '--accent-color-dark': '强调色深色变体（深色模式专用）',
-            // ── 我方气泡 ──
             '--message-sent-bg':   '【我方气泡】背景色',
             '--message-sent-text': '【我方气泡】文字 & 图标色（气泡内所有颜色）',
-            // ── 对方气泡 ──
             '--message-received-bg':   '【对方气泡】背景色',
             '--message-received-text': '【对方气泡】文字色',
-            // ── 输入工具栏按钮 ──
             '--toolbar-btn-bg':        '工具栏按钮背景（附件/拍照等）',
             '--toolbar-btn-color':     '工具栏按钮图标色',
-            // ── 发送按钮 ──
             '--send-btn-bg':        '发送按钮 背景色',
             '--send-btn-icon-color':'发送按钮 图标色',
-            // ── 其他 ──
             '--favorite-color':    '收藏星标颜色',
             '--timestamp-color':   '时间戳颜色',
         };
@@ -197,7 +183,6 @@ function initThemeEditor() {
                 const val = root.style.getPropertyValue(variable);
                 if (val) customColors[variable] = val.trim();
             }
-            // Persist --accent-color-rgb alongside --accent-color so rgba() expressions work
             if (customColors['--accent-color']) {
                 const hex = customColors['--accent-color'].replace('#','');
                 if (/^[0-9a-fA-F]{6}$/.test(hex)) {
@@ -208,7 +193,6 @@ function initThemeEditor() {
             settings.customThemeColors = customColors;
             throttledSaveData && throttledSaveData();
             updateUI();
-            // Re-apply bubble CSS AFTER updateUI so specificity boost takes effect last
             if (settings.customBubbleCss) {
                 try { applyCustomBubbleCss(settings.customBubbleCss); } catch(e) {}
             }
@@ -286,10 +270,7 @@ function initThemeEditor() {
         };
     }
 }
-        /**
-         * Resolve a CSS custom-property value that may itself be a var() reference.
-         * e.g.  "--message-sent-bg: var(--accent-color)"  →  "#c5a47e"
-         */
+        
         function resolveColorVar(rawVal, rootStyle) {
             if (!rawVal) return '';
             let val = rawVal.trim();
@@ -316,7 +297,6 @@ function initThemeEditor() {
             grid.innerHTML = '';
             const rootStyle = getComputedStyle(document.documentElement);
 
-            // ── Grouped colour pickers ────────────────────────────────────────
             const groups = [
                 { label: '🖼 背景颜色',  vars: ['--primary-bg','--secondary-bg','--header-bg','--input-area-bg'] },
                 { label: '✏️ 文字 & 线条', vars: ['--text-primary','--text-secondary','--timestamp-color','--border-color'] },
@@ -373,7 +353,6 @@ function initThemeEditor() {
                 });
             });
 
-            // ── Numeric / select controls ────────────────────────────────────
             const extraHeading = document.createElement('div');
             extraHeading.style.cssText = 'grid-column:1/-1;font-size:11px;font-weight:700;color:var(--text-secondary);letter-spacing:1.5px;text-transform:uppercase;padding:8px 0 4px;border-bottom:1px solid var(--border-color);margin-top:6px;';
             extraHeading.textContent = '⚙️ 数值 & 字重';
@@ -413,7 +392,6 @@ function initThemeEditor() {
                 grid.appendChild(item);
             }
 
-            // ── Live preview ─────────────────────────────────────────────────
             const previewHeading = document.createElement('div');
             previewHeading.style.cssText = 'grid-column:1/-1;font-size:11px;font-weight:700;color:var(--text-secondary);letter-spacing:1.5px;text-transform:uppercase;padding:8px 0 4px;border-bottom:1px solid var(--border-color);margin-top:6px;';
             previewHeading.textContent = '👁 实时预览';
@@ -610,8 +588,6 @@ function populateThemeSelector() {
             settings.inChatAvatarEnabled = scheme.inChatAvatarEnabled;
             settings.inChatAvatarSize = scheme.inChatAvatarSize;
 
-            // CRITICAL: persist custom colors into settings.customThemeColors so
-            // updateUI() re-applies them after its applyTheme(null,true) reset.
             settings.customThemeColors = (scheme.customColors && Object.keys(scheme.customColors).length > 0)
                 ? Object.assign({}, scheme.customColors)
                 : {};

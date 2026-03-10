@@ -1,18 +1,3 @@
-/**
- * onboarding.js - 入场引导 + 新手教程
- * 合并自：splash.js + tour.js
- * 
- * 包含：
- *  - 打字状态指示器设置（Typing Indicator）
- *  - 入场承诺 Splash Screen
- *  - 新手引导 Tour
- *  - 纪念日模块 Anniversary
- */
-/**
- * splash.js - 入场引导 Splash Screen
- * 打字状态指示器与入场承诺页
- */
-
 (function() {
     var TI_AVATAR_KEY = 'tiSettings_showAvatar';
     var TI_TEXT_KEY = 'tiSettings_customText';
@@ -306,14 +291,6 @@
         initSplash();
     }
 })();
-
-/* ========================================================
-   tour.js - 新手引导 & 纪念日模块
-   ======================================================== */
-/**
- * features/tour.js - 引导教程 Tour & Anniversary
- * 用户引导、纪念日与系列功能
- */
 
 const tourOverlay = document.getElementById('tour-overlay');
 const tourPopover = document.getElementById('tour-popover');

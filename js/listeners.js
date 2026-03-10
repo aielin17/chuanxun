@@ -1,8 +1,3 @@
-/**
- * listeners.js - Event Listeners & Initialization
- * 事件监听器与初始化函数
- */
-
 function setupEventListeners() {
     try {
         initCoreListeners();
@@ -622,7 +617,6 @@ if (_chatSettingsEl) _chatSettingsEl.addEventListener('click', () => {
                 });
             }
 
-            // 全局主题 CSS
             const globalCssTextarea = document.getElementById('custom-global-css');
             const applyGlobalCssBtn = document.getElementById('apply-global-css-btn');
             const resetGlobalCssBtn = document.getElementById('reset-global-css-btn');
@@ -2135,10 +2129,6 @@ playlist.style.top = (rect.top + (player.classList.contains('collapsed') ? 65 : 
     }
 };
 
-        // getRandomItem is defined globally in utils.js
-
-
-
         function initCoreListeners() {
 
 
@@ -2431,7 +2421,6 @@ playlist.style.top = (rect.top + (player.classList.contains('collapsed') ? 65 : 
 
 function _applyCollapseState(on) {
     document.body.classList.toggle('bottom-collapse-mode', on);
-    // Sync cs-panel-display toggle pill
     const csToggle = document.getElementById('bottom-collapse-cs-toggle');
     if (csToggle) csToggle.classList.toggle('active', on);
     if (!on) {

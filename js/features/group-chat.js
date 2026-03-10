@@ -1,8 +1,3 @@
-/**
- * features/group-chat.js - 多人模式 Group Chat
- * 群聊成员管理与多人聊天模式
- */
-
 window.switchStatsTab = function(tab) {
     var statsPanel = document.getElementById('stats-panel');
     var favoritesPanel = document.getElementById('favorites-panel');
@@ -28,7 +23,6 @@ window.switchStatsTab = function(tab) {
         }, 100);
     } else if (tab === 'wordcloud') {
         if (wordcloudPanel) wordcloudPanel.style.display = 'block';
-        // 使用 rAF 确保 display:block 的布局已完成，offsetWidth 可读
         requestAnimationFrame(function() {
             if (typeof renderWordCloud === 'function') renderWordCloud();
         });
@@ -583,7 +577,6 @@ window.startEditDgWeather = function(el) {
     });
 
 
-// ─── Message Search (_runMsgSearch) ───────────────────────────────────────────
 window._runMsgSearch = function() {
     var input = document.getElementById('msg-search-input');
     var dateFrom = document.getElementById('msg-search-date-from');
@@ -618,7 +611,6 @@ window._runMsgSearch = function() {
         return;
     }
 
-    // Get avatars
     var myAvatarEl = document.querySelector('#my-avatar img');
     var partnerAvatarEl = document.querySelector('#partner-avatar img');
     var myAvatar = myAvatarEl ? myAvatarEl.src : '';
@@ -638,7 +630,6 @@ window._runMsgSearch = function() {
         var name = isUser ? myName : partnerName;
         var avatar = isUser ? myAvatar : partnerAvatar;
 
-        // Group chat member
         if (!isUser && typeof groupChatSettings !== 'undefined' && groupChatSettings.enabled && groupChatSettings.members) {
             var member = groupChatSettings.members.find(function(m) { return m.name === msg.sender; });
             if (member) {
@@ -670,13 +661,11 @@ window._runMsgSearch = function() {
             + '</div></div>';
     }).join('');
 
-    // Result count
     resultsEl.insertAdjacentHTML('afterbegin',
         '<div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;padding:0 2px;">共找到 ' + filtered.length + ' 条结果</div>'
     );
 };
 
-// Allow clicking search result to scroll to message in chat
 window.scrollToMessage = function(msgId) {
     var el = document.querySelector('[data-id="' + msgId + '"]');
     if (el) {

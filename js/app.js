@@ -1,7 +1,4 @@
-/**
- * app.js - Application Entry Point
- * 应用初始化与主入口
- */
+/*应用初始化与主入口*/
 
 document.addEventListener('DOMContentLoaded', async () => {
     const loaderBar = document.getElementById('loader-tech-bar');
@@ -33,10 +30,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     try {
-        // Bug Fix #4: 移除未被 await 的并行初始化
-        // 原先这些函数在 Promise.all 中"发射后不管"，
-        // 之后 loadData() 内部又各自初始化一次，导致事件绑定重复。
-        // 改为在 loadData 完成后统一执行。
         try { setupEventListeners?.(); } catch(e) { console.error('setupEventListeners:', e); }
 
         if (typeof localforage === 'undefined') {
@@ -58,7 +51,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         setInterval(checkStatusChange, 60000);
 
-        // Bug Fix: 合并两次重复的 acceptDisclaimerBtn 事件绑定为一次
         if (disclaimerModal) {
             const tourSeen = await safeAwait(localforage?.getItem(APP_PREFIX + 'tour_seen'), false);
             
@@ -115,7 +107,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 try {
                     const permission = await Notification.requestPermission();
                     if (permission === 'granted') {
-                        showNotification('已开启系统通知，收到消息时会提醒你 ✨', 'success', 3000);
+                        showNotification('已开启系统通知，收到消息时会提醒你'success', 3000);
                     }
                 } catch(e) {
                     console.warn('通知权限请求失败:', e);
