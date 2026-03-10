@@ -1649,43 +1649,71 @@ function _showBatchAddDialog() {
     panel.style.cssText = `
         background:var(--secondary-bg);border-radius:22px;padding:24px;
         width:92%;max-width:420px;
+        max-height:88vh;
+        display:flex;flex-direction:column;
         box-shadow:0 24px 80px rgba(0,0,0,.45);
         animation:popIn 0.22s cubic-bezier(.34,1.56,.64,1);
     `;
+
+    const hasGroups = customReplyGroups && customReplyGroups.length > 0;
+    const groupPillsHTML = hasGroups ? `
+        <button class="ba-grp-pill" data-gidx="-1" style="
+            padding:5px 13px;border-radius:20px;font-size:12px;font-family:var(--font-family);cursor:pointer;
+            border:1.5px solid var(--accent-color);background:var(--accent-color);color:#fff;font-weight:700;
+            flex-shrink:0;transition:all .15s;
+        ">不分组</button>
+        ${customReplyGroups.map((g, i) => `
+        <button class="ba-grp-pill" data-gidx="${i}" style="
+            padding:5px 13px;border-radius:20px;font-size:12px;font-family:var(--font-family);cursor:pointer;
+            border:1.5px solid ${g.color}44;background:${g.color}18;color:${g.color};font-weight:600;
+            flex-shrink:0;transition:all .15s;
+        ">
+            <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${g.color};margin-right:4px;vertical-align:middle;"></span>${g.name}
+        </button>`).join('')}
+    ` : '';
+
     panel.innerHTML = `
-        <style>@keyframes popIn { from{opacity:0;transform:scale(.93)} to{opacity:1;transform:scale(1)} }</style>
-        <div style="font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:6px;">批量添加字卡</div>
-        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:14px;line-height:1.6;">每行一条，自动去重</div>
-        <textarea id="batch-add-input" rows="10" placeholder="在此粘贴内容，每行一条…" style="
-            width:100%;box-sizing:border-box;padding:12px 14px;
-            border:1.5px solid var(--border-color);border-radius:13px;
-            background:var(--primary-bg);color:var(--text-primary);
-            font-size:13px;font-family:var(--font-family);outline:none;resize:vertical;
-            line-height:1.6;transition:border 0.18s;
-        "></textarea>
-        <div style="font-size:11px;color:var(--text-secondary);margin-top:6px;margin-bottom:12px;">
-            <span id="batch-add-count">0 条</span>
-        </div>
-        ${(customReplyGroups && customReplyGroups.length > 0) ? `
-        <div style="margin-bottom:16px;">
-            <div style="font-size:11px;font-weight:700;color:var(--text-secondary);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;">添加到分组</div>
-            <div id="ba-group-list" style="display:flex;flex-wrap:wrap;gap:7px;">
-                <button class="ba-grp-pill" data-gidx="-1" style="
-                    padding:5px 13px;border-radius:20px;font-size:12px;font-family:var(--font-family);cursor:pointer;
-                    border:1.5px solid var(--accent-color);background:var(--accent-color);color:#fff;font-weight:700;
-                    transition:all .15s;
-                ">不分组</button>
-                ${customReplyGroups.map((g, i) => `
-                <button class="ba-grp-pill" data-gidx="${i}" style="
-                    padding:5px 13px;border-radius:20px;font-size:12px;font-family:var(--font-family);cursor:pointer;
-                    border:1.5px solid ${g.color}44;background:${g.color}18;color:${g.color};font-weight:600;
-                    transition:all .15s;
-                ">
-                    <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${g.color};margin-right:4px;vertical-align:middle;"></span>${g.name}
-                </button>`).join('')}
+        <style>
+            @keyframes popIn { from{opacity:0;transform:scale(.93)} to{opacity:1;transform:scale(1)} }
+            @keyframes baGroupSlide { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+        </style>
+        <div style="flex-shrink:0;font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:6px;">批量添加字卡</div>
+        <div style="flex-shrink:0;font-size:12px;color:var(--text-secondary);margin-bottom:14px;line-height:1.6;">每行一条，自动去重</div>
+
+        <div style="flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;">
+            <textarea id="batch-add-input" rows="10" placeholder="在此粘贴内容，每行一条…" style="
+                width:100%;box-sizing:border-box;padding:12px 14px;
+                border:1.5px solid var(--border-color);border-radius:13px;
+                background:var(--primary-bg);color:var(--text-primary);
+                font-size:13px;font-family:var(--font-family);outline:none;resize:vertical;
+                line-height:1.6;transition:border 0.18s;
+            "></textarea>
+            <div style="font-size:11px;color:var(--text-secondary);margin-top:6px;margin-bottom:12px;">
+                <span id="batch-add-count">0 条</span>
             </div>
-        </div>` : ''}
-        <div style="display:flex;gap:10px;">
+
+            ${hasGroups ? `
+            <div id="ba-group-section" style="margin-bottom:4px;">
+                <button id="ba-group-toggle" style="
+                    display:flex;align-items:center;gap:7px;width:100%;
+                    padding:9px 12px;border-radius:11px;cursor:pointer;
+                    border:1.5px solid var(--border-color);background:var(--primary-bg);
+                    color:var(--text-secondary);font-size:12px;font-family:var(--font-family);
+                    font-weight:600;transition:all .15s;text-align:left;
+                ">
+                    <i class="fas fa-folder" style="font-size:12px;color:var(--accent-color);"></i>
+                    <span id="ba-toggle-label">添加到分组</span>
+                    <span id="ba-toggle-arrow" style="margin-left:auto;font-size:10px;transition:transform .2s;">▼</span>
+                </button>
+                <div id="ba-group-drawer" style="display:none;overflow-x:auto;overflow-y:hidden;padding:10px 2px 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch;">
+                    <div id="ba-group-list" style="display:flex;gap:7px;width:max-content;">
+                        ${groupPillsHTML}
+                    </div>
+                </div>
+            </div>` : ''}
+        </div>
+
+        <div style="flex-shrink:0;padding-top:14px;display:flex;gap:10px;">
             <button id="ba-cancel" style="flex:1;padding:12px;border:1.5px solid var(--border-color);border-radius:13px;background:none;color:var(--text-secondary);font-size:13px;cursor:pointer;font-family:var(--font-family);">取消</button>
             <button id="ba-confirm" style="flex:2;padding:12px;border:none;border-radius:13px;background:var(--accent-color);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font-family);">添加</button>
         </div>
@@ -1702,6 +1730,30 @@ function _showBatchAddDialog() {
     ta.addEventListener('focus', e => { e.target.style.borderColor = 'var(--accent-color)'; });
     ta.addEventListener('blur', e => { e.target.style.borderColor = 'var(--border-color)'; });
 
+    // Group toggle button
+    const groupToggle = panel.querySelector('#ba-group-toggle');
+    const groupDrawer = panel.querySelector('#ba-group-drawer');
+    const toggleArrow = panel.querySelector('#ba-toggle-arrow');
+    const toggleLabel = panel.querySelector('#ba-toggle-label');
+    let _drawerOpen = false;
+    if (groupToggle && groupDrawer) {
+        groupToggle.addEventListener('click', () => {
+            _drawerOpen = !_drawerOpen;
+            if (_drawerOpen) {
+                groupDrawer.style.display = 'block';
+                groupDrawer.style.animation = 'baGroupSlide 0.18s ease forwards';
+                toggleArrow.style.transform = 'rotate(180deg)';
+                groupToggle.style.borderColor = 'var(--accent-color)';
+                groupToggle.style.color = 'var(--text-primary)';
+            } else {
+                groupDrawer.style.display = 'none';
+                toggleArrow.style.transform = '';
+                groupToggle.style.borderColor = 'var(--border-color)';
+                groupToggle.style.color = 'var(--text-secondary)';
+            }
+        });
+    }
+
     // Group pill selection
     let _selectedGroupIdx = -1; // -1 = no group
     const pillContainer = panel.querySelector('#ba-group-list');
@@ -1710,6 +1762,15 @@ function _showBatchAddDialog() {
             const pill = e.target.closest('.ba-grp-pill');
             if (!pill) return;
             _selectedGroupIdx = parseInt(pill.dataset.gidx);
+            // Update toggle label to show selected group
+            if (toggleLabel) {
+                if (_selectedGroupIdx === -1) {
+                    toggleLabel.textContent = '添加到分组';
+                } else {
+                    const g = customReplyGroups[_selectedGroupIdx];
+                    toggleLabel.textContent = g ? `分组：${g.name}` : '添加到分组';
+                }
+            }
             // Update pill styles
             pillContainer.querySelectorAll('.ba-grp-pill').forEach((p, i) => {
                 const gidx = parseInt(p.dataset.gidx);
