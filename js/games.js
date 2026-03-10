@@ -1666,8 +1666,8 @@ function initComboMenu() {
         var pName = (typeof settings !== 'undefined' && settings.partnerName) ? settings.partnerName : '对方';
         var mName = (typeof settings !== 'undefined' && settings.myName)      ? settings.myName      : '我';
 
-        var partnerMsgs = messages.filter(function(m) { return m.sender !== 'user' && m.text && m.type !== 'system'; });
-        var myMsgs      = messages.filter(function(m) { return m.sender === 'user' && m.text && m.type !== 'system'; });
+        var partnerMsgs = messages.filter(function(m) { return m.sender !== 'user' && m.text && m.type !== 'system' && m.type !== 'call-event'; });
+        var myMsgs      = messages.filter(function(m) { return m.sender === 'user' && m.text && m.type !== 'system' && m.type !== 'call-event'; });
 
         var pFreq = {}, mFreq = {};
         partnerMsgs.forEach(function(m) { pFreq = mergeFreq(pFreq, tokenize(m.text)); });

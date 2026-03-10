@@ -102,29 +102,33 @@ function applyAvatarShapeToDOM(type, shape) {
         }
         const themeColorMappings = {
             // ── 背景 ──
-            '--primary-bg':        '主背景色（聊天区底色）',
+            '--primary-bg':        '主背景（聊天底色）',
             '--secondary-bg':      '卡片 / 弹窗背景',
-            '--header-bg':         '顶栏背景',
-            '--input-area-bg':     '输入区背景',
+            '--header-bg':         '顶栏背景色',
+            '--input-area-bg':     '输入框区域背景',
             // ── 文字 ──
             '--text-primary':      '主要文字颜色',
-            '--text-secondary':    '次要文字 / 占位符',
+            '--text-secondary':    '次要文字 / 说明文字',
             // ── 线条 ──
             '--border-color':      '边框 / 分割线颜色',
-            // ── 强调色 ──
-            '--accent-color':      '主强调色（图标 / 高亮 / 按钮）',
-            '--accent-color-dark': '强调色深色变体（深色模式用）',
+            // ── 强调色（会影响全局图标、高亮、链接等） ──
+            '--accent-color':      '强调色（全局图标/高亮/链接，影响广泛）',
+            '--accent-color-dark': '强调色深色变体（深色模式专用）',
             // ── 我方气泡 ──
             '--message-sent-bg':   '【我方气泡】背景色',
-            '--message-sent-text': '【我方气泡】文字颜色',
+            '--message-sent-text': '【我方气泡】文字 & 图标色（气泡内所有颜色）',
             // ── 对方气泡 ──
             '--message-received-bg':   '【对方气泡】背景色',
-            '--message-received-text': '【对方气泡】文字颜色',
+            '--message-received-text': '【对方气泡】文字色',
+            // ── 输入工具栏按钮 ──
+            '--toolbar-btn-bg':        '工具栏按钮背景（附件/拍照等）',
+            '--toolbar-btn-color':     '工具栏按钮图标色',
             // ── 发送按钮 ──
             '--send-btn-bg':        '发送按钮 背景色',
             '--send-btn-icon-color':'发送按钮 图标色',
             // ── 其他 ──
             '--favorite-color':    '收藏星标颜色',
+            '--timestamp-color':   '时间戳颜色',
         };
 
         const themeExtraMappings = {
@@ -315,10 +319,11 @@ function initThemeEditor() {
             // ── Grouped colour pickers ────────────────────────────────────────
             const groups = [
                 { label: '🖼 背景颜色',  vars: ['--primary-bg','--secondary-bg','--header-bg','--input-area-bg'] },
-                { label: '✏️ 文字 & 线条', vars: ['--text-primary','--text-secondary','--border-color'] },
-                { label: '✨ 强调色',     vars: ['--accent-color','--accent-color-dark'] },
+                { label: '✏️ 文字 & 线条', vars: ['--text-primary','--text-secondary','--timestamp-color','--border-color'] },
+                { label: '✨ 强调色（影响全局）', vars: ['--accent-color','--accent-color-dark'] },
                 { label: '💬 我方气泡',  vars: ['--message-sent-bg','--message-sent-text'] },
                 { label: '💬 对方气泡',  vars: ['--message-received-bg','--message-received-text'] },
+                { label: '🔧 工具栏按钮', vars: ['--toolbar-btn-bg','--toolbar-btn-color'] },
                 { label: '📤 发送按钮',  vars: ['--send-btn-bg','--send-btn-icon-color'] },
                 { label: '⭐ 其他',       vars: ['--favorite-color'] },
             ];

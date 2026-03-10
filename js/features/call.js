@@ -376,8 +376,8 @@
 
 /* ═══ TOOLBAR BUTTON ════════════════════════════════════ */
 #call-toolbar-btn{
-    background-color:var(--message-received-bg) !important;
-    color:var(--text-secondary) !important;
+    background-color:var(--toolbar-btn-bg, var(--message-received-bg)) !important;
+    color:var(--toolbar-btn-color, var(--text-secondary)) !important;
 }
 #call-toolbar-btn:hover{color:var(--text-primary) !important;}
 body.bottom-collapse-mode #call-toolbar-btn{display:none !important;}
@@ -600,16 +600,26 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
         pill.style.right  = 'auto'; pill.style.bottom = 'auto';
     }
 
-    /* ── Send chat message ────────────────────────────────── */
+    /* ── Send call-event message (special type, excluded from wordcloud) ── */
+    function sendCallEvent(icon, label, detail) {
+        if (typeof window._addCallEvent === 'function') {
+            window._addCallEvent(icon, label, detail);
+        } else {
+            // fallback: poll until core.js exposes _addCallEvent
+            let tries = 0;
+            const t = setInterval(() => {
+                if (typeof window._addCallEvent === 'function') {
+                    clearInterval(t);
+                    window._addCallEvent(icon, label, detail);
+                }
+                if (++tries > 25) clearInterval(t);
+            }, 200);
+        }
+    }
+
     function sendCallMsg(dur) {
         if (dur < 2000) return;
-        const input = document.getElementById('message-input');
-        const send  = document.getElementById('send-btn');
-        if (!input || !send) return;
-        const prev = input.value;
-        input.value = `📹 视频通话已结束 · ${fmt(dur)}`;
-        send.click();
-        setTimeout(() => { if (input.value === input.value) {} }, 80);
+        sendCallEvent('fa-video', '视频通话已结束', fmt(dur));
     }
 
     /* ── Start / End ──────────────────────────────────────── */
@@ -633,13 +643,42 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
         if (timerEl) timerEl.textContent = '连接中';
 
         clearTimeout(S.connectingTimer);
-        S.connectingTimer = setTimeout(() => {
-            if (!S.active) return;
-            S.startTime = Date.now();
-            if (conn) conn.classList.remove('visible');
-            if (body) body.style.display = '';
-            tick();
-        }, 1400 + Math.random() * 1400);
+
+        // If user is calling partner (not partner calling user), 35% chance partner rejects
+        if (!isPartner && Math.random() < 0.35) {
+            const rejectDelay = 4000 + Math.random() * 8000;
+            S.connectingTimer = setTimeout(() => {
+                if (!S.active) return;
+                // Cancel the call
+                S.active = false;
+                cancelAnimationFrame(S.timerRAF);
+                const winEl = document.getElementById('call-window');
+                if (winEl) { winEl.classList.remove('visible'); winEl.classList.remove('immersive'); }
+                const connEl = document.getElementById('call-connecting-state');
+                if (connEl) connEl.classList.remove('visible');
+                const bodyEl = document.getElementById('call-window-body');
+                if (bodyEl) bodyEl.style.display = '';
+                // Send call-event rejection message
+                const rejectLabels = [
+                    getName() + ' 未接听',
+                    getName() + ' 正在忙，无法接听',
+                    getName() + ' 拒绝了通话',
+                    getName() + ' 暂时无法接听',
+                ];
+                const lbl = rejectLabels[Math.floor(Math.random() * rejectLabels.length)];
+                sendCallEvent('fa-phone-slash', lbl, null);
+                if (typeof showNotification === 'function')
+                    showNotification(lbl, 'info', 3000);
+            }, rejectDelay);
+        } else {
+            S.connectingTimer = setTimeout(() => {
+                if (!S.active) return;
+                S.startTime = Date.now();
+                if (conn) conn.classList.remove('visible');
+                if (body) body.style.display = '';
+                tick();
+            }, 1400 + Math.random() * 1400);
+        }
     }
 
     function endCall() {
@@ -684,17 +723,15 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
             S.incomingTimer = setTimeout(() => {
                 if (!ov.classList.contains('visible')) return;
                 ov.classList.remove('visible');
-                // Send reject message to chat
-                const rejectMessages = [
-                    `📵 ${getName()} 未接听你的视频通话`,
-                    `📵 ${getName()} 拒绝了你的视频通话`,
-                    `📵 ${getName()} 没有接听`,
-                    `📵 通话未接通，${getName()} 可能正在忙`,
+                // Send call-event (special type, excluded from word cloud)
+                const rejectLabels = [
+                    getName() + ' 未接听',
+                    getName() + ' 拒绝了通话',
+                    getName() + ' 暂时无法接听',
+                    getName() + ' 可能正在忙',
                 ];
-                const msg = rejectMessages[Math.floor(Math.random() * rejectMessages.length)];
-                const input = document.getElementById('message-input');
-                const send  = document.getElementById('send-btn');
-                if (input && send) { input.value = msg; send.click(); }
+                const label = rejectLabels[Math.floor(Math.random() * rejectLabels.length)];
+                sendCallEvent('fa-phone-slash', label, null);
             }, rejectDelay);
         } else {
             S.incomingTimer = setTimeout(() => ov.classList.remove('visible'), 22000);
@@ -845,8 +882,7 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
         document.getElementById('call-inc-reject')?.addEventListener('click', () => {
             document.getElementById('call-incoming-overlay')?.classList.remove('visible');
             clearTimeout(S.incomingTimer);
-            const i = document.getElementById('message-input'), sb = document.getElementById('send-btn');
-            if (i && sb) { i.value = `📵 已拒绝 ${getName()} 的视频通话`; sb.click(); }
+            sendCallEvent('fa-phone-slash', '已拒绝 ' + getName() + ' 的通话', null);
         });
         document.getElementById('call-inc-accept')?.addEventListener('click', () => {
             document.getElementById('call-incoming-overlay')?.classList.remove('visible');
