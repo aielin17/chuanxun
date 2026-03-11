@@ -488,27 +488,9 @@ function _renderGroupBlock(list, group, groupItems, disabledSet, isUngrouped = f
     const colorDot = group.color || '#868E96';
 
     section.innerHTML = `
-        <style>
-            .rl-group-block { margin-bottom:12px; }
-            .rl-group-header {
-                display:flex;align-items:center;gap:9px;padding:9px 14px;
-                border-radius:12px 12px ${isCollapsed ? '12px 12px' : '0 0'};
-                background:var(--secondary-bg);cursor:pointer;user-select:none;
-                transition:background 0.2s;
-                ${isDisabled ? 'opacity:0.5;' : ''}
-            }
-            .rl-group-header:hover { background:rgba(var(--accent-color-rgb,180,140,100),0.06); }
-            .rl-group-body { border:1px solid var(--border-color);border-top:none;border-radius:0 0 12px 12px;padding:6px 8px 8px;background:var(--primary-bg); }
-            .rl-group-tag {
-                display:inline-flex;align-items:center;gap:5px;
-                padding:2px 9px 2px 6px;border-radius:20px;
-                border:1.5px solid ${colorDot}30;background:${colorDot}15;
-                cursor:pointer;transition:all 0.15s;
-            }
-            .rl-group-tag:hover { background:${colorDot}30; }
-        </style>
-        <div class="rl-group-header" id="grp-hdr-${group.id}">
-            <div class="rl-group-tag" id="grp-tag-${group.id}" title="${isDisabled ? '点击启用此分组' : '点击屏蔽此分组'}">
+        <div class="rl-group-header ${isCollapsed ? 'collapsed' : ''}" id="grp-hdr-${group.id}" ${isDisabled ? 'style="opacity:0.5;"' : ''}>
+            <div class="rl-group-tag" id="grp-tag-${group.id}" title="${isDisabled ? '点击启用此分组' : '点击屏蔽此分组'}"
+                 style="border:1.5px solid ${colorDot}30;background:${colorDot}15;">
                 <span style="width:8px;height:8px;border-radius:50%;background:${colorDot};flex-shrink:0;"></span>
                 <span style="font-size:12px;font-weight:700;color:${colorDot};">${group.name}</span>
                 ${isDisabled ? `<span title="已屏蔽" style="color:${colorDot};">${ICONS.eyeOff}</span>` : ''}
@@ -584,10 +566,86 @@ function _renderGroupBlock(list, group, groupItems, disabledSet, isUngrouped = f
     });
 }
 
-function _renderCardList(container, itemsWithIdx, disabledSet) {
-    itemsWithIdx.forEach(({ text, idx }) => {
-        container.appendChild(_createCard(text, idx, disabledSet));
+// ── 共享样式：只注入一次，不在每张卡里重复写 <style> ──────────────────
+(function _injectCardStyles() {
+    if (document.getElementById('rl-card-shared-style')) return;
+    const s = document.createElement('style');
+    s.id = 'rl-card-shared-style';
+    s.textContent = `
+        .rl-card {
+            display:flex;align-items:flex-start;gap:0;padding:11px 13px;
+            border-radius:12px;border:1.5px solid var(--border-color);
+            background:var(--secondary-bg);margin-bottom:7px;
+            transition:all 0.18s;position:relative;overflow:hidden;
+        }
+        .rl-card:hover { border-color:var(--accent-color);transform:translateY(-1px);box-shadow:0 3px 12px rgba(0,0,0,0.08); }
+        .rl-card.rl-card-batch {
+            cursor:pointer;
+            gap:10px;
+        }
+        .rl-card-actions {
+            display:flex;gap:3px;margin-left:auto;flex-shrink:0;padding-left:8px;
+            opacity:0;transition:opacity 0.18s;align-items:center;
+        }
+        .rl-card:hover .rl-card-actions { opacity:1; }
+        @media (hover:none) { .rl-card-actions { opacity:1; } }
+        .rl-act-btn {
+            width:28px;height:28px;border-radius:8px;border:none;
+            background:transparent;color:var(--text-secondary);cursor:pointer;
+            display:flex;align-items:center;justify-content:center;transition:all 0.15s;
+            flex-shrink:0;
+        }
+        .rl-act-btn:hover { border-color:var(--accent-color);color:var(--accent-color); }
+        .rl-act-btn.danger:hover { border-color:#ef4444;color:#ef4444; }
+        .rl-act-btn.active { background:var(--accent-color);border-color:var(--accent-color);color:#fff; }
+        .rl-group-block { margin-bottom:12px; }
+        .rl-group-header {
+            display:flex;align-items:center;gap:9px;padding:9px 14px;
+            border-radius:12px 12px 0 0;
+            background:var(--secondary-bg);cursor:pointer;user-select:none;
+            transition:background 0.2s;
+        }
+        .rl-group-header.collapsed { border-radius:12px; }
+        .rl-group-header:hover { background:rgba(var(--accent-color-rgb,180,140,100),0.06); }
+        .rl-group-body { border:1px solid var(--border-color);border-top:none;border-radius:0 0 12px 12px;padding:6px 8px 8px;background:var(--primary-bg); }
+        .rl-group-tag {
+            display:inline-flex;align-items:center;gap:5px;
+            padding:2px 9px 2px 6px;border-radius:20px;
+            cursor:pointer;transition:all 0.15s;
+        }
+        .rl-group-tag:hover { filter:brightness(1.15); }
+        .rl-load-more-btn {
+            width:100%;padding:9px;margin-top:6px;border-radius:10px;
+            border:1.5px dashed var(--border-color);background:none;
+            color:var(--text-secondary);font-size:12px;cursor:pointer;
+            font-family:var(--font-family);transition:all 0.18s;
+        }
+        .rl-load-more-btn:hover { border-color:var(--accent-color);color:var(--accent-color); }
+    `;
+    document.head.appendChild(s);
+})();
+
+const _RL_PAGE_SIZE = 60; // 首次渲染最多 60 张，避免一次性渲染上千节点
+
+function _renderCardList(container, itemsWithIdx, disabledSet, _offset = 0) {
+    const page = itemsWithIdx.slice(_offset, _offset + _RL_PAGE_SIZE);
+    const frag = document.createDocumentFragment();
+    page.forEach(({ text, idx }) => {
+        frag.appendChild(_createCard(text, idx, disabledSet));
     });
+    container.appendChild(frag);
+
+    const remaining = itemsWithIdx.length - (_offset + _RL_PAGE_SIZE);
+    if (remaining > 0) {
+        const btn = document.createElement('button');
+        btn.className = 'rl-load-more-btn';
+        btn.textContent = `展示更多（还有 ${remaining} 条）`;
+        btn.onclick = () => {
+            btn.remove();
+            _renderCardList(container, itemsWithIdx, disabledSet, _offset + _RL_PAGE_SIZE);
+        };
+        container.appendChild(btn);
+    }
 }
 
 function _createCard(item, index, disabledSet) {
@@ -617,16 +675,9 @@ function _createCard(item, index, disabledSet) {
         : `<span style="font-size:13px;">${item}</span>`;
 
     if (_batchModeActive) {
-        div.style.cssText = `cursor:pointer;`;
+        div.className = 'rl-card rl-card-batch';
+        div.style.cssText = `border-color:${isSelected ? 'var(--accent-color)' : 'var(--border-color)'};background:${isSelected ? 'rgba(var(--accent-color-rgb,180,140,100),0.08)' : 'var(--secondary-bg)'};`;
         div.innerHTML = `
-            <style>
-                .rl-card {
-                    display:flex;align-items:flex-start;gap:10px;padding:11px 13px;
-                    border-radius:12px;border:1.5px solid ${isSelected ? 'var(--accent-color)' : 'var(--border-color)'};
-                    background:${isSelected ? 'rgba(var(--accent-color-rgb,180,140,100),0.08)' : 'var(--secondary-bg)'};
-                    margin-bottom:7px;transition:all 0.15s;
-                }
-            </style>
             <div style="
                 width:18px;height:18px;border-radius:5px;flex-shrink:0;margin-top:1px;
                 border:1.5px solid ${isSelected ? 'var(--accent-color)' : 'var(--border-color)'};
@@ -649,30 +700,6 @@ function _createCard(item, index, disabledSet) {
     }
 
     div.innerHTML = `
-        <style>
-            .rl-card {
-                display:flex;align-items:flex-start;gap:0;padding:11px 13px;
-                border-radius:12px;border:1.5px solid var(--border-color);
-                background:var(--secondary-bg);margin-bottom:7px;
-                transition:all 0.18s;position:relative;overflow:hidden;
-            }
-            .rl-card:hover { border-color:var(--accent-color);transform:translateY(-1px);box-shadow:0 3px 12px rgba(0,0,0,0.08); }
-            .rl-card-actions {
-                display:flex;gap:3px;margin-left:auto;flex-shrink:0;padding-left:8px;
-                opacity:0;transition:opacity 0.18s;align-items:center;
-            }
-            .rl-card:hover .rl-card-actions { opacity:1; }
-            @media (hover:none) { .rl-card-actions { opacity:1; } }
-            .rl-act-btn {
-                width:28px;height:28px;border-radius:8px;border:none;
-                background:transparent;color:var(--text-secondary);cursor:pointer;
-                display:flex;align-items:center;justify-content:center;transition:all 0.15s;
-                flex-shrink:0;
-            }
-            .rl-act-btn:hover { border-color:var(--accent-color);color:var(--accent-color); }
-            .rl-act-btn.danger:hover { border-color:#ef4444;color:#ef4444; }
-            .rl-act-btn.active { background:var(--accent-color);border-color:var(--accent-color);color:#fff; }
-        </style>
         <div style="flex:1;min-width:0;${isDisabled ? 'opacity:0.4;text-decoration:line-through;' : ''}">
             ${displayText}
             ${groupBadge}
@@ -825,29 +852,6 @@ function _runDedup() {
     const preEmoji = customEmojis.length;
     customEmojis = [...new Set(customEmojis)];
     totalRemoved += (preEmoji - customEmojis.length);
-
-    // 同时对分组内部条目去重（同一分组内重复 + 跨分组重复）
-    if (window.customReplyGroups && window.customReplyGroups.length > 0) {
-        const globalSeen = new Set(customReplies.map(s => s.trim().toLowerCase()).filter(Boolean));
-        window.customReplyGroups.forEach(group => {
-            if (!Array.isArray(group.items)) return;
-            const before = group.items.length;
-            const localSeen = new Set();
-            group.items = group.items.filter(item => {
-                const norm = (item || '').trim().toLowerCase();
-                if (!norm || globalSeen.has(norm) || localSeen.has(norm)) return false;
-                localSeen.add(norm);
-                globalSeen.add(norm);
-                return true;
-            });
-            totalRemoved += (before - group.items.length);
-        });
-        localforage.setItem(
-            (typeof getStorageKey === 'function' ? getStorageKey('customReplyGroups') : `${APP_PREFIX}${SESSION_ID}_customReplyGroups`),
-            window.customReplyGroups
-        ).catch(() => {});
-    }
-
     if (totalRemoved > 0) {
         throttledSaveData(); renderReplyLibrary();
         showNotification(`🧹 共清理了 ${totalRemoved} 条重复内容`, 'success');

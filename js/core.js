@@ -30,18 +30,39 @@
     overlay.addEventListener('click', e => { if (e.target === overlay) closeDialog(); });
     document.getElementById('_reset_cancel').onclick = closeDialog;
 
-    document.getElementById('_reset_current').onclick = () => {
+    document.getElementById('_reset_current').onclick = async () => {
         closeDialog();
         if (confirm('确定要清除当前会话的所有消息吗？此操作无法恢复！')) {
             messages = [];
             displayedMessageCount = HISTORY_BATCH_SIZE;
-            // 直接写入，不走防抖，防止页面关闭/刷新前未能落盘
-            saveData().then(() => {
-                showNotification('当前会话消息已清除', 'success');
-            }).catch(() => {
-                showNotification('清除失败，请重试', 'error');
-            });
             renderMessages();
+
+            // ① 直接 await 写入 localforage，不走防抖，确保在任何跳转前落盘
+            try {
+                await localforage.setItem(getStorageKey('chatMessages'), []);
+            } catch(e) {
+                console.error('[clearMessages] localforage 写入失败:', e);
+            }
+
+            // ② 同步更新 localStorage 备份，防止备份里的旧消息被恢复
+            try {
+                const raw = localStorage.getItem(_BACKUP_PREFIX + 'critical');
+                if (raw) {
+                    const b = JSON.parse(raw);
+                    b.messages = [];
+                    b.ts = Date.now();
+                    localStorage.setItem(_BACKUP_PREFIX + 'critical', JSON.stringify(b));
+                } else {
+                    // 备份不存在时写一个空的占位，防止 _tryRecoverFromBackup 取到意外数据
+                    localStorage.setItem(_BACKUP_PREFIX + 'critical', JSON.stringify({
+                        ts: Date.now(), messages: [], sessionId: SESSION_ID
+                    }));
+                }
+            } catch(e) {}
+
+            // ③ 顺带保存其他设置
+            throttledSaveData();
+            showNotification('当前会话消息已清除', 'success');
         }
     };
 
@@ -1217,7 +1238,7 @@ if (!isBatchMode && type === 'normal') {
     const delayRange = settings.replyDelayMax - settings.replyDelayMin;
     const randomDelay = settings.replyDelayMin + Math.random() * delayRange;
 
-    const shouldIgnore = settings.allowReadNoReply && (Math.random() < (settings.readNoReplyChance ?? 0.2));
+    const shouldIgnore = settings.allowReadNoReply && (Math.random() < 0.5);
 
     const readDelay = 1500 + Math.random() * 2500;
     setTimeout(() => {
