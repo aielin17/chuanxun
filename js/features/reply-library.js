@@ -49,6 +49,58 @@ const ICONS = {
 };
 
 
+// ─── 共享样式：只注入一次，避免每张卡片各塞一个 <style> ───────────────────
+(function _injectReplyLibStyles() {
+    if (document.getElementById('rl-shared-styles')) return;
+    const s = document.createElement('style');
+    s.id = 'rl-shared-styles';
+    s.textContent = `
+        .rl-card {
+            display:flex;align-items:flex-start;gap:0;padding:11px 13px;
+            border-radius:12px;border:1.5px solid var(--border-color);
+            background:var(--secondary-bg);margin-bottom:7px;
+            transition:all 0.18s;position:relative;overflow:hidden;
+        }
+        .rl-card:hover { border-color:var(--accent-color);transform:translateY(-1px);box-shadow:0 3px 12px rgba(0,0,0,0.08); }
+        .rl-card.rl-selected { border-color:var(--accent-color);background:rgba(var(--accent-color-rgb,180,140,100),0.08); }
+        .rl-card-actions {
+            display:flex;gap:3px;margin-left:auto;flex-shrink:0;padding-left:8px;
+            opacity:0;transition:opacity 0.18s;align-items:center;
+        }
+        .rl-card:hover .rl-card-actions { opacity:1; }
+        @media (hover:none) { .rl-card-actions { opacity:1; } }
+        .rl-act-btn {
+            width:28px;height:28px;border-radius:8px;border:none;
+            background:transparent;color:var(--text-secondary);cursor:pointer;
+            display:flex;align-items:center;justify-content:center;transition:all 0.15s;
+            flex-shrink:0;
+        }
+        .rl-act-btn:hover { border-color:var(--accent-color);color:var(--accent-color); }
+        .rl-act-btn.danger:hover { border-color:#ef4444;color:#ef4444; }
+        .rl-act-btn.active { background:var(--accent-color);border-color:var(--accent-color);color:#fff; }
+        .rl-group-block { margin-bottom:12px; }
+        .rl-group-header {
+            display:flex;align-items:center;gap:9px;padding:9px 14px;
+            border-radius:12px 12px 0 0;
+            background:var(--secondary-bg);cursor:pointer;user-select:none;
+            transition:background 0.2s;
+        }
+        .rl-group-header.collapsed { border-radius:12px; }
+        .rl-group-header:hover { background:rgba(var(--accent-color-rgb,180,140,100),0.06); }
+        .rl-group-body { border:1px solid var(--border-color);border-top:none;border-radius:0 0 12px 12px;padding:6px 8px 8px;background:var(--primary-bg); }
+        .rl-group-tag {
+            display:inline-flex;align-items:center;gap:5px;
+            padding:2px 9px 2px 6px;border-radius:20px;
+            cursor:pointer;transition:all 0.15s;
+        }
+        .rl-batch-check {
+            width:18px;height:18px;border-radius:5px;flex-shrink:0;margin-top:1px;
+            display:flex;align-items:center;justify-content:center;transition:all 0.15s;
+        }
+    `;
+    (document.head || document.documentElement).appendChild(s);
+})();
+
 function _renderListContentOnly() {
     const list = document.getElementById('custom-replies-list');
     if (!list) return;
@@ -96,6 +148,16 @@ function _renderListContentOnly() {
     } else {
         _renderAtmosphereList(list, filtered);
     }
+}
+
+let _rlRafId = null;
+/** 防抖版 renderReplyLibrary：同一帧内多次调用只渲染一次 */
+function renderReplyLibraryRaf() {
+    if (_rlRafId) return;
+    _rlRafId = requestAnimationFrame(() => {
+        _rlRafId = null;
+        renderReplyLibrary();
+    });
 }
 
 function renderReplyLibrary() {
@@ -432,9 +494,12 @@ function _renderModernToolbar() {
 
 function _renderCardViewWithGroups(list, items) {
     const disabledSet = _getDisabledItemsSet();
-    const itemsWithIdx = items.map((text, idx) => ({
+    // 预建索引 Map，避免 indexOf 的 O(n²) 查找
+    const replyIndexMap = new Map();
+    customReplies.forEach((r, i) => { if (!replyIndexMap.has(r)) replyIndexMap.set(r, i); });
+    const itemsWithIdx = items.map(text => ({
         text,
-        idx: customReplies.indexOf(text)
+        idx: replyIndexMap.has(text) ? replyIndexMap.get(text) : -1
     }));
 
     if (_activeGroupFilter === null) {
@@ -488,9 +553,8 @@ function _renderGroupBlock(list, group, groupItems, disabledSet, isUngrouped = f
     const colorDot = group.color || '#868E96';
 
     section.innerHTML = `
-        <div class="rl-group-header ${isCollapsed ? 'collapsed' : ''}" id="grp-hdr-${group.id}" ${isDisabled ? 'style="opacity:0.5;"' : ''}>
-            <div class="rl-group-tag" id="grp-tag-${group.id}" title="${isDisabled ? '点击启用此分组' : '点击屏蔽此分组'}"
-                 style="border:1.5px solid ${colorDot}30;background:${colorDot}15;">
+        <div class="rl-group-header${isCollapsed ? ' collapsed' : ''}" id="grp-hdr-${group.id}" style="${isDisabled ? 'opacity:0.5;' : ''}">
+            <div class="rl-group-tag" id="grp-tag-${group.id}" title="${isDisabled ? '点击启用此分组' : '点击屏蔽此分组'}">
                 <span style="width:8px;height:8px;border-radius:50%;background:${colorDot};flex-shrink:0;"></span>
                 <span style="font-size:12px;font-weight:700;color:${colorDot};">${group.name}</span>
                 ${isDisabled ? `<span title="已屏蔽" style="color:${colorDot};">${ICONS.eyeOff}</span>` : ''}
@@ -546,7 +610,7 @@ function _renderGroupBlock(list, group, groupItems, disabledSet, isUngrouped = f
         group._collapsed = !group._collapsed;
         body.style.display = group._collapsed ? 'none' : 'block';
         section.querySelector('.grp-chevron').style.transform = group._collapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
-        section.querySelector('.rl-group-header').style.borderRadius = group._collapsed ? '12px' : '12px 12px 0 0';
+        section.querySelector('.rl-group-header').classList.toggle('collapsed', !!group._collapsed);
     });
 
     const tag = section.querySelector(`#grp-tag-${group.id}`);
@@ -566,86 +630,34 @@ function _renderGroupBlock(list, group, groupItems, disabledSet, isUngrouped = f
     });
 }
 
-// ── 共享样式：只注入一次，不在每张卡里重复写 <style> ──────────────────
-(function _injectCardStyles() {
-    if (document.getElementById('rl-card-shared-style')) return;
-    const s = document.createElement('style');
-    s.id = 'rl-card-shared-style';
-    s.textContent = `
-        .rl-card {
-            display:flex;align-items:flex-start;gap:0;padding:11px 13px;
-            border-radius:12px;border:1.5px solid var(--border-color);
-            background:var(--secondary-bg);margin-bottom:7px;
-            transition:all 0.18s;position:relative;overflow:hidden;
-        }
-        .rl-card:hover { border-color:var(--accent-color);transform:translateY(-1px);box-shadow:0 3px 12px rgba(0,0,0,0.08); }
-        .rl-card.rl-card-batch {
-            cursor:pointer;
-            gap:10px;
-        }
-        .rl-card-actions {
-            display:flex;gap:3px;margin-left:auto;flex-shrink:0;padding-left:8px;
-            opacity:0;transition:opacity 0.18s;align-items:center;
-        }
-        .rl-card:hover .rl-card-actions { opacity:1; }
-        @media (hover:none) { .rl-card-actions { opacity:1; } }
-        .rl-act-btn {
-            width:28px;height:28px;border-radius:8px;border:none;
-            background:transparent;color:var(--text-secondary);cursor:pointer;
-            display:flex;align-items:center;justify-content:center;transition:all 0.15s;
-            flex-shrink:0;
-        }
-        .rl-act-btn:hover { border-color:var(--accent-color);color:var(--accent-color); }
-        .rl-act-btn.danger:hover { border-color:#ef4444;color:#ef4444; }
-        .rl-act-btn.active { background:var(--accent-color);border-color:var(--accent-color);color:#fff; }
-        .rl-group-block { margin-bottom:12px; }
-        .rl-group-header {
-            display:flex;align-items:center;gap:9px;padding:9px 14px;
-            border-radius:12px 12px 0 0;
-            background:var(--secondary-bg);cursor:pointer;user-select:none;
-            transition:background 0.2s;
-        }
-        .rl-group-header.collapsed { border-radius:12px; }
-        .rl-group-header:hover { background:rgba(var(--accent-color-rgb,180,140,100),0.06); }
-        .rl-group-body { border:1px solid var(--border-color);border-top:none;border-radius:0 0 12px 12px;padding:6px 8px 8px;background:var(--primary-bg); }
-        .rl-group-tag {
-            display:inline-flex;align-items:center;gap:5px;
-            padding:2px 9px 2px 6px;border-radius:20px;
-            cursor:pointer;transition:all 0.15s;
-        }
-        .rl-group-tag:hover { filter:brightness(1.15); }
-        .rl-load-more-btn {
-            width:100%;padding:9px;margin-top:6px;border-radius:10px;
-            border:1.5px dashed var(--border-color);background:none;
-            color:var(--text-secondary);font-size:12px;cursor:pointer;
-            font-family:var(--font-family);transition:all 0.18s;
-        }
-        .rl-load-more-btn:hover { border-color:var(--accent-color);color:var(--accent-color); }
-    `;
-    document.head.appendChild(s);
-})();
+const _CARD_PAGE_SIZE = 80; // 每次最多渲染 80 张，超过时追加"显示更多"
 
-const _RL_PAGE_SIZE = 60; // 首次渲染最多 60 张，避免一次性渲染上千节点
+function _renderCardList(container, itemsWithIdx, disabledSet) {
+    const total = itemsWithIdx.length;
+    const toRender = itemsWithIdx.slice(0, _CARD_PAGE_SIZE);
+    const remaining = total - toRender.length;
 
-function _renderCardList(container, itemsWithIdx, disabledSet, _offset = 0) {
-    const page = itemsWithIdx.slice(_offset, _offset + _RL_PAGE_SIZE);
     const frag = document.createDocumentFragment();
-    page.forEach(({ text, idx }) => {
+    toRender.forEach(({ text, idx }) => {
         frag.appendChild(_createCard(text, idx, disabledSet));
     });
-    container.appendChild(frag);
 
-    const remaining = itemsWithIdx.length - (_offset + _RL_PAGE_SIZE);
     if (remaining > 0) {
         const btn = document.createElement('button');
-        btn.className = 'rl-load-more-btn';
-        btn.textContent = `展示更多（还有 ${remaining} 条）`;
+        btn.style.cssText = 'width:100%;padding:10px;margin-top:4px;border:1.5px dashed var(--border-color);border-radius:12px;background:transparent;color:var(--text-secondary);font-size:12px;cursor:pointer;font-family:var(--font-family);';
+        btn.textContent = `显示剩余 ${remaining} 条`;
         btn.onclick = () => {
             btn.remove();
-            _renderCardList(container, itemsWithIdx, disabledSet, _offset + _RL_PAGE_SIZE);
+            const moreFrag = document.createDocumentFragment();
+            itemsWithIdx.slice(_CARD_PAGE_SIZE).forEach(({ text, idx }) => {
+                moreFrag.appendChild(_createCard(text, idx, disabledSet));
+            });
+            container.appendChild(moreFrag);
         };
-        container.appendChild(btn);
+        frag.appendChild(btn);
     }
+
+    container.appendChild(frag);
 }
 
 function _createCard(item, index, disabledSet) {
@@ -675,14 +687,12 @@ function _createCard(item, index, disabledSet) {
         : `<span style="font-size:13px;">${item}</span>`;
 
     if (_batchModeActive) {
-        div.className = 'rl-card rl-card-batch';
-        div.style.cssText = `border-color:${isSelected ? 'var(--accent-color)' : 'var(--border-color)'};background:${isSelected ? 'rgba(var(--accent-color-rgb,180,140,100),0.08)' : 'var(--secondary-bg)'};`;
+        div.style.cssText = 'cursor:pointer;';
+        div.className = 'rl-card' + (isSelected ? ' rl-selected' : '');
         div.innerHTML = `
-            <div style="
-                width:18px;height:18px;border-radius:5px;flex-shrink:0;margin-top:1px;
+            <div class="rl-batch-check" style="
                 border:1.5px solid ${isSelected ? 'var(--accent-color)' : 'var(--border-color)'};
                 background:${isSelected ? 'var(--accent-color)' : 'transparent'};
-                display:flex;align-items:center;justify-content:center;transition:all 0.15s;
             ">
                 ${isSelected ? `<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>` : ''}
             </div>
@@ -730,14 +740,16 @@ function _createCard(item, index, disabledSet) {
 
 function _renderAtmosphereList(list, items) {
     const disabledSet = _getDisabledItemsSet();
+    // 预建各数组的索引 Map，避免 O(n²)
+    const indexMaps = {
+        pokes:    new Map(customPokes.map((r,i)   => [r, i])),
+        statuses: new Map(customStatuses.map((r,i) => [r, i])),
+        mottos:   new Map(customMottos.map((r,i)   => [r, i])),
+        intros:   new Map(customIntros.map((r,i)   => [r, i])),
+    };
+    const frag = document.createDocumentFragment();
     items.forEach((item, idx) => {
-        const realIdx = (() => {
-            if (currentSubTab === 'pokes') return customPokes.indexOf(item);
-            if (currentSubTab === 'statuses') return customStatuses.indexOf(item);
-            if (currentSubTab === 'mottos') return customMottos.indexOf(item);
-            if (currentSubTab === 'intros') return customIntros.indexOf(item);
-            return idx;
-        })();
+        const realIdx = (indexMaps[currentSubTab] || { get: () => idx }).get(item) ?? idx;
         const div = document.createElement('div');
         div.className = 'custom-reply-item';
         div.innerHTML = `
@@ -749,8 +761,9 @@ function _renderAtmosphereList(list, items) {
         `;
         div.querySelector('.delete-btn').onclick = () => deleteItem(realIdx);
         div.querySelector('.edit-btn').onclick = () => editItem(realIdx, item);
-        list.appendChild(div);
+        frag.appendChild(div);
     });
+    list.appendChild(frag);
 }
 
 function _renderEmojiTab(list, itemsToRender) {
