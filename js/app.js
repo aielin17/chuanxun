@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 try {
                     const permission = await Notification.requestPermission();
                     if (permission === 'granted') {
-                        showNotification('已开启系统通知，收到消息时会提醒你'success', 3000);
+                        showNotification('已开启系统通知，收到消息时会提醒你', 'success', 3000);
                     }
                 } catch(e) {
                     console.warn('通知权限请求失败:', e);

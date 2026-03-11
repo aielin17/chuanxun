@@ -1350,9 +1350,8 @@ if (_cancelEnvEl) _cancelEnvEl.addEventListener('click', () => {
         DOMElements.sessionModal.managerBtn.addEventListener('click', () => {
             renderSessionList(); showModal(DOMElements.sessionModal.modal);
         });
-        DOMElements.sessionModal.createBtn.addEventListener('click', () => {
-            const newId = createNewSession(false);
-
+        DOMElements.sessionModal.createBtn.addEventListener('click', async () => {
+            await createNewSession(false);
             renderSessionList();
             showNotification('新会话已创建', 'success');
         });
@@ -1383,9 +1382,17 @@ if (_cancelEnvEl) _cancelEnvEl.addEventListener('click', () => {
                     sessionList = sessionList.filter(s => s.id !== sessionId);
 localforage.setItem(`${APP_PREFIX}sessionList`, sessionList);
 
+// 同时清除 localStorage 和 localforage 中该会话的所有键
 Object.keys(localStorage).forEach(key => {
     if (key.startsWith(`${APP_PREFIX}${sessionId}_`)) safeRemoveItem(key);
 });
+localforage.keys().then(keys => {
+    keys.forEach(key => {
+        if (key.startsWith(`${APP_PREFIX}${sessionId}_`)) {
+            localforage.removeItem(key).catch(() => {});
+        }
+    });
+}).catch(() => {});
 
 if (sessionId === currentSessionId) {
     const newCurrentId = sessionList[0].id;

@@ -825,6 +825,29 @@ function _runDedup() {
     const preEmoji = customEmojis.length;
     customEmojis = [...new Set(customEmojis)];
     totalRemoved += (preEmoji - customEmojis.length);
+
+    // 同时对分组内部条目去重（同一分组内重复 + 跨分组重复）
+    if (window.customReplyGroups && window.customReplyGroups.length > 0) {
+        const globalSeen = new Set(customReplies.map(s => s.trim().toLowerCase()).filter(Boolean));
+        window.customReplyGroups.forEach(group => {
+            if (!Array.isArray(group.items)) return;
+            const before = group.items.length;
+            const localSeen = new Set();
+            group.items = group.items.filter(item => {
+                const norm = (item || '').trim().toLowerCase();
+                if (!norm || globalSeen.has(norm) || localSeen.has(norm)) return false;
+                localSeen.add(norm);
+                globalSeen.add(norm);
+                return true;
+            });
+            totalRemoved += (before - group.items.length);
+        });
+        localforage.setItem(
+            (typeof getStorageKey === 'function' ? getStorageKey('customReplyGroups') : `${APP_PREFIX}${SESSION_ID}_customReplyGroups`),
+            window.customReplyGroups
+        ).catch(() => {});
+    }
+
     if (totalRemoved > 0) {
         throttledSaveData(); renderReplyLibrary();
         showNotification(`🧹 共清理了 ${totalRemoved} 条重复内容`, 'success');

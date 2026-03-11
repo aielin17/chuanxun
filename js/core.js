@@ -34,9 +34,14 @@
         closeDialog();
         if (confirm('确定要清除当前会话的所有消息吗？此操作无法恢复！')) {
             messages = [];
-            throttledSaveData();
+            displayedMessageCount = HISTORY_BATCH_SIZE;
+            // 直接写入，不走防抖，防止页面关闭/刷新前未能落盘
+            saveData().then(() => {
+                showNotification('当前会话消息已清除', 'success');
+            }).catch(() => {
+                showNotification('清除失败，请重试', 'error');
+            });
             renderMessages();
-            showNotification('当前会话消息已清除', 'success');
         }
     };
 
@@ -1212,7 +1217,7 @@ if (!isBatchMode && type === 'normal') {
     const delayRange = settings.replyDelayMax - settings.replyDelayMin;
     const randomDelay = settings.replyDelayMin + Math.random() * delayRange;
 
-    const shouldIgnore = settings.allowReadNoReply && (Math.random() < 0.5);
+    const shouldIgnore = settings.allowReadNoReply && (Math.random() < (settings.readNoReplyChance ?? 0.2));
 
     const readDelay = 1500 + Math.random() * 2500;
     setTimeout(() => {

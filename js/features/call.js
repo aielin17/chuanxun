@@ -655,6 +655,8 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
         sendCallMsg(dur);
         if (typeof showNotification === 'function' && dur > 1500)
             showNotification(`通话结束 · ${fmt(dur)}`, 'info', 3000);
+        else if (typeof showNotification === 'function' && dur <= 1500 && dur > 0)
+            showNotification('通话已挂断', 'info', 2000);
     }
 
     function showIncomingCall() {
@@ -671,17 +673,24 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
             S.incomingTimer = setTimeout(() => {
                 if (!ov.classList.contains('visible')) return;
                 ov.classList.remove('visible');
+                const myName = (typeof settings !== 'undefined' && settings.myName) || '我';
+                const partnerName = getName();
                 const rejectLabels = [
-                    getName() + ' 未接听',
-                    getName() + ' 拒绝了通话',
-                    getName() + ' 暂时无法接听',
-                    getName() + ' 可能正在忙',
+                    `${partnerName} 的来电，${myName}未接听`,
+                    `${myName}拒绝了 ${partnerName} 的通话`,
+                    `错过了 ${partnerName} 的来电`,
+                    `${myName}暂时无法接听 ${partnerName} 的通话`,
                 ];
                 const label = rejectLabels[Math.floor(Math.random() * rejectLabels.length)];
                 sendCallEvent('fa-phone-slash', label, null);
             }, rejectDelay);
         } else {
-            S.incomingTimer = setTimeout(() => ov.classList.remove('visible'), 22000);
+            S.incomingTimer = setTimeout(() => {
+                if (!ov.classList.contains('visible')) return;
+                ov.classList.remove('visible');
+                const myName = (typeof settings !== 'undefined' && settings.myName) || '我';
+                sendCallEvent('fa-phone-slash', `${myName}未接听 ${getName()} 的来电`, null);
+            }, 22000);
         }
     }
 
@@ -821,7 +830,8 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
         document.getElementById('call-inc-reject')?.addEventListener('click', () => {
             document.getElementById('call-incoming-overlay')?.classList.remove('visible');
             clearTimeout(S.incomingTimer);
-            sendCallEvent('fa-phone-slash', '已拒绝 ' + getName() + ' 的通话', null);
+            const myName = (typeof settings !== 'undefined' && settings.myName) || '我';
+            sendCallEvent('fa-phone-slash', `${myName}拒绝了 ${getName()} 的通话`, null);
         });
         document.getElementById('call-inc-accept')?.addEventListener('click', () => {
             document.getElementById('call-incoming-overlay')?.classList.remove('visible');
