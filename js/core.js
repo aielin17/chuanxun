@@ -34,25 +34,18 @@
         closeDialog();
         if (confirm('确定要清除当前会话的所有消息吗？此操作无法恢复！')) {
             messages = [];
+            window.messages = messages; // 双保险：同步 window 属性
             displayedMessageCount = HISTORY_BATCH_SIZE;
 
-            // ① 同步写入"已清除"标记，防止 IndexedDB 异步写入未完成前页面关闭导致旧消息复活
-            const _clearKey = APP_PREFIX + SESSION_ID + '_MSGS_CLEARED';
-            try { localStorage.setItem(_clearKey, '1'); } catch(e) {}
+            // 立即清除 localStorage 备份，防止 _tryRecoverFromBackup 在 IndexedDB 写入前恢复旧消息
+            try { localStorage.removeItem('BACKUP_V1_critical'); } catch(e) {}
+            try { localStorage.removeItem('BACKUP_V1_timestamp'); } catch(e) {}
 
-            // ② 清空 localStorage 紧急备份，防止 _tryRecoverFromBackup 恢复旧消息
-            try { localStorage.removeItem(_BACKUP_PREFIX + 'critical'); } catch(e) {}
-
-            // ③ 立即异步写入 IndexedDB（跳过防抖）
-            saveData().then(() => {
-                // 写入成功后移除标记（标记使命完成）
-                try { localStorage.removeItem(_clearKey); } catch(e) {}
-                showNotification('当前会话消息已清除', 'success');
-            }).catch(() => {
-                showNotification('清除失败，请重试', 'error');
-            });
+            // 直接写入 IndexedDB（跳过 500ms 防抖），确保刷新后不恢复
+            localforage.setItem(getStorageKey('chatMessages'), []).catch(() => {});
 
             renderMessages();
+            showNotification('当前会话消息已清除', 'success');
         }
     };
 
@@ -286,17 +279,7 @@ const loadData = async () => {
         if (savedIntros) customIntros = savedIntros;
         else customIntros = CONSTANTS.WELCOME_ANIMATIONS.map(a => `${a.line1}|${a.line2}`);
 
-        // 检查同步清除标记：若标记存在说明上次清除操作的 IndexedDB 写入还未完成页面就刷新了
-        const _clearKey = APP_PREFIX + (SESSION_ID || '') + '_MSGS_CLEARED';
-        const _wasClearedSynced = localStorage.getItem(_clearKey) === '1';
-
-        if (_wasClearedSynced) {
-            // 标记存在：以清除为准，等 IndexedDB 本次加载完再补写一次空数组
-            messages = [];
-            localforage.setItem(getStorageKey('chatMessages'), []).then(() => {
-                try { localStorage.removeItem(_clearKey); } catch(e) {}
-            }).catch(() => {});
-        } else if (savedMessages && Array.isArray(savedMessages)) {
+        if (savedMessages && Array.isArray(savedMessages)) {
             messages = savedMessages.map(m => ({
                 ...m, timestamp: new Date(m.timestamp)
             }));
