@@ -330,11 +330,15 @@
         var clearChatBtn = mc.querySelector('#clear-chat-only');
         if (clearChatBtn) clearChatBtn.addEventListener('click', function () {
             if (!confirm('确定要清除当前会话的所有消息吗？\n\n所有设置、头像、字卡等数据将保留，仅聊天记录会被删除。\n\n此操作无法恢复！')) return;
-            if (typeof messages !== 'undefined') {
-                window.messages = [];
-                if (typeof throttledSaveData === 'function') throttledSaveData();
-                if (typeof renderMessages === 'function') renderMessages();
+            // 修复：直接赋值 let messages（window.messages 赋值不影响 let 绑定）
+            messages = [];
+            displayedMessageCount = typeof HISTORY_BATCH_SIZE !== 'undefined' ? HISTORY_BATCH_SIZE : 20;
+            try { localStorage.removeItem('BACKUP_V1_critical'); } catch(e) {}
+            try { localStorage.removeItem('BACKUP_V1_timestamp'); } catch(e) {}
+            if (window.localforage && typeof getStorageKey === 'function') {
+                localforage.setItem(getStorageKey('chatMessages'), []).catch(function() {});
             }
+            if (typeof renderMessages === 'function') renderMessages();
             if (typeof showNotification === 'function') showNotification('聊天记录已清除', 'success');
         });
 
