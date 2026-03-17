@@ -2,7 +2,13 @@ const dayData = {
     "2026-03-17": {
         title: "3/17",
         desc: "初次见面",
+        theme: {
+            accent: "#6d2b2b",
+            accentDeep: "#4b1515",
+            gradientMain: "linear-gradient(135deg, rgba(109,43,43,0.96) 0%, rgba(75,21,21,1) 100%)"
+        },
         zodiac: ["白羊座", "金牛座", "狮子座", "天秤座"],
+        hairColors: ["黑发", "金发"],
         status: [
             "在飞机上 / 赶飞机 / 旅途中 / 即将旅行",
             "天气有些闷、炎热，又或者心情比较燥",

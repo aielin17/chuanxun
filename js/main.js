@@ -8,6 +8,90 @@ function wrapDigitsHTML(str) {
     return String(str).replace(/(\d+)/g, '<span class="zs-num">$1</span>');
 }
 
+function applyDayTheme(data) {
+    const root = document.documentElement;
+    const t = data && data.theme ? data.theme : null;
+    if (!t) {
+        root.style.removeProperty('--accent');
+        root.style.removeProperty('--accent-deep');
+        root.style.removeProperty('--gradient-main');
+        return;
+    }
+    if (t.accent) root.style.setProperty('--accent', t.accent);
+    if (t.accentDeep) root.style.setProperty('--accent-deep', t.accentDeep);
+    if (t.gradientMain) root.style.setProperty('--gradient-main', t.gradientMain);
+}
+
+function mulberry32(seed) {
+    let a = seed >>> 0;
+    return function() {
+        a |= 0;
+        a = (a + 0x6D2B79F5) | 0;
+        let t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+}
+
+function seedFromString(s) {
+    let h = 2166136261;
+    for (let i = 0; i < s.length; i++) {
+        h ^= s.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+}
+
+function addFlipInteraction(root) {
+    if (!root) return;
+    if (root.dataset && root.dataset.flipBound === '1') return;
+    if (root.dataset) root.dataset.flipBound = '1';
+    const threshold = 10; 
+    const maxTapMs = 550;
+    let sx = 0, sy = 0, st = 0, activeEl = null, pid = null;
+
+    const onDown = (e) => {
+        const card = e.target.closest('.flip-card');
+        if (!card || !root.contains(card)) return;
+        if (e.button != null && e.button !== 0) return;
+        activeEl = card;
+        pid = e.pointerId;
+        sx = e.clientX;
+        sy = e.clientY;
+        st = Date.now();
+        if (typeof card.setPointerCapture === 'function' && pid != null) {
+            try { card.setPointerCapture(pid); } catch {}
+        }
+    };
+
+    const onUp = (e) => {
+        if (!activeEl) return;
+        if (pid != null && e.pointerId != null && e.pointerId !== pid) return;
+        const dx = e.clientX - sx;
+        const dy = e.clientY - sy;
+        const dt = Date.now() - st;
+        const moved = Math.hypot(dx, dy);
+
+        const sel = window.getSelection ? window.getSelection() : null;
+        const hasSelection = sel && String(sel).trim().length > 0;
+
+        const card = activeEl;
+        activeEl = null;
+        pid = null;
+
+        if (hasSelection) return;
+        if (dt > maxTapMs) return;
+        if (moved > threshold) return;
+
+        card.classList.toggle('flipped');
+        playSound('flip');
+    };
+
+    root.addEventListener('pointerdown', onDown, { passive: true });
+    root.addEventListener('pointerup', onUp, { passive: true });
+    root.addEventListener('pointercancel', () => { activeEl = null; pid = null; }, { passive: true });
+}
+
 const audioEngine = {
     ctx: null,
     master: null,
@@ -322,6 +406,7 @@ function bindDateCards() {
 function renderCurrentDayData() {
     const data = dayData[currentDateKey];
     if (!data) return;
+    applyDayTheme(data);
 
     const zodiacGrid = document.getElementById('zodiacGrid');
     zodiacGrid.innerHTML = '';
@@ -341,16 +426,21 @@ function renderCurrentDayData() {
         <div class="info-subtitle">发色</div>
     `;
 
-    ["黑发","金发","红发","蓝发"].forEach(name => {
-        const icon = zodiacIcons[name] || `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 18c2-1 4-1.5 6-1.5S16 17 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M8.5 7.5c.8-1.7 2.1-2.7 3.5-2.7s2.7 1 3.5 2.7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M7.2 14.2c-.7-1.1-1.1-2.4-1.1-3.7 0-3.6 2.7-6.5 5.9-6.5s5.9 2.9 5.9 6.5c0 1.3-.4 2.6-1.1 3.7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-        zodiacGrid.innerHTML += `
-        <div class="info-item">
-            <div class="zodiac-icon">
-                ${icon}
-            </div>
-            <span>${name}</span>
-        </div>`;
-    });
+    const hairs = Array.isArray(data.hairColors) ? data.hairColors.filter(Boolean) : [];
+    if (!hairs.length) {
+        zodiacGrid.innerHTML += `<div class="info-note">今日不发色</div>`;
+    } else {
+        hairs.forEach(name => {
+            const icon = zodiacIcons[name] || `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 18c2-1 4-1.5 6-1.5S16 17 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M8.5 7.5c.8-1.7 2.1-2.7 3.5-2.7s2.7 1 3.5 2.7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M7.2 14.2c-.7-1.1-1.1-2.4-1.1-3.7 0-3.6 2.7-6.5 5.9-6.5s5.9 2.9 5.9 6.5c0 1.3-.4 2.6-1.1 3.7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+            zodiacGrid.innerHTML += `
+            <div class="info-item">
+                <div class="zodiac-icon">
+                    ${icon}
+                </div>
+                <span>${name}</span>
+            </div>`;
+        });
+    }
 
     const statusList = document.getElementById('statusList');
     statusList.innerHTML = '';
@@ -361,16 +451,22 @@ function renderCurrentDayData() {
     const cardsGrid = document.getElementById('cardsGrid');
     cardsGrid.innerHTML = '';
     const shuffledCards = [...data.cards].sort(() => Math.random() - 0.5);
+    const rng = mulberry32(seedFromString(`${currentDateKey}|cards`));
     shuffledCards.forEach((msg, i) => {
         const label = String(i + 1).padStart(2, '0');
         const labelHTML = wrapDigitsHTML(label);
+        const stampX = Math.round(10 + rng() * 80);
+        const stampY = Math.round(8 + rng() * 78);
+        const stampR = Math.round(-18 + rng() * 36);
         cardsGrid.innerHTML += `
-        <div class="flip-card" onclick="this.classList.toggle('flipped');playSound('flip')">
+        <div class="flip-card">
             <div class="flip-card-inner">
                 <div class="flip-card-front">
                     <div class="card-front-number">${labelHTML}</div>
+                    <div class="card-front-hint">TAP</div>
                 </div>
                 <div class="flip-card-back">
+                    <div class="back-stamp" aria-hidden="true" style="--stamp-x:${stampX}%;--stamp-y:${stampY}%;--stamp-rot:${stampR}deg;">${labelHTML}</div>
                     <div class="quote-row">
                         <span class="quote-mark">❝</span>
                         <span class="card-id">#${labelHTML}</span>
@@ -383,20 +479,27 @@ function renderCurrentDayData() {
             </div>
         </div>`;
     });
+    addFlipInteraction(cardsGrid);
 
     const secretGrid = document.getElementById('secretCardsGrid');
     secretGrid.innerHTML = '';
     const shuffledSecret = [...data.secretCards].sort(() => Math.random() - 0.5);
+    const srng = mulberry32(seedFromString(`${currentDateKey}|secret`));
     shuffledSecret.forEach((msg, i) => {
-        const label = `S${String(i + 1).padStart(2, '0')}`;
+        const label = `G${String(i + 1).padStart(2, '0')}`;
         const labelHTML = wrapDigitsHTML(label);
+        const stampX = Math.round(10 + srng() * 80);
+        const stampY = Math.round(8 + srng() * 78);
+        const stampR = Math.round(-18 + srng() * 36);
         secretGrid.innerHTML += `
-        <div class="flip-card" onclick="this.classList.toggle('flipped');playSound('flip')">
+        <div class="flip-card">
             <div class="flip-card-inner">
                 <div class="flip-card-front">
                     <div class="card-front-number">${labelHTML}</div>
+                    <div class="card-front-hint">TAP</div>
                 </div>
                 <div class="flip-card-back">
+                    <div class="back-stamp" aria-hidden="true" style="--stamp-x:${stampX}%;--stamp-y:${stampY}%;--stamp-rot:${stampR}deg;">${labelHTML}</div>
                     <div class="quote-row">
                         <span class="quote-mark">❝</span>
                         <span class="card-id">#${labelHTML}</span>
@@ -409,6 +512,7 @@ function renderCurrentDayData() {
             </div>
         </div>`;
     });
+    addFlipInteraction(secretGrid);
 
     const musicList = document.getElementById('musicList');
     musicList.innerHTML = '';
