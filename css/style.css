@@ -1363,7 +1363,6 @@ h1::after {
         font-size: 0.85rem;
         padding: 20px 15px;
         line-height: 1.6;
-        justify-content: center;
 
     }
     .password-container {
