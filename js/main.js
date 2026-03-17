@@ -3,6 +3,11 @@ const totalPages = 5;
 let currentDateKey = "";
 let toastTimeout;
 let homeViewMode = 'auto'; // 'grid' | 'calendar' | 'auto'
+const fontScales = [
+    { key: 's', label: '小', scale: 0.94 },
+    { key: 'm', label: '中', scale: 1.00 },
+    { key: 'l', label: '大', scale: 1.10 }
+];
 
 const audioEngine = {
     ctx: null,
@@ -134,6 +139,29 @@ function initTheme() {
     document.documentElement.setAttribute('data-theme', theme);
 }
 
+function getFontScaleKey() {
+    const saved = localStorage.getItem('fontScale');
+    if (saved === 's' || saved === 'm' || saved === 'l') return saved;
+    return 'm';
+}
+
+function applyFontScale(key) {
+    const item = fontScales.find(x => x.key === key) || fontScales[1];
+    document.documentElement.style.setProperty('--font-scale', String(item.scale));
+    localStorage.setItem('fontScale', item.key);
+    const btn = document.getElementById('fontToggle');
+    if (btn) btn.setAttribute('aria-label', `字号：${item.label}`);
+}
+
+function cycleFontScale() {
+    const cur = getFontScaleKey();
+    const idx = fontScales.findIndex(x => x.key === cur);
+    const next = fontScales[(Math.max(0, idx) + 1) % fontScales.length].key;
+    applyFontScale(next);
+    playSound('click');
+    showToast(`字号：${fontScales.find(x => x.key === next)?.label || '中'}`, 'success');
+}
+
 function toggleTheme() {
     const current = document.documentElement.getAttribute('data-theme');
     const next = current === 'dark' ? 'light' : 'dark';
@@ -157,6 +185,12 @@ function formatMD(dateKey) {
     const d = new Date(dateKey + 'T00:00:00');
     if (Number.isNaN(d.getTime())) return dateKey;
     return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+function formatMDParts(dateKey) {
+    const d = new Date(dateKey + 'T00:00:00');
+    if (Number.isNaN(d.getTime())) return { m: '', d: dateKey };
+    return { m: `${d.getMonth() + 1}月`, d: String(d.getDate()) };
 }
 
 function getHomeMode() {
@@ -205,11 +239,14 @@ function renderGridHome(keys) {
 
     keys.forEach(key => {
         const item = dayData[key];
-        const md = formatMD(key);
+        const md = formatMDParts(key);
         grid.innerHTML += `
         <div class="date-card" data-date="${key}">
             <div class="date-card-main">
-                <span class="date-badge">${md}</span>
+                <span class="date-badge">
+                    <span class="date-m">${md.m}</span>
+                    <span class="date-d">${md.d}<span class="date-d-suffix">日</span></span>
+                </span>
                 <span class="date-desc">${item.desc || ''}</span>
             </div>
         </div>`;
@@ -475,11 +512,14 @@ function copyText(text) {
 
 window.addEventListener('DOMContentLoaded', () => {
     initTheme();
+    applyFontScale(getFontScaleKey());
     homeViewMode = localStorage.getItem('homeViewMode') || 'auto';
     bindHomeViewToggle();
     renderDateList();
     hideLoader();
     document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+    const fontBtn = document.getElementById('fontToggle');
+    if (fontBtn) fontBtn.addEventListener('click', cycleFontScale);
 
     // 首次用户手势后预热音频（避免 iOS/部分浏览器自动播放限制）
     const warm = () => {
