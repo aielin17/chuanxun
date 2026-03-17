@@ -917,7 +917,8 @@ h1::after {
     overflow-wrap: anywhere;
     overflow-y: auto;
     justify-content: flex-start;
-    padding-top: 25px;
+    align-items: stretch;
+    padding-top: 18px;
     position: relative;
 }
 

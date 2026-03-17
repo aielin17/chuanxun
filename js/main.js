@@ -486,7 +486,7 @@ function renderCurrentDayData() {
     const shuffledSecret = [...data.secretCards].sort(() => Math.random() - 0.5);
     const srng = mulberry32(seedFromString(`${currentDateKey}|secret`));
     shuffledSecret.forEach((msg, i) => {
-        const label = `G${String(i + 1).padStart(2, '0')}`;
+        const label = String(i + 1).padStart(2, '0');
         const labelHTML = wrapDigitsHTML(label);
         const stampX = Math.round(10 + srng() * 80);
         const stampY = Math.round(8 + srng() * 78);
@@ -502,7 +502,7 @@ function renderCurrentDayData() {
                     <div class="back-stamp" aria-hidden="true" style="--stamp-x:${stampX}%;--stamp-y:${stampY}%;--stamp-rot:${stampR}deg;">${labelHTML}</div>
                     <div class="quote-row">
                         <span class="quote-mark">❝</span>
-                        <span class="card-id">#${labelHTML}</span>
+                        <span class="card-id">#特供 ${labelHTML}</span>
                     </div>
                     <div class="card-message">${msg}</div>
                     <div class="quote-row quote-row-end">
