@@ -51,12 +51,10 @@ body {
     color: var(--text-main);
     font-family: 'Noto Serif SC', serif;
     line-height: 1.8;
-    padding: 4vw;
+    padding: 0;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
     min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: block;
     transition: var(--transition);
     overscroll-behavior: none;
     text-rendering: geometricPrecision;
@@ -65,16 +63,39 @@ body {
 
 .album-container {
     width: 100%;
-    max-width: 1000px;
+    max-width: none;
     background: var(--bg-card);
-    padding: 50px 40px;
-    border-radius: 12px;
+    padding: 56px 44px;
+    border-radius: 0;
     box-shadow: var(--shadow-medium);
     border: 1px solid var(--border-color);
     position: relative;
-    overflow: auto;
-    max-height: calc(100vh - 8vw);
+    overflow-y: auto;
+    height: 100vh;
     -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    margin: 0;
+}
+
+.album-container::before,
+.container::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(800px 400px at 15% 0%, rgba(0,0,0,0.06), transparent 55%),
+        radial-gradient(700px 420px at 85% 15%, rgba(0,0,0,0.05), transparent 60%),
+        linear-gradient(180deg, rgba(0,0,0,0.03), transparent 22%, rgba(0,0,0,0.02));
+    opacity: 0.9;
+}
+
+[data-theme="dark"] .album-container::before,
+[data-theme="dark"] .container::before {
+    background:
+        radial-gradient(900px 460px at 15% 0%, rgba(255,255,255,0.06), transparent 55%),
+        radial-gradient(820px 520px at 85% 15%, rgba(255,255,255,0.05), transparent 60%),
+        linear-gradient(180deg, rgba(255,255,255,0.03), transparent 22%, rgba(255,255,255,0.02));
 }
 
 .album-header {
@@ -223,6 +244,10 @@ body {
     border-color: var(--accent);
 }
 
+.date-card:active {
+    transform: translateY(-2px) scale(0.99);
+}
+
 .date-card:hover::before {
     transform: scaleX(1);
 }
@@ -246,26 +271,6 @@ body {
 .date-card-main {
     position: relative;
     z-index: 2;
-}
-
-.letter-swarm {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    pointer-events: none;
-    filter: blur(0.2px);
-}
-
-.letter-swarm span {
-    position: absolute;
-    left: var(--x);
-    top: var(--y);
-    transform: translate(-50%, -50%) rotate(var(--r));
-    opacity: var(--o);
-    color: var(--text-main);
-    font-size: 1.1rem;
-    letter-spacing: 2px;
-    font-weight: 300;
 }
 
 .calendar-view {
@@ -352,6 +357,10 @@ body {
     border-color: var(--accent);
 }
 
+.cal-cell.has-data:active {
+    transform: translateY(-1px) scale(0.99);
+}
+
 .cal-day {
     font-weight: 300;
     color: var(--text-main);
@@ -360,20 +369,22 @@ body {
 
 .container {
     width: 100%;
-    max-width: 800px;
+    max-width: none;
     background: var(--bg-card);
-    padding: 40px;
-    border-radius: 12px;
+    padding: 56px 44px;
+    border-radius: 0;
     box-shadow: var(--shadow-medium);
     border: 1px solid var(--border-color);
     position: relative;
-    overflow: auto;
-    max-height: calc(100vh - 8vw);
+    overflow-y: auto;
+    height: 100vh;
     -webkit-overflow-scrolling: touch;
-    min-height: 80vh;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
     display: none;
+    scroll-behavior: smooth;
+    margin: 0;
 }
 
 .page {
@@ -493,6 +504,10 @@ h1::after {
     border-color: var(--accent);
 }
 
+.info-item:active {
+    transform: translateY(-2px) scale(0.99);
+}
+
 .info-item:hover::after {
     opacity: 0.8;
 }
@@ -592,6 +607,10 @@ h1::after {
     border-color: var(--accent);
 }
 
+.status-list li:active {
+    transform: translateX(2px);
+}
+
 .action-bar {
     display: flex;
     justify-content: space-between;
@@ -617,10 +636,23 @@ h1::after {
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
+.btn-action[aria-label="全部翻阅"] {
+    padding: 10px;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    justify-content: center;
+}
+
 .btn-action:hover {
     background: var(--accent-deep);
     transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+}
+
+.btn-action:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.12);
 }
 
 .btn-action svg {
@@ -680,16 +712,11 @@ h1::after {
     font-style: italic;
     letter-spacing: 2px;
     flex-direction: column;
-    gap: 10px;
+    gap: 6px;
 }
 
 .flip-card-front::after {
-    content: "TAP TO REVEAL";
-    position: absolute;
-    bottom: 15px;
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    letter-spacing: 3px;
+    content: "";
 }
 
 .card-front-number {
@@ -709,6 +736,11 @@ h1::after {
 
 .flip-card:hover .flip-card-front {
     border-color: var(--accent);
+}
+
+.flip-card:active .flip-card-inner {
+    box-shadow: 0 10px 26px rgba(0,0,0,0.08);
+    filter: saturate(1.05);
 }
 
 .flip-card-back {
@@ -834,6 +866,21 @@ h1::after {
     box-shadow: 0 0 0 3px rgba(0,0,0,0.05);
 }
 
+.password-input.shake {
+    border-color: #b24a4a;
+    box-shadow: 0 0 0 3px rgba(178, 74, 74, 0.12);
+    animation: shakeX 0.36s ease-in-out;
+}
+
+@keyframes shakeX {
+    0% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+    100% { transform: translateX(0); }
+}
+
 .music-item {
     display: flex;
     align-items: center;
@@ -946,6 +993,10 @@ h1::after {
     box-shadow: 0 8px 15px rgba(0,0,0,0.1);
 }
 
+.btn-nav:active {
+    transform: translateY(-1px) scale(0.99);
+}
+
 .btn-nav:hover::before {
     left: 0;
 }
@@ -976,6 +1027,14 @@ h1::after {
     box-shadow: 0 10px 30px rgba(0,0,0,0.2);
 }
 
+#toast[data-type="success"] {
+    background: #111;
+}
+
+#toast[data-type="error"] {
+    background: #5a1c1c;
+}
+
 #toast.show {
     visibility: visible;
     opacity: 1;
@@ -1002,9 +1061,9 @@ h1::after {
 }
 
 .back-btn {
-    position: absolute;
-    top: 20px;
-    left: 20px;
+    position: sticky;
+    top: 14px;
+    left: 0;
     background: transparent;
     border: none;
     color: var(--text-muted);
@@ -1015,11 +1074,42 @@ h1::after {
     font-size: 0.9rem;
     transition: var(--transition-fast);
     z-index: 10;
+    padding: 8px 10px;
+    border-radius: 10px;
+    backdrop-filter: blur(6px);
+}
+
+.back-btn:focus-visible,
+.theme-toggle:focus-visible,
+.view-btn:focus-visible,
+.btn-action:focus-visible,
+.btn-nav:focus-visible,
+.copy-btn:focus-visible,
+.date-card:focus-visible,
+.cal-cell.has-data:focus-visible {
+    outline: 2px solid rgba(0,0,0,0.35);
+    outline-offset: 3px;
+}
+
+[data-theme="dark"] .back-btn:focus-visible,
+[data-theme="dark"] .theme-toggle:focus-visible,
+[data-theme="dark"] .view-btn:focus-visible,
+[data-theme="dark"] .btn-action:focus-visible,
+[data-theme="dark"] .btn-nav:focus-visible,
+[data-theme="dark"] .copy-btn:focus-visible,
+[data-theme="dark"] .date-card:focus-visible,
+[data-theme="dark"] .cal-cell.has-data:focus-visible {
+    outline-color: rgba(255,255,255,0.35);
 }
 
 .back-btn:hover {
     color: var(--accent);
     transform: translateX(-3px);
+}
+
+.back-btn:active {
+    transform: translateX(-1px) scale(0.99);
+    background: var(--hover-bg);
 }
 
 .back-btn svg {
@@ -1049,8 +1139,8 @@ h1::after {
 
 @media (max-width: 600px) {
     .album-container {
-        padding: 30px 20px;
-        border-radius: 8px;
+        padding: 28px 18px;
+        border-radius: 0;
     }
     .album-title {
         font-size: 1.8rem;
@@ -1068,8 +1158,8 @@ h1::after {
         border-radius: 10px;
     }
     .container {
-        padding: 25px 15px;
-        border-radius: 8px;
+        padding: 28px 18px;
+        border-radius: 0;
         min-height: 100vh;
     }
     h1 {

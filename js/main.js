@@ -4,19 +4,117 @@ let currentDateKey = "";
 let toastTimeout;
 let homeViewMode = 'auto'; // 'grid' | 'calendar' | 'auto'
 
-const sounds = {
-    click: new Audio("data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmImBze5u+wVRwASe7UAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="),
-    flip: new Audio("data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhX1qiV1gf4+cpUgcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmImBze5u+wVRwASe7UAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="),
-    page: new Audio("data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmImBze5u+wVRwASe7UAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="),
-    unlock: new Audio("data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhX1qiV1gf4+cpUgcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmImBze5u+wVRwASe7UAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="),
-    copy: new Audio("data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmImBze5u+wVRwASe7UAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
+const audioEngine = {
+    ctx: null,
+    master: null,
+    ready: false,
+    volume: 0.4
 };
 
+function ensureAudio() {
+    if (audioEngine.ready) return true;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return false;
+    try {
+        audioEngine.ctx = new AC();
+        audioEngine.master = audioEngine.ctx.createGain();
+        audioEngine.master.gain.value = audioEngine.volume;
+        audioEngine.master.connect(audioEngine.ctx.destination);
+        audioEngine.ready = true;
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+function beep({ freq = 440, dur = 0.06, type = 'sine', gain = 0.18, sweepTo = null } = {}) {
+    if (!ensureAudio()) return;
+    const ctx = audioEngine.ctx;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+
+    const t0 = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t0);
+    if (sweepTo) osc.frequency.exponentialRampToValueAtTime(Math.max(40, sweepTo), t0 + Math.max(0.02, dur));
+
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(gain, t0 + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+
+    osc.connect(g);
+    g.connect(audioEngine.master);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.01);
+}
+
+function noiseBurst({ dur = 0.08, gain = 0.08, hp = 800, lp = 6800 } = {}) {
+    if (!ensureAudio()) return;
+    const ctx = audioEngine.ctx;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+
+    const t0 = ctx.currentTime;
+    const bufferSize = Math.max(1, Math.floor(ctx.sampleRate * dur));
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 2.2);
+
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+
+    const hpF = ctx.createBiquadFilter();
+    hpF.type = 'highpass';
+    hpF.frequency.setValueAtTime(hp, t0);
+
+    const lpF = ctx.createBiquadFilter();
+    lpF.type = 'lowpass';
+    lpF.frequency.setValueAtTime(lp, t0);
+
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(gain, t0 + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + Math.max(0.02, dur));
+
+    src.connect(hpF);
+    hpF.connect(lpF);
+    lpF.connect(g);
+    g.connect(audioEngine.master);
+    src.start(t0);
+    src.stop(t0 + dur + 0.01);
+}
+
 function playSound(name) {
-    if (sounds[name]) {
-        sounds[name].currentTime = 0;
-        sounds[name].volume = 0.3;
-        sounds[name].play().catch(() => {});
+    switch (name) {
+        case 'click':
+            beep({ freq: 560, dur: 0.038, type: 'triangle', gain: 0.10, sweepTo: 520 });
+            setTimeout(() => beep({ freq: 920, dur: 0.020, type: 'sine', gain: 0.03, sweepTo: 860 }), 18);
+            break;
+        case 'page':
+            noiseBurst({ dur: 0.08, gain: 0.05, hp: 700, lp: 5200 });
+            beep({ freq: 360, dur: 0.06, type: 'sine', gain: 0.10, sweepTo: 520 });
+            setTimeout(() => beep({ freq: 520, dur: 0.05, type: 'sine', gain: 0.07, sweepTo: 660 }), 70);
+            break;
+        case 'flip':
+            noiseBurst({ dur: 0.06, gain: 0.06, hp: 900, lp: 7200 });
+            beep({ freq: 240, dur: 0.07, type: 'square', gain: 0.06, sweepTo: 170 });
+            setTimeout(() => beep({ freq: 760, dur: 0.028, type: 'triangle', gain: 0.05, sweepTo: 620 }), 55);
+            break;
+        case 'unlock':
+            beep({ freq: 660, dur: 0.08, type: 'sine', gain: 0.10, sweepTo: 880 });
+            setTimeout(() => beep({ freq: 990, dur: 0.08, type: 'sine', gain: 0.09, sweepTo: 1180 }), 90);
+            setTimeout(() => beep({ freq: 1320, dur: 0.07, type: 'triangle', gain: 0.06, sweepTo: 1480 }), 190);
+            break;
+        case 'error':
+            beep({ freq: 220, dur: 0.10, type: 'sawtooth', gain: 0.08, sweepTo: 140 });
+            setTimeout(() => beep({ freq: 160, dur: 0.08, type: 'sawtooth', gain: 0.06, sweepTo: 120 }), 90);
+            break;
+        case 'copy':
+            beep({ freq: 740, dur: 0.04, type: 'triangle', gain: 0.09, sweepTo: 920 });
+            setTimeout(() => beep({ freq: 1040, dur: 0.03, type: 'triangle', gain: 0.05, sweepTo: 1180 }), 45);
+            break;
+        default:
+            beep({ freq: 440, dur: 0.05, type: 'sine', gain: 0.08 });
     }
 }
 
@@ -42,6 +140,16 @@ function toggleTheme() {
     document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem('theme', next);
     playSound('click');
+}
+
+function scrollActiveToTop() {
+    const album = document.getElementById('albumContainer');
+    const msg = document.getElementById('messageContainer');
+    const msgVisible = !!(msg && window.getComputedStyle(msg).display !== 'none');
+    const el = msgVisible ? msg : album;
+    if (!el) return;
+    if (typeof el.scrollTo === 'function') el.scrollTo({ top: 0, behavior: 'smooth' });
+    else el.scrollTop = 0;
 }
 
 function formatMD(dateKey) {
@@ -84,16 +192,8 @@ function bindHomeViewToggle() {
 }
 
 function buildLetterSwarm(text) {
-    const letters = String(text || '').replace(/\s+/g, '');
-    if (!letters) return '';
-    const items = letters.split('').slice(0, 10).map((ch, i) => {
-        const r1 = (i * 37) % 100;
-        const r2 = (i * 61) % 100;
-        const rot = ((i * 19) % 21) - 10;
-        const opa = 0.08 + ((i * 7) % 10) / 100;
-        return `<span style="--x:${r1}%;--y:${r2}%;--r:${rot}deg;--o:${opa}">${ch}</span>`;
-    }).join('');
-    return `<div class="letter-swarm" aria-hidden="true">${items}</div>`;
+    // 主页卡片背后的字母装饰已移除（更冷淡的杂志风）
+    return '';
 }
 
 function renderGridHome(keys) {
@@ -106,10 +206,8 @@ function renderGridHome(keys) {
     keys.forEach(key => {
         const item = dayData[key];
         const md = formatMD(key);
-        const swarm = buildLetterSwarm('LETTER');
         grid.innerHTML += `
         <div class="date-card" data-date="${key}">
-            ${swarm}
             <div class="date-card-main">
                 <span class="date-badge">${md}</span>
                 <span class="date-desc">${item.desc || ''}</span>
@@ -178,7 +276,7 @@ function renderCalendarHome(keys) {
                 currentPage = 1;
                 showPage(1);
                 hideLoader();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                scrollActiveToTop();
             }, 500);
         });
     });
@@ -204,7 +302,7 @@ function bindDateCards() {
                 currentPage = 1;
                 showPage(1);
                 hideLoader();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                scrollActiveToTop();
             }, 500);
         });
     });
@@ -243,7 +341,6 @@ function renderCurrentDayData() {
             <div class="flip-card-inner">
                 <div class="flip-card-front">
                     <div class="card-front-number">${label}</div>
-                    <div class="card-front-hint">轻触翻开</div>
                 </div>
                 <div class="flip-card-back">
                     <div class="quote-row">
@@ -269,7 +366,6 @@ function renderCurrentDayData() {
             <div class="flip-card-inner">
                 <div class="flip-card-front">
                     <div class="card-front-number">${label}</div>
-                    <div class="card-front-hint">轻触翻开</div>
                 </div>
                 <div class="flip-card-back">
                     <div class="quote-row">
@@ -297,7 +393,9 @@ function renderCurrentDayData() {
                 </div>
                 <span>${m.artist} - <strong>${m.title}</strong></span>
             </div>
-            <button class="copy-btn" onclick="copyText('${txt}')"></button>
+            <button class="copy-btn" onclick="copyText('${txt}')" aria-label="复制歌曲信息">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 1H6c-1.1 0-2 .9-2 2v12h2V3h10V1zm3 4H10c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h9c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H10V7h9v14z"></path></svg>
+            </button>
         </div>`;
     });
 }
@@ -309,6 +407,7 @@ function backToAlbum() {
         document.getElementById('messageContainer').style.display = 'none';
         document.getElementById('albumContainer').style.display = 'block';
         hideLoader();
+        scrollActiveToTop();
     }, 300);
 }
 
@@ -325,24 +424,27 @@ function changePage(step) {
     const next = currentPage + step;
     if (next < 1 || next > totalPages) return;
     showPage(next);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollActiveToTop();
 }
 
-function showToast(msg) {
+function showToast(msg, type = 'info') {
     const t = document.getElementById('toast');
     t.textContent = msg;
+    t.dataset.type = type;
     t.classList.add('show');
     clearTimeout(toastTimeout);
-    toastTimeout = setTimeout(() => t.classList.remove('show'), 2000);
+    toastTimeout = setTimeout(() => t.classList.remove('show'), type === 'error' ? 2600 : 2000);
 }
 
 function revealAll(gridId) {
+    const cards = Array.from(document.querySelectorAll(`#${gridId} .flip-card`));
+    if (!cards.length) return;
+    const allFlipped = cards.every(el => el.classList.contains('flipped'));
     playSound('flip');
-    const list = document.querySelectorAll(`#${gridId} .flip-card:not(.flipped)`);
-    list.forEach((el, i) => {
-        setTimeout(() => el.classList.add('flipped'), i * 100);
+    cards.forEach((el, i) => {
+        setTimeout(() => el.classList.toggle('flipped', !allFlipped), i * 70);
     });
-    showToast('已全部翻开');
+    showToast(allFlipped ? '已全部合上' : '已全部展开', 'success');
 }
 
 function unlockSecret() {
@@ -352,9 +454,15 @@ function unlockSecret() {
         playSound('unlock');
         document.getElementById('passwordArea').style.display = 'none';
         document.getElementById('secretContent').style.display = 'block';
-        showToast('解锁成功');
+        showToast('已解锁 · 特供已开启', 'success');
     } else {
-        showToast('密码错误');
+        playSound('error');
+        const input = document.getElementById('secretPwd');
+        input.classList.remove('shake');
+        // 触发 reflow 以重复动画
+        void input.offsetWidth;
+        input.classList.add('shake');
+        showToast('密钥不正确。不必强求。', 'error');
     }
 }
 
@@ -373,9 +481,38 @@ window.addEventListener('DOMContentLoaded', () => {
     hideLoader();
     document.getElementById('themeToggle').addEventListener('click', toggleTheme);
 
-    // 减少移动端双击/连点缩放与延迟
-    document.body.style.touchAction = 'manipulation';
-    document.addEventListener('dblclick', (e) => {
-        e.preventDefault();
-    }, { passive: false });
+    // 首次用户手势后预热音频（避免 iOS/部分浏览器自动播放限制）
+    const warm = () => {
+        ensureAudio();
+        document.removeEventListener('pointerdown', warm);
+        document.removeEventListener('touchstart', warm);
+        document.removeEventListener('keydown', warm);
+    };
+    document.addEventListener('pointerdown', warm, { passive: true });
+    document.addEventListener('touchstart', warm, { passive: true });
+    document.addEventListener('keydown', warm);
+
+    // 左右滑动翻页（不阻塞竖向滚动）
+    const wrap = document.getElementById('messageContainer');
+    let sx = 0, sy = 0, st = 0, tracking = false;
+    wrap.addEventListener('touchstart', (e) => {
+        if (!e.touches || e.touches.length !== 1) return;
+        const t = e.touches[0];
+        sx = t.clientX; sy = t.clientY; st = Date.now();
+        tracking = true;
+    }, { passive: true });
+    wrap.addEventListener('touchend', (e) => {
+        if (!tracking) return;
+        tracking = false;
+        const t = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : null;
+        if (!t) return;
+        const dx = t.clientX - sx;
+        const dy = t.clientY - sy;
+        const dt = Date.now() - st;
+        const adx = Math.abs(dx), ady = Math.abs(dy);
+        if (dt > 700) return;
+        if (adx < 60 || adx < ady * 1.2) return; // 更偏横向才触发
+        if (dx < 0) changePage(1);
+        else changePage(-1);
+    }, { passive: true });
 });
