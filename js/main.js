@@ -2,7 +2,7 @@ let currentPage = 1;
 const totalPages = 5;
 let currentDateKey = "";
 let toastTimeout;
-let homeViewMode = 'auto';
+let homeViewMode = 'auto'; 
 
 function wrapDigitsHTML(str) {
     return String(str).replace(/(\d+)/g, '<span class="zs-num">$1</span>');
@@ -46,7 +46,7 @@ function addFlipInteraction(root) {
     if (!root) return;
     if (root.dataset && root.dataset.flipBound === '1') return;
     if (root.dataset) root.dataset.flipBound = '1';
-    const threshold = 10;
+    const threshold = 10; 
     const maxTapMs = 550;
     let sx = 0, sy = 0, st = 0, activeEl = null, pid = null;
 
@@ -175,53 +175,31 @@ function noiseBurst({ dur = 0.08, gain = 0.08, hp = 800, lp = 6800 } = {}) {
 function playSound(name) {
     switch (name) {
         case 'click':
-            beep({ freq: 620, dur: 0.025, type: 'triangle', gain: 0.12 });
-            setTimeout(() => beep({ freq: 880, dur: 0.018, type: 'sine', gain: 0.06 }), 15);
+            beep({ freq: 560, dur: 0.038, type: 'triangle', gain: 0.10, sweepTo: 520 });
+            setTimeout(() => beep({ freq: 920, dur: 0.020, type: 'sine', gain: 0.03, sweepTo: 860 }), 18);
             break;
         case 'page':
-            noiseBurst({ dur: 0.12, gain: 0.04, hp: 500, lp: 4000 });
-            beep({ freq: 320, dur: 0.04, type: 'sine', gain: 0.08, sweepTo: 480 });
-            setTimeout(() => {
-                beep({ freq: 580, dur: 0.03, type: 'triangle', gain: 0.06, sweepTo: 720 });
-            }, 60);
+            noiseBurst({ dur: 0.08, gain: 0.05, hp: 700, lp: 5200 });
+            beep({ freq: 360, dur: 0.06, type: 'sine', gain: 0.10, sweepTo: 520 });
+            setTimeout(() => beep({ freq: 520, dur: 0.05, type: 'sine', gain: 0.07, sweepTo: 660 }), 70);
             break;
         case 'flip':
-            noiseBurst({ dur: 0.08, gain: 0.05, hp: 800, lp: 6500 });
-            beep({ freq: 180, dur: 0.06, type: 'sine', gain: 0.05, sweepTo: 140 });
-            setTimeout(() => beep({ freq: 420, dur: 0.04, type: 'triangle', gain: 0.08, sweepTo: 380 }), 20);
-            setTimeout(() => beep({ freq: 980, dur: 0.03, type: 'sine', gain: 0.04, sweepTo: 1120 }), 45);
-            break;
-        case 'flip-many':
-            for (let i = 0; i < 5; i++) {
-                setTimeout(() => {
-                    beep({ freq: 200 + i * 60, dur: 0.02, type: 'triangle', gain: 0.03 });
-                }, i * 30);
-            }
-            noiseBurst({ dur: 0.15, gain: 0.03, hp: 600, lp: 5500 });
+            noiseBurst({ dur: 0.06, gain: 0.06, hp: 900, lp: 7200 });
+            beep({ freq: 240, dur: 0.07, type: 'square', gain: 0.06, sweepTo: 170 });
+            setTimeout(() => beep({ freq: 760, dur: 0.028, type: 'triangle', gain: 0.05, sweepTo: 620 }), 55);
             break;
         case 'unlock':
-            beep({ freq: 523, dur: 0.08, type: 'sine', gain: 0.10 });
-            setTimeout(() => beep({ freq: 659, dur: 0.08, type: 'sine', gain: 0.10 }), 90);
-            setTimeout(() => beep({ freq: 784, dur: 0.12, type: 'sine', gain: 0.12, sweepTo: 880 }), 180);
-            setTimeout(() => beep({ freq: 1046, dur: 0.15, type: 'triangle', gain: 0.08 }), 300);
+            beep({ freq: 660, dur: 0.08, type: 'sine', gain: 0.10, sweepTo: 880 });
+            setTimeout(() => beep({ freq: 990, dur: 0.08, type: 'sine', gain: 0.09, sweepTo: 1180 }), 90);
+            setTimeout(() => beep({ freq: 1320, dur: 0.07, type: 'triangle', gain: 0.06, sweepTo: 1480 }), 190);
             break;
         case 'error':
-            beep({ freq: 440, dur: 0.06, type: 'sawtooth', gain: 0.08 });
-            setTimeout(() => beep({ freq: 330, dur: 0.08, type: 'sawtooth', gain: 0.07, sweepTo: 220 }), 50);
-            setTimeout(() => beep({ freq: 220, dur: 0.10, type: 'sawtooth', gain: 0.06, sweepTo: 160 }), 120);
+            beep({ freq: 220, dur: 0.10, type: 'sawtooth', gain: 0.08, sweepTo: 140 });
+            setTimeout(() => beep({ freq: 160, dur: 0.08, type: 'sawtooth', gain: 0.06, sweepTo: 120 }), 90);
             break;
         case 'copy':
-            beep({ freq: 880, dur: 0.03, type: 'triangle', gain: 0.09 });
-            setTimeout(() => beep({ freq: 1320, dur: 0.04, type: 'sine', gain: 0.07 }), 30);
-            setTimeout(() => beep({ freq: 1760, dur: 0.03, type: 'triangle', gain: 0.05 }), 70);
-            break;
-        case 'hover':
-            beep({ freq: 1760, dur: 0.01, type: 'sine', gain: 0.02 });
-            break;
-        case 'complete':
-            [523, 587, 659, 698, 784].forEach((freq, i) => {
-                setTimeout(() => beep({ freq, dur: 0.05, type: 'sine', gain: 0.07 }), i * 60);
-            });
+            beep({ freq: 740, dur: 0.04, type: 'triangle', gain: 0.09, sweepTo: 920 });
+            setTimeout(() => beep({ freq: 1040, dur: 0.03, type: 'triangle', gain: 0.05, sweepTo: 1180 }), 45);
             break;
         default:
             beep({ freq: 440, dur: 0.05, type: 'sine', gain: 0.08 });
@@ -305,6 +283,10 @@ function bindHomeViewToggle() {
     apply(getHomeMode());
 }
 
+function buildLetterSwarm(text) {
+    return '';
+}
+
 function renderGridHome(keys) {
     const grid = document.getElementById('dateGrid');
     const cal = document.getElementById('calendarView');
@@ -352,7 +334,7 @@ function renderCalendarHome(keys) {
     const monthLabel = wrapDigitsHTML(monthLabelRaw);
 
     const keySet = new Set(keys);
-    const firstDay = (monthStart.getDay() + 6) % 7;
+    const firstDay = (monthStart.getDay() + 6) % 7; 
     const daysInMonth = monthEnd.getDate();
 
     cal.innerHTML += `
@@ -591,9 +573,9 @@ function revealAll(gridId) {
     const cards = Array.from(document.querySelectorAll(`#${gridId} .flip-card`));
     if (!cards.length) return;
     const allFlipped = cards.every(el => el.classList.contains('flipped'));
-    playSound('flip-many');
+    playSound('flip');
     cards.forEach((el, i) => {
-        setTimeout(() => el.classList.toggle('flipped', !allFlipped), i * 50);
+        setTimeout(() => el.classList.toggle('flipped', !allFlipped), i * 70);
     });
     showToast(allFlipped ? '已全部合上' : '已全部展开', 'success');
 }
@@ -659,23 +641,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const dt = Date.now() - st;
         const adx = Math.abs(dx), ady = Math.abs(dy);
         if (dt > 700) return;
-        if (adx < 60 || adx < ady * 1.2) return;
+        if (adx < 60 || adx < ady * 1.2) return; 
         if (dx < 0) changePage(1);
         else changePage(-1);
     }, { passive: true });
-
-    document.querySelectorAll('.btn-nav, .btn-action, .date-card, .cal-cell.has-data').forEach(el => {
-        el.addEventListener('touchstart', () => {
-            el.style.transform = 'scale(0.98)';
-        }, { passive: true });
-        el.addEventListener('touchend', () => {
-            el.style.transform = '';
-            setTimeout(() => {
-                el.style.transform = '';
-            }, 100);
-        }, { passive: true });
-        el.addEventListener('touchcancel', () => {
-            el.style.transform = '';
-        }, { passive: true });
-    });
 });
