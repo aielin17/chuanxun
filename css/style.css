@@ -802,8 +802,6 @@ h1::after {
     -webkit-transform-style: preserve-3d;
     box-shadow: 0 18px 54px rgba(0,0,0,0.08);
     border-radius: 16px;
-    border: 1px solid var(--border-color);
-    background: var(--bg-card);
     will-change: transform;
 }
 
@@ -842,7 +840,6 @@ h1::after {
     letter-spacing: 0.10em;
     flex-direction: column;
     gap: 10px;
-    position: relative;
     overflow: hidden;
 }
 
@@ -919,7 +916,6 @@ h1::after {
     justify-content: flex-start;
     align-items: stretch;
     padding-top: 18px;
-    position: relative;
 }
 
 .flip-card-back {
