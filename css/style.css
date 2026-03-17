@@ -897,12 +897,14 @@ h1::after {
     white-space: pre-line;
     word-break: break-word;
     overflow-wrap: anywhere;
-    overflow-y: auto;
-    justify-content: center; 
-    align-items: stretch;
+    overflow-y: auto; 
+    overflow-x: hidden; 
+    justify-content: flex-start; 
+    align-items: flex-start; 
     padding: 24px 20px;
     position: relative;
     display: flex;
+    height: 100%; 
 }
 
 .flip-card-back {
