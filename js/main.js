@@ -2,18 +2,17 @@ let currentPage = 1;
 const totalPages = 5;
 let currentDateKey = "";
 let toastTimeout;
-let homeViewMode = 'auto'; // 'grid' | 'calendar' | 'auto'
-const fontScales = [
-    { key: 's', label: '小', scale: 0.94 },
-    { key: 'm', label: '中', scale: 1.00 },
-    { key: 'l', label: '大', scale: 1.10 }
-];
+let homeViewMode = 'auto'; 
+
+function wrapDigitsHTML(str) {
+    return String(str).replace(/(\d+)/g, '<span class="zs-num">$1</span>');
+}
 
 const audioEngine = {
     ctx: null,
     master: null,
     ready: false,
-    volume: 0.4
+    volume: 1.0
 };
 
 function ensureAudio() {
@@ -139,29 +138,6 @@ function initTheme() {
     document.documentElement.setAttribute('data-theme', theme);
 }
 
-function getFontScaleKey() {
-    const saved = localStorage.getItem('fontScale');
-    if (saved === 's' || saved === 'm' || saved === 'l') return saved;
-    return 'm';
-}
-
-function applyFontScale(key) {
-    const item = fontScales.find(x => x.key === key) || fontScales[1];
-    document.documentElement.style.setProperty('--font-scale', String(item.scale));
-    localStorage.setItem('fontScale', item.key);
-    const btn = document.getElementById('fontToggle');
-    if (btn) btn.setAttribute('aria-label', `字号：${item.label}`);
-}
-
-function cycleFontScale() {
-    const cur = getFontScaleKey();
-    const idx = fontScales.findIndex(x => x.key === cur);
-    const next = fontScales[(Math.max(0, idx) + 1) % fontScales.length].key;
-    applyFontScale(next);
-    playSound('click');
-    showToast(`字号：${fontScales.find(x => x.key === next)?.label || '中'}`, 'success');
-}
-
 function toggleTheme() {
     const current = document.documentElement.getAttribute('data-theme');
     const next = current === 'dark' ? 'light' : 'dark';
@@ -181,7 +157,6 @@ function scrollActiveToTop() {
 }
 
 function formatMD(dateKey) {
-    // dateKey: YYYY-MM-DD
     const d = new Date(dateKey + 'T00:00:00');
     if (Number.isNaN(d.getTime())) return dateKey;
     return `${d.getMonth() + 1}/${d.getDate()}`;
@@ -197,7 +172,6 @@ function getHomeMode() {
     const keys = Object.keys(dayData);
     const saved = localStorage.getItem('homeViewMode');
     if (saved === 'grid' || saved === 'calendar') return saved;
-    // auto: 少量用列表，多了进入日历态
     return keys.length > 8 ? 'calendar' : 'grid';
 }
 
@@ -226,7 +200,6 @@ function bindHomeViewToggle() {
 }
 
 function buildLetterSwarm(text) {
-    // 主页卡片背后的字母装饰已移除（更冷淡的杂志风）
     return '';
 }
 
@@ -244,8 +217,8 @@ function renderGridHome(keys) {
         <div class="date-card" data-date="${key}">
             <div class="date-card-main">
                 <span class="date-badge">
-                    <span class="date-m">${md.m}</span>
-                    <span class="date-d">${md.d}<span class="date-d-suffix">日</span></span>
+                    <span class="date-m">${wrapDigitsHTML(md.m)}</span>
+                    <span class="date-d">${wrapDigitsHTML(md.d)}<span class="date-d-suffix">日</span></span>
                 </span>
                 <span class="date-desc">${item.desc || ''}</span>
             </div>
@@ -273,10 +246,11 @@ function renderCalendarHome(keys) {
     const anchor = dates.length ? dates.sort((a,b)=>a-b)[dates.length - 1] : new Date();
     const monthStart = startOfMonth(anchor);
     const monthEnd = endOfMonth(anchor);
-    const monthLabel = `${anchor.getFullYear()}.${String(anchor.getMonth() + 1).padStart(2, '0')}`;
+    const monthLabelRaw = `${anchor.getFullYear()}.${String(anchor.getMonth() + 1).padStart(2, '0')}`;
+    const monthLabel = wrapDigitsHTML(monthLabelRaw);
 
     const keySet = new Set(keys);
-    const firstDay = (monthStart.getDay() + 6) % 7; // Monday=0
+    const firstDay = (monthStart.getDay() + 6) % 7; 
     const daysInMonth = monthEnd.getDate();
 
     cal.innerHTML += `
@@ -284,7 +258,7 @@ function renderCalendarHome(keys) {
             <div class="calendar-month">${monthLabel}</div>
             <div class="calendar-legend">有内容的日期会高亮</div>
         </div>
-        <div class="calendar-grid" role="grid" aria-label="${monthLabel} 日历">
+        <div class="calendar-grid" role="grid" aria-label="${monthLabelRaw} 日历">
             ${['一','二','三','四','五','六','日'].map(w=>`<div class="cal-dow" role="columnheader">${w}</div>`).join('')}
             ${Array.from({length: firstDay}).map(()=>`<div class="cal-cell is-empty" role="gridcell" aria-disabled="true"></div>`).join('')}
             ${Array.from({length: daysInMonth}).map((_, i) => {
@@ -295,7 +269,7 @@ function renderCalendarHome(keys) {
                 const label = has ? (dayData[k]?.desc || '有内容') : '无内容';
                 return `
                 <button class="cal-cell ${has ? 'has-data' : ''}" type="button" ${has ? `data-date="${k}"` : 'disabled'} role="gridcell" aria-label="${md}，${label}">
-                    <span class="cal-day">${day}</span>
+                    <span class="cal-day">${wrapDigitsHTML(day)}</span>
                 </button>`;
             }).join('')}
         </div>
@@ -362,6 +336,22 @@ function renderCurrentDayData() {
         </div>`;
     });
 
+    zodiacGrid.innerHTML += `
+        <div class="info-sep" aria-hidden="true"></div>
+        <div class="info-subtitle">发色</div>
+    `;
+
+    ["黑发","金发","红发","蓝发"].forEach(name => {
+        const icon = zodiacIcons[name] || `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 18c2-1 4-1.5 6-1.5S16 17 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M8.5 7.5c.8-1.7 2.1-2.7 3.5-2.7s2.7 1 3.5 2.7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M7.2 14.2c-.7-1.1-1.1-2.4-1.1-3.7 0-3.6 2.7-6.5 5.9-6.5s5.9 2.9 5.9 6.5c0 1.3-.4 2.6-1.1 3.7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+        zodiacGrid.innerHTML += `
+        <div class="info-item">
+            <div class="zodiac-icon">
+                ${icon}
+            </div>
+            <span>${name}</span>
+        </div>`;
+    });
+
     const statusList = document.getElementById('statusList');
     statusList.innerHTML = '';
     data.status.forEach(s => {
@@ -373,16 +363,17 @@ function renderCurrentDayData() {
     const shuffledCards = [...data.cards].sort(() => Math.random() - 0.5);
     shuffledCards.forEach((msg, i) => {
         const label = String(i + 1).padStart(2, '0');
+        const labelHTML = wrapDigitsHTML(label);
         cardsGrid.innerHTML += `
         <div class="flip-card" onclick="this.classList.toggle('flipped');playSound('flip')">
             <div class="flip-card-inner">
                 <div class="flip-card-front">
-                    <div class="card-front-number">${label}</div>
+                    <div class="card-front-number">${labelHTML}</div>
                 </div>
                 <div class="flip-card-back">
                     <div class="quote-row">
                         <span class="quote-mark">❝</span>
-                        <span class="card-id">#${label}</span>
+                        <span class="card-id">#${labelHTML}</span>
                     </div>
                     <div class="card-message">${msg}</div>
                     <div class="quote-row quote-row-end">
@@ -398,16 +389,17 @@ function renderCurrentDayData() {
     const shuffledSecret = [...data.secretCards].sort(() => Math.random() - 0.5);
     shuffledSecret.forEach((msg, i) => {
         const label = `S${String(i + 1).padStart(2, '0')}`;
+        const labelHTML = wrapDigitsHTML(label);
         secretGrid.innerHTML += `
         <div class="flip-card" onclick="this.classList.toggle('flipped');playSound('flip')">
             <div class="flip-card-inner">
                 <div class="flip-card-front">
-                    <div class="card-front-number">${label}</div>
+                    <div class="card-front-number">${labelHTML}</div>
                 </div>
                 <div class="flip-card-back">
                     <div class="quote-row">
                         <span class="quote-mark">❝</span>
-                        <span class="card-id">#${label}</span>
+                        <span class="card-id">#${labelHTML}</span>
                     </div>
                     <div class="card-message">${msg}</div>
                     <div class="quote-row quote-row-end">
@@ -496,10 +488,9 @@ function unlockSecret() {
         playSound('error');
         const input = document.getElementById('secretPwd');
         input.classList.remove('shake');
-        // 触发 reflow 以重复动画
         void input.offsetWidth;
         input.classList.add('shake');
-        showToast('密钥不正确。不必强求。', 'error');
+        showToast('密钥不正确 · 不必强求。', 'error');
     }
 }
 
@@ -512,16 +503,12 @@ function copyText(text) {
 
 window.addEventListener('DOMContentLoaded', () => {
     initTheme();
-    applyFontScale(getFontScaleKey());
     homeViewMode = localStorage.getItem('homeViewMode') || 'auto';
     bindHomeViewToggle();
     renderDateList();
     hideLoader();
     document.getElementById('themeToggle').addEventListener('click', toggleTheme);
-    const fontBtn = document.getElementById('fontToggle');
-    if (fontBtn) fontBtn.addEventListener('click', cycleFontScale);
 
-    // 首次用户手势后预热音频（避免 iOS/部分浏览器自动播放限制）
     const warm = () => {
         ensureAudio();
         document.removeEventListener('pointerdown', warm);
@@ -532,7 +519,6 @@ window.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('touchstart', warm, { passive: true });
     document.addEventListener('keydown', warm);
 
-    // 左右滑动翻页（不阻塞竖向滚动）
     const wrap = document.getElementById('messageContainer');
     let sx = 0, sy = 0, st = 0, tracking = false;
     wrap.addEventListener('touchstart', (e) => {
@@ -551,7 +537,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const dt = Date.now() - st;
         const adx = Math.abs(dx), ady = Math.abs(dy);
         if (dt > 700) return;
-        if (adx < 60 || adx < ady * 1.2) return; // 更偏横向才触发
+        if (adx < 60 || adx < ady * 1.2) return; 
         if (dx < 0) changePage(1);
         else changePage(-1);
     }, { passive: true });

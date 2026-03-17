@@ -1,5 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:opsz,wght@8..40,400;8..40,500&display=swap');
 @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
+.zs-num{
+    font-family: "EB Garamond","Noto Serif SC",serif;
+    font-weight: 500;
+    font-style: normal;
+    font-variant-numeric: oldstyle-nums;
+    font-feature-settings: "onum" 1, "lnum" 0, "tnum" 0;
+}
 
 :root {
     --bg-light: #fafafa;
@@ -17,7 +26,6 @@
     --transition: all 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
     --transition-fast: all 0.18s ease;
     --paper: linear-gradient(180deg, rgba(0,0,0,0.02) 0%, rgba(0,0,0,0) 35%, rgba(0,0,0,0.03) 100%);
-    --font-scale: 1;
 }
 
 [data-theme="dark"] {
@@ -34,6 +42,12 @@
     --gradient-main: linear-gradient(135deg, rgba(242,242,243,0.90) 0%, rgba(255,255,255,1) 100%);
     --gradient-bg: radial-gradient(1200px 900px at 30% 0%, #1a1a1f 0%, #0f0f12 55%, #08080a 100%);
     --paper: linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0) 35%, rgba(255,255,255,0.05) 100%);
+}
+
+[data-theme="dark"] .back-btn {
+    background: rgba(16,16,18,0.84);
+    border-color: rgba(255,255,255,0.10);
+    box-shadow: 0 14px 44px rgba(0,0,0,0.55);
 }
 
 * {
@@ -61,7 +75,7 @@ body {
     overscroll-behavior: none;
     text-rendering: geometricPrecision;
     overflow: hidden;
-    font-size: calc(16px * var(--font-scale));
+    font-size: 16px;
 }
 
 .album-container {
@@ -119,9 +133,26 @@ body {
 
 [data-theme="dark"] .flip-card-front {
     background-image:
-        radial-gradient(900px 420px at 20% 0%, rgba(255,255,255,0.06), transparent 55%),
-        var(--paper);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+        linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0) 42%, rgba(255,255,255,0.06)),
+        radial-gradient(1000px 520px at 50% -10%, rgba(255,255,255,0.05), transparent 60%);
+    box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.08),
+        inset 0 0 0 2px rgba(0,0,0,0.20);
+}
+
+[data-theme="dark"] .flip-card-front::before {
+    background:
+        repeating-linear-gradient(0deg, rgba(255,255,255,0.08) 0 1px, transparent 1px 12px),
+        radial-gradient(900px 520px at 18% 12%, rgba(255,255,255,0.08), transparent 60%);
+    opacity: 0.14;
+}
+
+[data-theme="dark"] .flip-card-front::after {
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.12), transparent 55%, rgba(0,0,0,0.35));
+    box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.12);
+    opacity: 0.60;
 }
 
 [data-theme="dark"] .flip-card-back {
@@ -175,34 +206,6 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 10px;
-}
-
-.font-toggle {
-    background: transparent;
-    border: 1px solid var(--border-color);
-    height: 40px;
-    padding: 0 12px;
-    border-radius: 999px;
-    color: var(--accent);
-    cursor: pointer;
-    transition: var(--transition-fast);
-    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
-    letter-spacing: 0.04em;
-}
-
-.font-toggle:hover {
-    background: var(--hover-bg);
-    border-color: var(--accent);
-}
-
-.font-toggle:active {
-    transform: translateY(1px) scale(0.99);
-}
-
-.font-toggle-aa {
-    font-size: 14px;
-    font-weight: 600;
-    opacity: 0.85;
 }
 
 .view-toggle {
@@ -570,6 +573,23 @@ h1::after {
     gap: 15px;
 }
 
+.info-sep {
+    grid-column: 1 / -1;
+    height: 1px;
+    background: var(--border-color);
+    opacity: 0.9;
+    margin: 6px 0 2px;
+}
+
+.info-subtitle {
+    grid-column: 1 / -1;
+    font-size: 0.78rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 6px 2px 2px;
+}
+
 .info-item {
     background: var(--bg-light);
     border: 1px solid var(--border-color);
@@ -790,6 +810,7 @@ h1::after {
 
 .flip-card-front, .flip-card-back {
     position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     backface-visibility: hidden;
@@ -803,21 +824,45 @@ h1::after {
 .flip-card-front {
     background: var(--bg-card);
     background-image:
-        radial-gradient(900px 420px at 20% 0%, rgba(0,0,0,0.06), transparent 55%),
-        var(--paper);
+        linear-gradient(180deg, rgba(0,0,0,0.025), rgba(0,0,0,0) 42%, rgba(0,0,0,0.03)),
+        radial-gradient(1000px 520px at 50% -10%, rgba(0,0,0,0.04), transparent 60%);
     color: var(--text-muted);
     font-size: 2rem;
     border: none;
-    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.03);
+    box-shadow:
+        inset 0 0 0 1px rgba(0,0,0,0.06),
+        inset 0 0 0 2px rgba(255,255,255,0.35);
     font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
     font-style: normal;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.10em;
     flex-direction: column;
     gap: 10px;
+    position: relative;
+    overflow: hidden;
+}
+
+.flip-card-front::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    pointer-events: none;
+    background:
+        repeating-linear-gradient(0deg, rgba(0,0,0,0.06) 0 1px, transparent 1px 12px),
+        radial-gradient(900px 520px at 18% 12%, rgba(0,0,0,0.06), transparent 60%);
+    opacity: 0.07;
 }
 
 .flip-card-front::after {
     content: "";
+    position: absolute;
+    inset: 14px;
+    border-radius: 12px;
+    pointer-events: none;
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.35), transparent 55%, rgba(0,0,0,0.05));
+    box-shadow:
+        inset 0 0 0 1px rgba(0,0,0,0.10);
+    opacity: 0.38;
 }
 
 .card-front-number {
@@ -826,6 +871,8 @@ h1::after {
     color: var(--text-main);
     letter-spacing: -0.02em;
     line-height: 1;
+    position: relative;
+    z-index: 1;
 }
 
 .card-front-hint {
@@ -858,7 +905,8 @@ h1::after {
     box-shadow: inset 0 0 0 1px rgba(0,0,0,0.04);
     text-align: left;
     white-space: pre-line;
-    word-break: break-all;
+    word-break: break-word;
+    overflow-wrap: anywhere;
     overflow-y: auto;
     justify-content: flex-start;
     padding-top: 25px;
@@ -908,6 +956,7 @@ h1::after {
     font-size: 0.98rem;
     line-height: 1.85;
     letter-spacing: 0.02em;
+    white-space: pre-line;
 }
 
 .quote-mark {
@@ -1175,11 +1224,11 @@ h1::after {
 }
 
 .back-btn {
-    position: sticky;
-    top: 14px;
-    left: 0;
-    background: transparent;
-    border: none;
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 14px);
+    left: calc(env(safe-area-inset-left, 0px) + 14px);
+    background: rgba(255,255,255,0.86);
+    border: 1px solid var(--border-color);
     color: var(--text-muted);
     cursor: pointer;
     display: flex;
@@ -1187,14 +1236,14 @@ h1::after {
     gap: 5px;
     font-size: 0.9rem;
     transition: var(--transition-fast);
-    z-index: 10;
+    z-index: 120;
     padding: 8px 10px;
     border-radius: 10px;
-    backdrop-filter: blur(6px);
+    backdrop-filter: none;
+    box-shadow: 0 12px 34px rgba(0,0,0,0.08);
 }
 
 .back-btn:focus-visible,
-.font-toggle:focus-visible,
 .theme-toggle:focus-visible,
 .view-btn:focus-visible,
 .btn-action:focus-visible,
@@ -1207,7 +1256,6 @@ h1::after {
 }
 
 [data-theme="dark"] .back-btn:focus-visible,
-[data-theme="dark"] .font-toggle:focus-visible,
 [data-theme="dark"] .theme-toggle:focus-visible,
 [data-theme="dark"] .view-btn:focus-visible,
 [data-theme="dark"] .btn-action:focus-visible,
