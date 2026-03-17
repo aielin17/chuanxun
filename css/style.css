@@ -50,6 +50,31 @@
     box-shadow: 0 14px 44px rgba(0,0,0,0.55);
 }
 
+[data-theme="dark"] .flip-card-inner {
+    box-shadow: 0 22px 70px rgba(0,0,0,0.72);
+}
+
+[data-theme="dark"] .flip-card-front {
+    background-image: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0) 42%, rgba(255,255,255,0.06)), radial-gradient(1000px 520px at 50% -10%, rgba(255,255,255,0.05), transparent 60%);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08), inset 0 0 0 2px rgba(0,0,0,0.20);
+}
+
+[data-theme="dark"] .flip-card-front::before {
+    background: repeating-linear-gradient(0deg, rgba(255,255,255,0.08) 0 1px, transparent 1px 12px), radial-gradient(900px 520px at 18% 12%, rgba(255,255,255,0.08), transparent 60%);
+    opacity: 0.14;
+}
+
+[data-theme="dark"] .flip-card-front::after {
+    background: linear-gradient(180deg, rgba(255,255,255,0.12), transparent 55%, rgba(0,0,0,0.35));
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12);
+    opacity: 0.60;
+}
+
+[data-theme="dark"] .flip-card-back {
+    background-image: radial-gradient(1000px 520px at 85% 0%, rgba(255,255,255,0.05), transparent 60%), var(--paper);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+}
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -94,72 +119,27 @@ body {
     margin: 0;
 }
 
-.album-container,
-.container {
+.album-container, .container {
     -ms-overflow-style: none;
     scrollbar-width: none;
 }
 
-.album-container::-webkit-scrollbar,
-.container::-webkit-scrollbar {
+.album-container::-webkit-scrollbar, .container::-webkit-scrollbar {
     width: 0;
     height: 0;
 }
 
-.album-container::before,
-.container::before {
+.album-container::before, .container::before {
     content: "";
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background:
-        radial-gradient(800px 400px at 15% 0%, rgba(0,0,0,0.06), transparent 55%),
-        radial-gradient(700px 420px at 85% 15%, rgba(0,0,0,0.05), transparent 60%),
-        linear-gradient(180deg, rgba(0,0,0,0.03), transparent 22%, rgba(0,0,0,0.02));
+    background: radial-gradient(800px 400px at 15% 0%, rgba(0,0,0,0.06), transparent 55%), radial-gradient(700px 420px at 85% 15%, rgba(0,0,0,0.05), transparent 60%), linear-gradient(180deg, rgba(0,0,0,0.03), transparent 22%, rgba(0,0,0,0.02));
     opacity: 0.9;
 }
 
-[data-theme="dark"] .album-container::before,
-[data-theme="dark"] .container::before {
-    background:
-        radial-gradient(900px 460px at 15% 0%, rgba(255,255,255,0.06), transparent 55%),
-        radial-gradient(820px 520px at 85% 15%, rgba(255,255,255,0.05), transparent 60%),
-        linear-gradient(180deg, rgba(255,255,255,0.03), transparent 22%, rgba(255,255,255,0.02));
-}
-
-[data-theme="dark"] .flip-card-inner {
-    box-shadow: 0 22px 70px rgba(0,0,0,0.72);
-}
-
-[data-theme="dark"] .flip-card-front {
-    background-image:
-        linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0) 42%, rgba(255,255,255,0.06)),
-        radial-gradient(1000px 520px at 50% -10%, rgba(255,255,255,0.05), transparent 60%);
-    box-shadow:
-        inset 0 0 0 1px rgba(255,255,255,0.08),
-        inset 0 0 0 2px rgba(0,0,0,0.20);
-}
-
-[data-theme="dark"] .flip-card-front::before {
-    background:
-        repeating-linear-gradient(0deg, rgba(255,255,255,0.08) 0 1px, transparent 1px 12px),
-        radial-gradient(900px 520px at 18% 12%, rgba(255,255,255,0.08), transparent 60%);
-    opacity: 0.14;
-}
-
-[data-theme="dark"] .flip-card-front::after {
-    background:
-        linear-gradient(180deg, rgba(255,255,255,0.12), transparent 55%, rgba(0,0,0,0.35));
-    box-shadow:
-        inset 0 0 0 1px rgba(255,255,255,0.12);
-    opacity: 0.60;
-}
-
-[data-theme="dark"] .flip-card-back {
-    background-image:
-        radial-gradient(1000px 520px at 85% 0%, rgba(255,255,255,0.05), transparent 60%),
-        var(--paper);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+[data-theme="dark"] .album-container::before, [data-theme="dark"] .container::before {
+    background: radial-gradient(900px 460px at 15% 0%, rgba(255,255,255,0.06), transparent 55%), radial-gradient(820px 520px at 85% 15%, rgba(255,255,255,0.05), transparent 60%), linear-gradient(180deg, rgba(255,255,255,0.03), transparent 22%, rgba(255,255,255,0.02));
 }
 
 .album-header {
@@ -293,6 +273,18 @@ body {
     position: relative;
     overflow: hidden;
     cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.date-card:hover {
+    background: var(--hover-bg);
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-light);
+    border-color: var(--accent);
+}
+
+.date-card:active {
+    transform: translateY(-2px) scale(0.99);
 }
 
 .date-card::before {
@@ -305,17 +297,6 @@ body {
     background: var(--gradient-main);
     transform: scaleX(0);
     transition: var(--transition-fast);
-}
-
-.date-card:hover {
-    background: var(--hover-bg);
-    transform: translateY(-6px);
-    box-shadow: var(--shadow-light);
-    border-color: var(--accent);
-}
-
-.date-card:active {
-    transform: translateY(-2px) scale(0.99);
 }
 
 .date-card:hover::before {
@@ -441,6 +422,15 @@ body {
     box-shadow: 0 10px 24px rgba(0,0,0,0.05);
 }
 
+.cal-cell.has-data:hover {
+    transform: translateY(-3px);
+    border-color: var(--accent);
+}
+
+.cal-cell.has-data:active {
+    transform: translateY(-1px) scale(0.99);
+}
+
 .cal-cell.has-data::before {
     content: "";
     position: absolute;
@@ -450,15 +440,6 @@ body {
     height: 2px;
     background: var(--gradient-main);
     opacity: 0.15;
-}
-
-.cal-cell.has-data:hover {
-    transform: translateY(-3px);
-    border-color: var(--accent);
-}
-
-.cal-cell.has-data:active {
-    transform: translateY(-1px) scale(0.99);
 }
 
 .cal-day {
@@ -504,8 +485,9 @@ body {
 }
 
 @keyframes pageIn {
-    0% { opacity: 0; transform: scale(0.98); }
-    100% { opacity: 1; transform: scale(1); }
+    0% { opacity: 0; transform: translateY(20px) scale(0.98); filter: blur(2px); }
+    50% { filter: blur(0); }
+    100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
 }
 
 header {
@@ -601,6 +583,17 @@ h1::after {
     overflow: hidden;
 }
 
+.info-item:hover {
+    background: var(--hover-bg);
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-light);
+    border-color: var(--accent);
+}
+
+.info-item:active {
+    transform: translateY(-2px) scale(0.99);
+}
+
 .info-item::after {
     content: "";
     position: absolute;
@@ -612,17 +605,6 @@ h1::after {
     border-left: 20px solid transparent;
     opacity: 0;
     transition: var(--transition-fast);
-}
-
-.info-item:hover {
-    background: var(--hover-bg);
-    transform: translateY(-5px);
-    box-shadow: var(--shadow-light);
-    border-color: var(--accent);
-}
-
-.info-item:active {
-    transform: translateY(-2px) scale(0.99);
 }
 
 .info-item:hover::after {
@@ -670,6 +652,11 @@ h1::after {
     position: relative;
 }
 
+.dot:hover {
+    transform: scale(1.4);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
 .dot::after {
     content: "";
     position: absolute;
@@ -682,11 +669,6 @@ h1::after {
     border-radius: 50%;
     opacity: 0;
     transition: var(--transition-fast);
-}
-
-.dot:hover {
-    transform: scale(1.4);
-    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
 }
 
 .dot:hover::after {
@@ -710,13 +692,6 @@ h1::after {
     background: var(--bg-light);
 }
 
-.status-list li::before {
-    content: "—";
-    margin-right: 15px;
-    color: var(--accent);
-    font-weight: 600;
-}
-
 .status-list li:hover {
     background: var(--hover-bg);
     padding-left: 25px;
@@ -726,6 +701,13 @@ h1::after {
 
 .status-list li:active {
     transform: translateX(2px);
+}
+
+.status-list li::before {
+    content: "—";
+    margin-right: 15px;
+    color: var(--accent);
+    font-weight: 600;
 }
 
 .action-bar {
@@ -790,6 +772,15 @@ h1::after {
     perspective: 1500px;
     cursor: pointer;
     touch-action: pan-y;
+    transition: transform 0.2s ease;
+}
+
+.flip-card:hover {
+    transform: translateY(-4px);
+}
+
+.flip-card:active {
+    transform: translateY(0) scale(0.98);
 }
 
 .flip-card-inner {
@@ -828,15 +819,11 @@ h1::after {
 
 .flip-card-front {
     background: var(--bg-card);
-    background-image:
-        linear-gradient(180deg, rgba(0,0,0,0.025), rgba(0,0,0,0) 42%, rgba(0,0,0,0.03)),
-        radial-gradient(1000px 520px at 50% -10%, rgba(0,0,0,0.04), transparent 60%);
+    background-image: linear-gradient(180deg, rgba(0,0,0,0.025), rgba(0,0,0,0) 42%, rgba(0,0,0,0.03)), radial-gradient(1000px 520px at 50% -10%, rgba(0,0,0,0.04), transparent 60%);
     color: var(--text-muted);
     font-size: 2rem;
     border: none;
-    box-shadow:
-        inset 0 0 0 1px rgba(0,0,0,0.06),
-        inset 0 0 0 2px rgba(255,255,255,0.35);
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06), inset 0 0 0 2px rgba(255,255,255,0.35);
     font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
     font-style: normal;
     letter-spacing: 0.10em;
@@ -851,10 +838,13 @@ h1::after {
     position: absolute;
     inset: -1px;
     pointer-events: none;
-    background:
-        repeating-linear-gradient(0deg, rgba(0,0,0,0.06) 0 1px, transparent 1px 12px),
-        radial-gradient(900px 520px at 18% 12%, rgba(0,0,0,0.06), transparent 60%);
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.06) 0 1px, transparent 1px 12px), radial-gradient(900px 520px at 18% 12%, rgba(0,0,0,0.06), transparent 60%);
     opacity: 0.07;
+    transition: opacity 0.3s ease;
+}
+
+.flip-card:hover .flip-card-front::before {
+    opacity: 0.15;
 }
 
 .flip-card-front::after {
@@ -863,10 +853,8 @@ h1::after {
     inset: 14px;
     border-radius: 12px;
     pointer-events: none;
-    background:
-        linear-gradient(180deg, rgba(255,255,255,0.35), transparent 55%, rgba(0,0,0,0.05));
-    box-shadow:
-        inset 0 0 0 1px rgba(0,0,0,0.10);
+    background: linear-gradient(180deg, rgba(255,255,255,0.35), transparent 55%, rgba(0,0,0,0.05));
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.10);
     opacity: 0.38;
 }
 
@@ -895,15 +883,9 @@ h1::after {
     box-shadow: 0 14px 44px rgba(0,0,0,0.10);
 }
 
-.flip-card:active {
-    transform: translateY(1px) scale(0.995);
-}
-
 .flip-card-back {
     background: var(--bg-card);
-    background-image:
-        radial-gradient(1000px 520px at 85% 0%, rgba(0,0,0,0.05), transparent 60%),
-        var(--paper);
+    background-image: radial-gradient(1000px 520px at 85% 0%, rgba(0,0,0,0.05), transparent 60%), var(--paper);
     color: var(--text-main);
     transform: rotateY(180deg);
     font-size: 0.95rem;
@@ -918,8 +900,9 @@ h1::after {
     overflow-y: auto;
     justify-content: flex-start;
     align-items: stretch;
-    padding-top: 18px;
+    padding: 24px 20px;
     position: relative;
+    display: flex;
 }
 
 .flip-card-back {
@@ -938,17 +921,17 @@ h1::after {
     align-items: baseline;
     justify-content: space-between;
     gap: 12px;
-    padding: 0 2px 10px;
+    padding: 0 2px 16px;
     border-bottom: 1px solid var(--border-color);
-    margin-bottom: 12px;
+    margin-bottom: 16px;
 }
 
 .quote-row-end {
     border-bottom: none;
     margin-top: auto;
     margin-bottom: 0;
-    padding-top: 14px;
-    padding-bottom: 0;
+    padding-top: 16px;
+    padding-bottom: 8px;
     justify-content: flex-end;
     opacity: 0.8;
 }
@@ -959,6 +942,27 @@ h1::after {
     color: var(--text-muted);
     text-transform: uppercase;
     opacity: 0.8;
+}
+
+.card-message {
+    width: 100%;
+    font-size: 0.98rem;
+    line-height: 1.85;
+    letter-spacing: 0.02em;
+    white-space: pre-line;
+    flex: 1;
+    margin-bottom: 16px;
+    background: linear-gradient(180deg, var(--text-main) 0%, var(--text-main) 85%, transparent 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+[data-theme="dark"] .card-message {
+    background: linear-gradient(180deg, var(--text-main) 0%, var(--text-main) 80%, rgba(242,242,243,0.6) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .back-stamp {
@@ -987,14 +991,6 @@ h1::after {
     font-size: 0.86rem;
     color: var(--text-muted);
     opacity: 0.85;
-}
-
-.card-message {
-    width: 100%;
-    font-size: 0.98rem;
-    line-height: 1.85;
-    letter-spacing: 0.02em;
-    white-space: pre-line;
 }
 
 .quote-mark {
@@ -1176,6 +1172,16 @@ h1::after {
     overflow: hidden;
 }
 
+.btn-nav:hover {
+    color: white;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+}
+
+.btn-nav:active {
+    transform: translateY(-1px) scale(0.99);
+}
+
 .btn-nav::before {
     content: "";
     position: absolute;
@@ -1186,16 +1192,6 @@ h1::after {
     background: var(--gradient-main);
     transition: var(--transition-fast);
     z-index: -1;
-}
-
-.btn-nav:hover {
-    color: white;
-    transform: translateY(-3px);
-    box-shadow: 0 8px 15px rgba(0,0,0,0.1);
-}
-
-.btn-nav:active {
-    transform: translateY(-1px) scale(0.99);
 }
 
 .btn-nav:hover::before {
@@ -1255,9 +1251,10 @@ h1::after {
 
 .progress-fill {
     height: 100%;
-    background: var(--gradient-main);
+    background: linear-gradient(90deg, var(--accent), var(--accent-deep));
+    box-shadow: 0 0 10px var(--accent);
     width: 20%;
-    transition: width 0.5s ease;
+    transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
     border-radius: 2px;
 }
 
@@ -1281,29 +1278,6 @@ h1::after {
     box-shadow: 0 12px 34px rgba(0,0,0,0.08);
 }
 
-.back-btn:focus-visible,
-.theme-toggle:focus-visible,
-.view-btn:focus-visible,
-.btn-action:focus-visible,
-.btn-nav:focus-visible,
-.copy-btn:focus-visible,
-.date-card:focus-visible,
-.cal-cell.has-data:focus-visible {
-    outline: 2px solid rgba(0,0,0,0.35);
-    outline-offset: 3px;
-}
-
-[data-theme="dark"] .back-btn:focus-visible,
-[data-theme="dark"] .theme-toggle:focus-visible,
-[data-theme="dark"] .view-btn:focus-visible,
-[data-theme="dark"] .btn-action:focus-visible,
-[data-theme="dark"] .btn-nav:focus-visible,
-[data-theme="dark"] .copy-btn:focus-visible,
-[data-theme="dark"] .date-card:focus-visible,
-[data-theme="dark"] .cal-cell.has-data:focus-visible {
-    outline-color: rgba(255,255,255,0.35);
-}
-
 .back-btn:hover {
     color: var(--accent);
     transform: translateX(-3px);
@@ -1318,6 +1292,15 @@ h1::after {
     width: 18px;
     height: 18px;
     fill: currentColor;
+}
+
+.back-btn:focus-visible, .theme-toggle:focus-visible, .view-btn:focus-visible, .btn-action:focus-visible, .btn-nav:focus-visible, .copy-btn:focus-visible, .date-card:focus-visible, .cal-cell.has-data:focus-visible {
+    outline: 2px solid rgba(0,0,0,0.35);
+    outline-offset: 3px;
+}
+
+[data-theme="dark"] .back-btn:focus-visible, [data-theme="dark"] .theme-toggle:focus-visible, [data-theme="dark"] .view-btn:focus-visible, [data-theme="dark"] .btn-action:focus-visible, [data-theme="dark"] .btn-nav:focus-visible, [data-theme="dark"] .copy-btn:focus-visible, [data-theme="dark"] .date-card:focus-visible, [data-theme="dark"] .cal-cell.has-data:focus-visible {
+    outline-color: rgba(255,255,255,0.35);
 }
 
 .loader {
@@ -1376,7 +1359,7 @@ h1::after {
     }
     .flip-card-back {
         font-size: 0.85rem;
-        padding: 15px;
+        padding: 20px 15px;
         line-height: 1.6;
     }
     .password-container {
