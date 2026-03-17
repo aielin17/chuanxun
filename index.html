@@ -17,6 +17,10 @@
     </div>
 
     <div class="calendar-toolbar">
+        <div class="view-toggle" role="tablist" aria-label="主页视图切换">
+            <button class="view-btn active" id="viewGridBtn" type="button" aria-pressed="true">列表</button>
+            <button class="view-btn" id="viewCalendarBtn" type="button" aria-pressed="false">日历</button>
+        </div>
         <button class="theme-toggle" id="themeToggle">
             <svg viewBox="0 0 24 24" class="icon-light"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zm0 16a7 7 0 1 1 0-14 7 7 0 0 1 0 14z"></path><path d="M12 5v2m0 10v2m4.24-8.24 1.42 1.42M5.34 5.34l1.42 1.42m11.32 0 1.42-1.42M5.34 18.66l1.42-1.42M17 12h2M5 12h2"></path></svg>
             <svg viewBox="0 0 24 24" class="icon-dark"><path d="M12 2a10 10 0 1 0 10 10H12V2z"></path></svg>
@@ -24,6 +28,7 @@
     </div>
 
     <div class="date-grid" id="dateGrid"></div>
+    <div class="calendar-view" id="calendarView" style="display:none;"></div>
 </div>
 
 <div class="container" id="messageContainer">
