@@ -811,10 +811,14 @@ h1::after {
     -webkit-backface-visibility: hidden;
     border-radius: 16px;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    transform: translateZ(0);
+    flex-direction: column;
+    justify-content: flex-start; 
+    align-items: flex-start;
+    padding: 24px 20px;
+    position: relative;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
 }
 
 .flip-card-front {
@@ -930,14 +934,13 @@ h1::after {
 
 .quote-row-end {
     border-bottom: none;
-    margin-top: auto;
-    margin-bottom: 0;
+    margin-top: auto; 
     padding-top: 16px;
     padding-bottom: 8px;
     justify-content: flex-end;
     opacity: 0.8;
+    flex-shrink: 0;
 }
-
 .card-id {
     font-size: 0.72rem;
     letter-spacing: 0.26em;
@@ -954,10 +957,10 @@ h1::after {
     white-space: pre-line;
     flex: 1;
     margin-bottom: 16px;
-    background: linear-gradient(180deg, var(--text-main) 0%, var(--text-main) 85%, transparent 100%);
+    overflow-y: auto; 
+    background: var(--text-main);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    background-clip: text;
 }
 
 [data-theme="dark"] .card-message {
@@ -1363,7 +1366,6 @@ h1::after {
         font-size: 0.85rem;
         padding: 20px 15px;
         line-height: 1.6;
-
     }
     .password-container {
         height: 320px;
