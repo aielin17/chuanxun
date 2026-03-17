@@ -898,7 +898,7 @@ h1::after {
     word-break: break-word;
     overflow-wrap: anywhere;
     overflow-y: auto;
-    justify-content: flex-start;
+    justify-content: center; 
     align-items: stretch;
     padding: 24px 20px;
     position: relative;
@@ -1361,6 +1361,8 @@ h1::after {
         font-size: 0.85rem;
         padding: 20px 15px;
         line-height: 1.6;
+        justify-content: center;
+
     }
     .password-container {
         height: 320px;
