@@ -3,107 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>凇说</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <title>传讯 - 淞</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
-<body data-theme="light">
-    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="切换日夜模式">
-        <i class="material-icons" id="themeIcon">dark_mode</i>
+<body>
+
+<div class="loader" id="loader"></div>
+
+<div class="album-container" id="albumContainer">
+    <div class="album-header">
+        <h2 class="album-title">凇-传讯</h2>
+        <p class="album-subtitle">大众传讯 · 理性看待</p>
+    </div>
+
+    <div class="calendar-toolbar">
+        <button class="theme-toggle" id="themeToggle">
+            <svg viewBox="0 0 24 24" class="icon-light"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zm0 16a7 7 0 1 1 0-14 7 7 0 0 1 0 14z"></path><path d="M12 5v2m0 10v2m4.24-8.24 1.42 1.42M5.34 5.34l1.42 1.42m11.32 0 1.42-1.42M5.34 18.66l1.42-1.42M17 12h2M5 12h2"></path></svg>
+            <svg viewBox="0 0 24 24" class="icon-dark"><path d="M12 2a10 10 0 1 0 10 10H12V2z"></path></svg>
+        </button>
+    </div>
+
+    <div class="date-grid" id="dateGrid"></div>
+</div>
+
+<div class="container" id="messageContainer">
+    <button class="back-btn" onclick="backToAlbum()">
+        <svg viewBox="0 0 24 24"><path d="M19 11H7.83l4.59-4.59L11 5l-7 7 7 7 1.41-1.41L7.83 13H19v-2z"></path></svg>
+        返回首页
     </button>
 
-    <audio id="sound-click" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3" preload="auto"></audio>
-    <audio id="sound-flip" src="https://assets.mixkit.co/active_storage/sfx/3005/3005-preview.mp3" preload="auto"></audio>
-    <audio id="sound-magic" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3" preload="auto"></audio>
-    <audio id="sound-page" src="https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3" preload="auto"></audio>
-
-    <div class="loader" id="loader"></div>
-
-    <div class="album-container glass-effect" id="albumContainer">
-        <div class="album-header">
-            <h2 class="album-title">淞の画册</h2>
-            <p class="album-subtitle">时间信笺 · 爱于此回响</p>
-        </div>
-        <div class="date-grid" id="dateGrid"></div>
+    <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
     </div>
 
-    <div class="container glass-effect" id="messageContainer">
-        <button class="back-btn" onclick="backToAlbum()">
-            <i class="material-icons">arrow_back</i> 返回画册
-        </button>
-
-        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-
-        <div class="page active" id="page-1">
-            <header><h1>能量对应</h1></header>
-            <div class="section-title"><i class="material-icons">auto_awesome</i> 对应星座</div>
-            <div class="info-grid" id="render-zodiacs"></div> 
-            <div class="color-section">
-                <div style="font-size: 0.85rem; color: var(--text-muted); letter-spacing: 2px;">感应色彩</div>
-                <div class="color-dots" id="render-colors"></div> 
-            </div>
-            <div class="nav-buttons right"><button class="btn-nav" onclick="changePage(1)">下一步 ➔</button></div>
+    <div class="page active" id="page-1">
+        <header><h1>大众传讯</h1></header>
+        <div class="section-title">
+            <svg viewBox="0 0 24 24"><path d="M12 2L2 22h20L12 2zm0 3.8L18.4 19H5.6L12 5.8z"></path></svg>
+            信息对应
         </div>
-
-        <div class="page" id="page-2">
-            <header><h1>环境感知</h1></header>
-            <div class="section-title"><i class="material-icons">psychology</i> 状态对应</div>
-            <ul class="status-list" id="render-status"></ul>
-            <div class="nav-buttons">
-                <button class="btn-nav" onclick="changePage(-1)">⬅ 上一步</button>
-                <button class="btn-nav" onclick="changePage(1)">开始读牌 ➔</button>
-            </div>
+        <div class="info-grid" id="zodiacGrid"></div>
+        <div class="nav-buttons right">
+            <button class="btn-nav" onclick="changePage(1)">
+                下一步
+                <svg viewBox="0 0 24 24"><path d="M5 11h11.17l-4.59 4.59L13 17l7-7-7-7-1.41 1.41L16.17 11H5v2z"></path></svg>
+            </button>
         </div>
+    </div>
 
-        <div class="page" id="page-3">
-            <header><h1>信笺展开</h1></header>
+    <div class="page" id="page-2">
+        <header><h1>环境感知</h1></header>
+        <div class="section-title">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg>
+            状态对应
+        </div>
+        <ul class="status-list" id="statusList"></ul>
+        <div class="nav-buttons">
+            <button class="btn-nav" onclick="changePage(-1)">
+                <svg viewBox="0 0 24 24"><path d="M19 11H7.83l4.59-4.59L11 5l-7 7 7 7 1.41-1.41L7.83 13H19v-2z"></path></svg>
+                上一步
+            </button>
+            <button class="btn-nav" onclick="changePage(1)">
+                开始读牌
+                <svg viewBox="0 0 24 24"><path d="M5 11h11.17l-4.59 4.59L13 17l7-7-7-7-1.41 1.41L16.17 11H5v2z"></path></svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="page" id="page-3">
+        <header><h1>信笺与低语</h1></header>
+        <div class="action-bar">
+            <div>Ta 想说的话，点击卡牌翻转</div>
+            <button class="btn-action" onclick="revealAll('cardsGrid')">
+                <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"></path></svg>
+                一键翻阅
+            </button>
+        </div>
+        <div class="cards-grid" id="cardsGrid"></div>
+        <div class="nav-buttons">
+            <button class="btn-nav" onclick="changePage(-1)">
+                <svg viewBox="0 0 24 24"><path d="M19 11H7.83l4.59-4.59L11 5l-7 7 7 7 1.41-1.41L7.83 13H19v-2z"></path></svg>
+                上一步
+            </button>
+            <button class="btn-nav" onclick="changePage(1)">
+                神秘领域
+                <svg viewBox="0 0 24 24"><path d="M5 11h11.17l-4.59 4.59L13 17l7-7-7-7-1.41 1.41L16.17 11H5v2z"></path></svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="page" id="page-4">
+        <header><h1>隐秘角落</h1></header>
+        <div id="passwordArea" class="password-container">
+            <svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"></path></svg>
+            <h3>群友/有缘人特供</h3>
+            <p>请输入密钥解锁</p>
+            <input type="password" id="secretPwd" class="password-input" placeholder="输入密码" onkeypress="if(event.key === 'Enter') unlockSecret()">
+            <button class="btn-action" onclick="unlockSecret()">解 锁</button>
+        </div>
+        <div id="secretContent" style="display: none;">
             <div class="action-bar">
-                <div style="font-size: 0.8rem; color: var(--text-muted);">Ta 想说的话，点击卡牌翻转</div>
-                <button class="btn-action" onclick="revealAll('cardsGrid')"><i class="material-icons" style="font-size: 16px;">visibility</i> 一键翻阅</button>
+                <div>特供传讯已解锁</div>
+                <button class="btn-action" onclick="revealAll('secretCardsGrid')">一键翻阅</button>
             </div>
-            <div class="cards-grid" id="cardsGrid"></div>
-            <div class="nav-buttons">
-                <button class="btn-nav" onclick="changePage(-1)">⬅ 上一步</button>
-                <button class="btn-nav" onclick="changePage(1)">神秘领域 ➔</button>
-            </div>
+            <div class="cards-grid" id="secretCardsGrid"></div>
         </div>
-
-        <div class="page" id="page-4">
-            <header><h1>隐秘角落</h1></header>
-            <div id="passwordArea" class="password-container glass-effect">
-                <i class="material-icons" style="font-size: 48px; color: var(--accent-pink);">lock</i>
-                <h3>群友特供</h3>
-                <p>请输入密钥解锁</p>
-                <input type="password" id="secretPwd" class="password-input" placeholder="输入密码" onkeypress="if(event.key === 'Enter') unlockSecret()">
-                <button class="btn-action" onclick="unlockSecret()">解 锁</button>
-            </div>
-            <div id="secretContent" style="display: none;">
-                <div class="action-bar">
-                    <div style="font-size: 0.8rem; color: var(--accent-pink);">特供传讯已解锁</div>
-                    <button class="btn-action" onclick="revealAll('secretCardsGrid')">一键翻阅</button>
-                </div>
-                <div class="cards-grid" id="secretCardsGrid"></div> 
-            </div>
-            <div class="nav-buttons">
-                <button class="btn-nav" onclick="changePage(-1)">⬅ 上一步</button>
-                <button class="btn-nav" onclick="changePage(1)">终点 ➔</button>
-            </div>
-        </div>
-
-        <div class="page" id="page-5">
-            <header><h1>余音绕梁</h1></header>
-            <div class="section-title"><i class="material-icons">headphones</i> 推荐音乐</div>
-            <div class="music-list" id="render-music"></div>
-            <div class="nav-buttons center">
-                <button class="btn-nav" onclick="changePage(-4)">↺ 重新回到起点</button>
-            </div>
+        <div class="nav-buttons">
+            <button class="btn-nav" onclick="changePage(-1)">
+                <svg viewBox="0 0 24 24"><path d="M19 11H7.83l4.59-4.59L11 5l-7 7 7 7 1.41-1.41L7.83 13H19v-2z"></path></svg>
+                上一步
+            </button>
+            <button class="btn-nav" onclick="changePage(1)">
+                终点
+                <svg viewBox="0 0 24 24"><path d="M5 11h11.17l-4.59 4.59L13 17l7-7-7-7-1.41 1.41L16.17 11H5v2z"></path></svg>
+            </button>
         </div>
     </div>
 
-    <div id="toast"></div>
+    <div class="page" id="page-5">
+        <header><h1>余音绕梁</h1></header>
+        <div class="section-title">
+            <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"></path></svg>
+            推荐音乐
+        </div>
+        <div class="music-list" id="musicList"></div>
+        <div class="nav-buttons center">
+            <button class="btn-nav" onclick="changePage(-4)">
+                <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l4 4 4-4H5c0-3.86 3.14-7 7-7s7 3.14 7 7-3.14 7-7 7c-1.93 0-3.68-.78-4.94-2.06l-1.42 1.42C8.27 20.99 10.51 22 13 22c4.97 0 9-4.03 9-9s-4.03-9-9-9z"></path></svg>
+                重新回到起点
+            </button>
+        </div>
+    </div>
+</div>
 
-    <script src="js/data.js"></script>
-    <script src="js/main.js"></script>
+<div id="toast"></div>
+
+<script src="js/data.js"></script>
+<script src="js/main.js"></script>
 </body>
 </html>
