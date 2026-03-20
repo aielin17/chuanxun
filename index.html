@@ -19,6 +19,15 @@
     <div class="album-header">
         <h2 class="album-title">凇-传讯</h2>
         <p class="album-subtitle">大众传讯 · 理性看待</p>
+        <div class="album-entry-row">
+            <button class="btn-entry-divination" type="button" onclick="openMassDivination()" aria-label="打开大众占卜">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M7 11h10l-2.2-6.2A2 2 0 0 0 12.9 3H11.1a2 2 0 0 0-1.9 1.8L7 11Zm-1 2h12v8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-8Z"></path>
+                    <path d="M9.2 14.2h5.6M9.2 17h5.6" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"></path>
+                </svg>
+                大众占卜
+            </button>
+        </div>
     </div>
 
     <div class="calendar-toolbar">
@@ -142,6 +151,80 @@
         <div class="nav-buttons center">
             <button class="btn-nav" type="button" onclick="changePage(-4)" aria-label="回到起点">
                 <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l4 4 4-4H5c0-3.86 3.14-7 7-7s7 3.14 7 7-3.14 7-7 7c-1.93 0-3.68-.78-4.94-2.06l-1.42 1.42C8.27 20.99 10.51 22 13 22c4.97 0 9-4.03 9-9s-4.03-9-9-9z"></path></svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="page" id="page-6">
+        <header><h1>大众占卜</h1></header>
+        <div class="section-title tri-section-title">
+            <svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 2.2 1 4.2 2.6 5.6L6 22l6-3 6 3-1.6-7.4A7 7 0 0 0 19 9a7 7 0 0 0-7-7Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path></svg>
+            假设你们是神奇动物和饲养员，关系如何？
+        </div>
+
+        <div class="tri-options-grid" id="triOptionsGrid">
+            <button class="tri-option-btn" type="button" data-tri-option="1" onclick="selectMassDivinationOption(1)" aria-label="选择选项一">
+                <div class="tri-option-media">
+                    <img alt="选项一图片" src="https://img.heliar.top/file/1774003647616_IMG_2829.jpeg">
+                </div>
+                <div class="tri-option-overlay">
+                    <span class="tri-option-number">选项一</span>
+                </div>
+            </button>
+
+            <button class="tri-option-btn" type="button" data-tri-option="2" onclick="selectMassDivinationOption(2)" aria-label="选择选项二">
+                <div class="tri-option-media">
+                    <img alt="选项二图片" src="https://img.heliar.top/file/1774007991620_IMG_2830.jpeg">
+                </div>
+                <div class="tri-option-overlay">
+                    <span class="tri-option-number">选项二</span>
+                </div>
+            </button>
+
+            <button class="tri-option-btn" type="button" data-tri-option="3" onclick="selectMassDivinationOption(3)" aria-label="选择选项三">
+                <div class="tri-option-media">
+                    <img alt="选项三图片" src="https://img.heliar.top/file/1774007992941_IMG_2831.jpeg">
+                </div>
+                <div class="tri-option-overlay">
+                    <span class="tri-option-number">选项三</span>
+                </div>
+            </button>
+        </div>
+
+        <div class="nav-buttons">
+            <button class="btn-nav" type="button" onclick="backToAlbum()">
+                <svg viewBox="0 0 24 24"><path d="M19 11H7.83l4.59-4.59L11 5l-7 7 7 7 1.41-1.41L7.83 13H19v-2z"></path></svg>
+                返回首页
+            </button>
+        </div>
+    </div>
+
+    <div class="page" id="page-7">
+        <header><h1>占卜结果</h1></header>
+
+        <div class="tri-result-top" id="triResultTop">
+            <div class="tri-result-media">
+                <img id="triResultImg" alt="占卜结果图片">
+            </div>
+            <div class="tri-result-side">
+                <div class="tri-result-kicker" id="triResultKicker">选项一</div>
+                <button class="btn-toggle-hi" id="triHighlightBtn" type="button" onclick="toggleDivinationHighlights()" aria-label="切换高亮模式">
+                    <span class="tri-toggle-label" id="triHighlightLabel">高亮：开</span>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Z" fill="none" stroke="currentColor" stroke-width="1.6"></path><path d="M12 6v6l4 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="tri-result-text" id="triResultText"></div>
+
+        <div class="nav-buttons">
+            <button class="btn-nav" type="button" onclick="changePage(-1)" aria-label="返回选项">
+                <svg viewBox="0 0 24 24"><path d="M19 11H7.83l4.59-4.59L11 5l-7 7 7 7 1.41-1.41L7.83 13H19v-2z"></path></svg>
+                返回选项
+            </button>
+            <button class="btn-nav" type="button" onclick="backToAlbum()" aria-label="返回首页">
+                <svg viewBox="0 0 24 24"><path d="M19 11H7.83l4.59-4.59L11 5l-7 7 7 7 1.41-1.41L7.83 13H19v-2z"></path></svg>
+                返回首页
             </button>
         </div>
     </div>

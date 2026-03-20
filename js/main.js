@@ -1,5 +1,5 @@
 let currentPage = 1;
-const totalPages = 5;
+const totalPages = 7;
 let currentDateKey = "";
 let toastTimeout;
 let homeViewMode = 'auto'; 
@@ -603,6 +603,193 @@ function copyText(text) {
     navigator.clipboard.writeText(text).then(() => {
         showToast(`已复制：${text}`);
     }).catch(() => showToast('复制失败'));
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function escapeRegExp(str) {
+    return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function highlightKeywordsToHtml(text, keywords) {
+    if (!keywords || !keywords.length) return escapeHtml(text);
+    const sorted = [...keywords].filter(Boolean).sort((a, b) => String(b).length - String(a).length);
+    const re = new RegExp(sorted.map(escapeRegExp).join('|'), 'g');
+    let out = '';
+    let last = 0;
+    let m;
+    while ((m = re.exec(text)) !== null) {
+        const start = m.index;
+        const end = start + m[0].length;
+        out += escapeHtml(text.slice(last, start));
+        out += `<mark class="tri-mark">${escapeHtml(m[0])}</mark>`;
+        last = end;
+        // Safety: avoid infinite loops for zero-width matches
+        if (m[0].length === 0) last++;
+    }
+    out += escapeHtml(text.slice(last));
+    return out;
+}
+
+const massDivination = {
+    question: '假设你们是神奇动物和饲养员，关系如何？',
+    options: [
+        {
+            id: 1,
+            image: 'https://img.heliar.top/file/1774003647616_IMG_2829.jpeg',
+            title: '选项一',
+            highlights: ['沉默', '水火不容', '饲养员', '神奇动物'],
+            text:
+                '沉默，沉默是今晚的康桥。' +
+                '\n看得人难以评价又热血沸腾的关系，一山不容二虎，今天我xxx一定要和你争个高低！' +
+                '\n\n估计在现实中，你们之间的关系就类似于对抗路，水可以不喝，饭可以不吃，搭档一定是要招惹的' +
+                '\n\n所以牌面就一个词：水火不容，不仅要争谁当饲养员，还要争谁当神奇动物，主打我都要' +
+                '\n\n上来就给我整这种难题吗？' +
+                '\n要么就全是神奇动物，要么就全是饲养员，你们不喜欢一方绝对压制一方的桥段' +
+                '\n\n华夏味儿比较浓，而且是受尊敬的神兽，能够给人民带来恩泽，有一方是纯粹的陆生动物，有一方则是海生动物' +
+                '\n本身八竿子打不着，大路朝天，各走各游一边，在自己的领域都是被追捧的强者' +
+                '\n\n但我们这儿是神奇动物频道，所以上天入海默认都可以做到' +
+                '\n那这下完蛋了，两个人碰到一起，那叫火花四溅、激情四射、四海扬名、我要你四！' +
+                '\n\n打破了头，一抹血，又开始“他说风雨中，这点痛算什么”' +
+                '\n\n你们其中有一方在日常是很温和的性格，愿意听百姓的请求并去实现，又或者说，类似一方的山神' +
+                '\n山神亲人却也离人，愿望可以实现、庄稼可以照看、冤屈可以聆听，但真要让山神现身，达咩，不可以，不行哦' +
+                '\n倒是会和同为一方山神的朋友之类聚在一起' +
+                '\n\n有一方就毫不收敛了，走哪儿都能被人追着要签名（）' +
+                '\n好一个花孔雀，简直就是霸主，出行浩浩荡荡的，离着八百里就能听见大小姐/大少爷驾到，通通闪开' +
+                '\n不过攻击性倒是不强，单纯炫耀＋威胁，至于对百姓有没有帮助，或许有吧，能舍脸给看一眼尊荣就算帮助了！' +
+                '\n\n相处方式属于不打不相识，估计不融洽的名声人人得知，但实际上对彼此的实力都是认可的' +
+                '\n白天打架，晚上亲嘴，谁也想不到这对敌人回的是同一个家' +
+                '\n\n不过呀' +
+                '\n还是会有遗憾的，成见是大山，对方到底什么时候能真正看见自己的灵魂呢' +
+                '\n这样期盼着，然后转头继续看对方不顺眼！'
+        },
+        {
+            id: 2,
+            image: 'https://img.heliar.top/file/1774007991620_IMG_2830.jpeg',
+            title: '选项二',
+            highlights: ['地狱笑话', '饲养员', '神奇动物', '梦角', '小鸟'],
+            text:
+                '好沉重，好一个地狱笑话' +
+                '\n这是什么？神奇动物？妈妈ta想和我回家！' +
+                '\n\n非常明显，你是饲养员，梦角是神奇动物' +
+                '\n估计是飞禽一类的，反正会飞，管他是鸟还是龙还是狮鹫，统一简称小鸟' +
+                '\n\n如果往现实且be且自私且地狱的方向解读，那就是狠心的坏女人骗心骗身，最后念叨着什么神奇动物应该挺值钱的，就把小鸟给卖了！' +
+                '\n小鸟一直在想你，就没停过！' +
+                '\n\n梦角最开始对饲养员没什么好感' +
+                '\n小鸟是自由翱翔于天际之间的存在，天空的孩子，结果一朝失足，被人给抓走了，从此再也无法回到天空的怀抱' +
+                '\n\n但这个饲养员好特殊' +
+                '\n她没有像别人那样剪掉小鸟的羽翼，反而一步步耐心地将小鸟培养成苍鹰，两个人是远近闻名的最佳搭档' +
+                '\n\n再难的密境，再危险的领域，两个人都闯过' +
+                '\n\n配合如此亲密无间，于是自然而然产生依赖和爱意' +
+                '\n鸟离开家的时间太早，饲养员就是最亲近的人，恨不彻底，爱也不彻底，但是鸟离不开饲养员，待在你的身边，ta就感觉到安全' +
+                '\n\n从此心甘情愿收敛羽翼，成为饲养员最优秀最忠诚的伙伴' +
+                '\n\n好虐！好狗血！好俗套！' +
+                '\n至于你是怎么想的，谁知道呢，或许就是真的坏女人，也或许是愿意和鸟一起闯荡江湖的侠女！'
+        },
+        {
+            id: 3,
+            image: 'https://img.heliar.top/file/1774007992941_IMG_2831.jpeg',
+            title: '选项三',
+            highlights: ['挚爱的灵魂伴侣', '神奇动物', '饲养员', '社会主义', '人人平等'],
+            text:
+                '怎么，选项一不符合你的预期吗，怎么又来啦？' +
+                '\n这一组的梦角就很不满了，什么饲养员，能不能说好听点！那叫我挚爱的灵魂伴侣！' +
+                '\n\n梦角是神奇动物，而你……你是去杀ta的！' +
+                '\n\n并没有非常鲜明的高低之分，倒不如说，梦角很强大，类似龙虎，是毋庸置疑的强者，无数的人侍奉' +
+                '\n\n这样强到让人生不出忌惮的人，就吸引到一个非要去看看到底有多强的小女孩！' +
+                '\n你不服啊，什么霸主，什么领主，我们这里是社会主义谢谢，人人平等，杜绝资本主义' +
+                '\n\n于是水灵灵地被梦角压制住了' +
+                '\n女人，你好不一样，我爱上你了，梦角就这样自顾自地想着，把你圈在自己的领域' +
+                '\n\nta爱你，但你又是人类之躯，这不行啊，ta没怎么动，你就会散架，这还怎么亲嘴' +
+                '\n\n于是此领主根本没有犹豫就将你也转化成了同样的神兽' +
+                '\n唉同类，唉这下可以放肆亲亲了，唉你怎么又开始捅我！' +
+                '\n\n我们这是神奇动物频道吗，为什么老是在干架？' +
+                '\n\n你问你的感受？哦这就复杂了' +
+                '\n被转化后睁开眼的那一瞬间，迎来的先是爱人的拥抱，可你在想，这是爱人还是恶魔？是可以交流的同类还是无法沟通的野兽？' +
+                '\n转头一看，发现自己也成为了无法定义的存在' +
+                '\n\n恨不恨的，爱不爱的，反正你们从此就成为对方无法分开的灵魂' +
+                '\n天南海北，天上地下，灵魂永远共鸣，心脏永远鼓动，被迫而又主动的，成为了对方的饲养员' +
+                '\n\n至于到底是谁在饲养谁，分那么清楚做什么呢'
+        }
+    ]
+};
+
+let triHighlightsOn = true;
+
+function setDivinationHighlightOn(on) {
+    triHighlightsOn = !!on;
+    const page7 = document.getElementById('page-7');
+    if (page7) page7.dataset.hi = triHighlightsOn ? 'on' : 'off';
+    const label = document.getElementById('triHighlightLabel');
+    if (label) label.textContent = `高亮：${triHighlightsOn ? '开' : '关'}`;
+}
+
+function toggleDivinationHighlights() {
+    playSound('click');
+    setDivinationHighlightOn(!triHighlightsOn);
+    // Re-render current text to reflect the highlight toggle.
+    const textEl = document.getElementById('triResultText');
+    if (textEl) {
+        const kicker = document.getElementById('triResultKicker')?.textContent || '';
+        const opt = massDivination.options.find(o => o.title === kicker);
+        if (opt) {
+            const html = triHighlightsOn
+                ? highlightKeywordsToHtml(opt.text, opt.highlights)
+                : escapeHtml(opt.text);
+            textEl.innerHTML = html;
+        }
+    }
+}
+
+function openMassDivination() {
+    playSound('click');
+    showLoader();
+    setTimeout(() => {
+        document.getElementById('albumContainer').style.display = 'none';
+        document.getElementById('messageContainer').style.display = 'flex';
+        currentPage = 6;
+        showPage(6);
+
+        // Reset selection & highlights
+        document.querySelectorAll('.tri-option-btn').forEach(btn => btn.classList.remove('is-selected'));
+        setDivinationHighlightOn(true);
+        hideLoader();
+        scrollActiveToTop();
+    }, 380);
+}
+
+function selectMassDivinationOption(id) {
+    playSound('click');
+    const option = massDivination.options.find(o => o.id === Number(id));
+    if (!option) return;
+
+    document.querySelectorAll('.tri-option-btn').forEach(btn => {
+        btn.classList.toggle('is-selected', String(btn.dataset.triOption) === String(option.id));
+    });
+
+    const img = document.getElementById('triResultImg');
+    if (img) img.src = option.image;
+
+    const kicker = document.getElementById('triResultKicker');
+    if (kicker) kicker.textContent = option.title;
+
+    const textEl = document.getElementById('triResultText');
+    if (textEl) {
+        textEl.innerHTML = triHighlightsOn
+            ? highlightKeywordsToHtml(option.text, option.highlights)
+            : escapeHtml(option.text);
+    }
+
+    setDivinationHighlightOn(triHighlightsOn);
+    showPage(7);
+    scrollActiveToTop();
 }
 
 window.addEventListener('DOMContentLoaded', () => {
