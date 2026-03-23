@@ -367,9 +367,9 @@ function renderCalendarHome(keys) {
             setTimeout(() => {
                 document.getElementById('albumContainer').style.display = 'none';
                 document.getElementById('messageContainer').style.display = 'flex';
-                renderCurrentDayData();
-                currentPage = 1;
-                showPage(1);
+                const page = renderCurrentDayData();
+                currentPage = page || 1;
+                showPage(currentPage);
                 hideLoader();
                 scrollActiveToTop();
             }, 500);
@@ -393,9 +393,9 @@ function bindDateCards() {
             setTimeout(() => {
                 document.getElementById('albumContainer').style.display = 'none';
                 document.getElementById('messageContainer').style.display = 'flex';
-                renderCurrentDayData();
-                currentPage = 1;
-                showPage(1);
+                const page = renderCurrentDayData();
+                currentPage = page || 1;
+                showPage(currentPage);
                 hideLoader();
                 scrollActiveToTop();
             }, 500);
@@ -406,6 +406,10 @@ function bindDateCards() {
 function renderCurrentDayData() {
     const data = dayData[currentDateKey];
     if (!data) return;
+    if (data.kind === 'divination') {
+        renderDivinationData(data);
+        return 6;
+    }
     applyDayTheme(data);
 
     const zodiacGrid = document.getElementById('zodiacGrid');
@@ -531,6 +535,39 @@ function renderCurrentDayData() {
             </button>
         </div>`;
     });
+    return 1;
+}
+
+function renderDivinationData(data) {
+    // 支持在日历/列表里按日期进入占卜：不同日期可以只标记 divinationKey，
+    // 内容由下面的 divinationSets 统一管理（后续你新增 set 也能直接接上）。
+    const divKey = data.divinationKey || 'mass';
+    currentMassDivination = (divinationSets && divinationSets[divKey]) ? divinationSets[divKey] : massDivination;
+
+    const q = document.getElementById('triQuestionText');
+    if (q) q.textContent = currentMassDivination.question;
+
+    currentMassDivination.options.forEach(opt => {
+        const btn = document.querySelector(`.tri-option-btn[data-tri-option="${opt.id}"]`);
+        if (!btn) return;
+        const img = btn.querySelector('img');
+        if (img) {
+            img.src = opt.image;
+            img.alt = `${opt.title}图片`;
+        }
+    });
+
+    // 重置选项与结果，避免从“传讯”跳转回来时残留上次的结果。
+    document.querySelectorAll('.tri-option-btn').forEach(btn => btn.classList.remove('is-selected'));
+    const first = currentMassDivination.options[0];
+    const imgEl = document.getElementById('triResultImg');
+    if (imgEl && first) imgEl.src = first.image;
+
+    const kicker = document.getElementById('triResultKicker');
+    if (kicker && first) kicker.textContent = first.title;
+
+    const textEl = document.getElementById('triResultText');
+    if (textEl) textEl.innerHTML = '';
 }
 
 function backToAlbum() {
@@ -721,32 +758,12 @@ const massDivination = {
     ]
 };
 
-let triHighlightsOn = true;
+// 占卜数据集：现在只有一个 set（mass），但后续你新增日期/内容只要加条 set 并在数据里填 divinationKey 即可。
+const divinationSets = {
+    mass: massDivination
+};
 
-function setDivinationHighlightOn(on) {
-    triHighlightsOn = !!on;
-    const page7 = document.getElementById('page-7');
-    if (page7) page7.dataset.hi = triHighlightsOn ? 'on' : 'off';
-    const label = document.getElementById('triHighlightLabel');
-    if (label) label.textContent = `高亮：${triHighlightsOn ? '开' : '关'}`;
-}
-
-function toggleDivinationHighlights() {
-    playSound('click');
-    setDivinationHighlightOn(!triHighlightsOn);
-    // Re-render current text to reflect the highlight toggle.
-    const textEl = document.getElementById('triResultText');
-    if (textEl) {
-        const kicker = document.getElementById('triResultKicker')?.textContent || '';
-        const opt = massDivination.options.find(o => o.title === kicker);
-        if (opt) {
-            const html = triHighlightsOn
-                ? highlightKeywordsToHtml(opt.text, opt.highlights)
-                : escapeHtml(opt.text);
-            textEl.innerHTML = html;
-        }
-    }
-}
+let currentMassDivination = massDivination;
 
 function openMassDivination() {
     playSound('click');
@@ -754,12 +771,13 @@ function openMassDivination() {
     setTimeout(() => {
         document.getElementById('albumContainer').style.display = 'none';
         document.getElementById('messageContainer').style.display = 'flex';
-        currentPage = 6;
-        showPage(6);
+        const latestKey = getLatestDivinationDateKey();
+        currentDateKey = latestKey || currentDateKey;
+        const divData = latestKey ? dayData[latestKey] : { kind: 'divination', divinationKey: 'mass' };
+        renderDivinationData(divData);
 
-        // Reset selection & highlights
-        document.querySelectorAll('.tri-option-btn').forEach(btn => btn.classList.remove('is-selected'));
-        setDivinationHighlightOn(true);
+        currentPage = 6;
+        showPage(currentPage);
         hideLoader();
         scrollActiveToTop();
     }, 380);
@@ -767,7 +785,7 @@ function openMassDivination() {
 
 function selectMassDivinationOption(id) {
     playSound('click');
-    const option = massDivination.options.find(o => o.id === Number(id));
+    const option = currentMassDivination.options.find(o => o.id === Number(id));
     if (!option) return;
 
     document.querySelectorAll('.tri-option-btn').forEach(btn => {
@@ -782,14 +800,31 @@ function selectMassDivinationOption(id) {
 
     const textEl = document.getElementById('triResultText');
     if (textEl) {
-        textEl.innerHTML = triHighlightsOn
-            ? highlightKeywordsToHtml(option.text, option.highlights)
-            : escapeHtml(option.text);
+        // 占卜高亮默认一直开启（已删掉 UI 的开关按钮）
+        textEl.innerHTML = highlightKeywordsToHtml(option.text, option.highlights);
     }
 
-    setDivinationHighlightOn(triHighlightsOn);
     showPage(7);
     scrollActiveToTop();
+}
+
+function getLatestDivinationDateKey() {
+    const toKey = (d) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    };
+
+    const todayKey = toKey(new Date());
+    const keys = Object.keys(dayData)
+        .filter(k => dayData[k] && dayData[k].kind === 'divination')
+        .sort((a, b) => a.localeCompare(b));
+
+    // 优先选取“今天或之前”的最新更新；如果还没有则回退到最近的未来日期。
+    const eligible = keys.filter(k => k <= todayKey);
+    const list = eligible.length ? eligible : keys;
+    return list.length ? list[list.length - 1] : '';
 }
 
 window.addEventListener('DOMContentLoaded', () => {

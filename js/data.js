@@ -99,6 +99,36 @@ const dayData = {
             { title: "my strange addiction", artist: "Billie Eilish" },
             { title: "(强推)それでも君が好き", artist: "SPICY CHOCOLATE" }
         ]
+    },
+    "2026-03-30": {
+        title: "3/30",
+        desc: "大众占卜",
+        kind: "divination",
+        divinationKey: "mass"
+    },
+    "2026-03-23": {
+        title: "3/23",
+        desc: "大众占卜",
+        kind: "divination",
+        divinationKey: "mass"
+    },
+    "2026-03-16": {
+        title: "3/16",
+        desc: "大众占卜",
+        kind: "divination",
+        divinationKey: "mass"
+    },
+    "2026-03-09": {
+        title: "3/9",
+        desc: "大众占卜",
+        kind: "divination",
+        divinationKey: "mass"
+    },
+    "2026-03-02": {
+        title: "3/2",
+        desc: "大众占卜",
+        kind: "divination",
+        divinationKey: "mass"
     }
 };
 

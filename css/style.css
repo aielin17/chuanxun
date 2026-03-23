@@ -534,6 +534,14 @@ h1::after {
     background: var(--accent);
 }
 
+.page-note {
+    margin-top: 12px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    font-weight: 300;
+    letter-spacing: 0.22em;
+}
+
 .section-title {
     font-size: 1.1rem;
     font-weight: 600;
@@ -1473,14 +1481,14 @@ h1::after {
     height: 100%;
     object-fit: cover;
     display: block;
-    filter: grayscale(1) contrast(1.06) brightness(0.92);
+    filter: contrast(1.06) brightness(0.96);
     transform: scale(1.02);
     transition: transform 0.55s ease, filter 0.55s ease;
 }
 
 .tri-option-btn:hover .tri-option-media img {
     transform: scale(1.06);
-    filter: grayscale(1) contrast(1.10) brightness(0.98);
+    filter: contrast(1.10) brightness(1);
 }
 
 .tri-option-overlay {
@@ -1531,7 +1539,7 @@ h1::after {
     max-height: 320px;
     object-fit: cover;
     display: block;
-    filter: grayscale(1) contrast(1.08) brightness(0.94);
+    filter: contrast(1.08) brightness(0.96);
 }
 
 .tri-result-side {
@@ -1582,32 +1590,31 @@ h1::after {
 .tri-result-text {
     border-top: 1px solid var(--border-color);
     padding-top: 18px;
-    white-space: pre-line;
+    white-space: pre-wrap;
     word-break: break-word;
     overflow-wrap: anywhere;
-    line-height: 2.05;
-    letter-spacing: 0.02em;
-    font-size: 1.02rem;
+    text-align: left;
+    width: 100%;
+    max-width: 62ch;
+    line-height: 1.92;
+    letter-spacing: 0.01em;
+    font-size: 1.01rem;
+    text-wrap: pretty;
     color: var(--text-main);
 }
 
 .tri-mark {
-    background: rgba(0,0,0,0.08);
-    border: 1px solid rgba(0,0,0,0.12);
-    padding: 0 4px;
-    border-radius: 8px;
+    background: transparent;
+    border: none;
+    padding: 0 2px;
+    border-radius: 6px;
     color: var(--text-main);
+    box-shadow: inset 0 -0.55em rgba(0,0,0,0.06);
+    box-decoration-break: clone;
 }
 
 [data-theme="dark"] .tri-mark {
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.16);
-}
-
-#page-7[data-hi="off"] .tri-mark {
-    background: transparent;
-    border-color: transparent;
-    opacity: 0.78;
+    box-shadow: inset 0 -0.55em rgba(255,255,255,0.10);
 }
 
 @media (max-width: 900px) {

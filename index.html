@@ -57,7 +57,7 @@
     </div>
 
     <div class="page active" id="page-1">
-        <header><h1>大众传讯</h1></header>
+        <header><h1>大众传讯</h1><p class="page-note">传讯每日一更，占卜每周一更</p></header>
         <div class="section-title">
             <svg viewBox="0 0 24 24"><path d="M12 2L2 22h20L12 2zm0 3.8L18.4 19H5.6L12 5.8z"></path></svg>
             信息对应
@@ -156,10 +156,10 @@
     </div>
 
     <div class="page" id="page-6">
-        <header><h1>大众占卜</h1></header>
+        <header><h1>大众占卜</h1><p class="page-note">传讯每日一更，占卜每周一更</p></header>
         <div class="section-title tri-section-title">
             <svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 2.2 1 4.2 2.6 5.6L6 22l6-3 6 3-1.6-7.4A7 7 0 0 0 19 9a7 7 0 0 0-7-7Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path></svg>
-            假设你们是神奇动物和饲养员，关系如何？
+            <span id="triQuestionText">假设你们是神奇动物和饲养员，关系如何？</span>
         </div>
 
         <div class="tri-options-grid" id="triOptionsGrid">
@@ -208,10 +208,6 @@
             </div>
             <div class="tri-result-side">
                 <div class="tri-result-kicker" id="triResultKicker">选项一</div>
-                <button class="btn-toggle-hi" id="triHighlightBtn" type="button" onclick="toggleDivinationHighlights()" aria-label="切换高亮模式">
-                    <span class="tri-toggle-label" id="triHighlightLabel">高亮：开</span>
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Z" fill="none" stroke="currentColor" stroke-width="1.6"></path><path d="M12 6v6l4 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                </button>
             </div>
         </div>
 
