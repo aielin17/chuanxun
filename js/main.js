@@ -542,7 +542,11 @@ function renderDivinationData(data) {
     // 支持在日历/列表里按日期进入占卜：不同日期可以只标记 divinationKey，
     // 内容由下面的 divinationSets 统一管理（后续你新增 set 也能直接接上）。
     const divKey = data.divinationKey || 'mass';
-    currentMassDivination = (divinationSets && divinationSets[divKey]) ? divinationSets[divKey] : massDivination;
+    // 优先使用 data.js 里的 `divinationSets`；若缺失才回退到 main.js 内置的兼容数据。
+    const fromData = (typeof divinationSets !== 'undefined' && divinationSets && divinationSets[divKey]) ? divinationSets[divKey] : null;
+    const fromMain = (typeof mainDivinationSets !== 'undefined' && mainDivinationSets && mainDivinationSets[divKey]) ? mainDivinationSets[divKey] : null;
+    currentMassDivination = fromData || fromMain || (typeof divinationSets !== 'undefined' && divinationSets && divinationSets.mass) || massDivination;
+    if (!currentMassDivination || !Array.isArray(currentMassDivination.options) || !currentMassDivination.question) return;
 
     const q = document.getElementById('triQuestionText');
     if (q) q.textContent = currentMassDivination.question;
@@ -759,11 +763,13 @@ const massDivination = {
 };
 
 // 占卜数据集：现在只有一个 set（mass），但后续你新增日期/内容只要加条 set 并在数据里填 divinationKey 即可。
-const divinationSets = {
+const mainDivinationSets = {
     mass: massDivination
 };
 
-let currentMassDivination = massDivination;
+let currentMassDivination = (typeof divinationSets !== 'undefined' && divinationSets && divinationSets.mass)
+    ? divinationSets.mass
+    : massDivination;
 
 function openMassDivination() {
     playSound('click');
@@ -785,6 +791,10 @@ function openMassDivination() {
 
 function selectMassDivinationOption(id) {
     playSound('click');
+    if (!currentMassDivination || !Array.isArray(currentMassDivination.options)) {
+        showToast('暂无占卜数据', 'error');
+        return;
+    }
     const option = currentMassDivination.options.find(o => o.id === Number(id));
     if (!option) return;
 
